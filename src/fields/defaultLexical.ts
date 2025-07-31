@@ -1,46 +1,103 @@
-import type { TextFieldSingleValidation } from 'payload'
+import type { Block } from 'payload'
+import { Banner } from '../blocks/Banner/config'
+import { Code } from '../blocks/Code/config'
+import { Embed } from '../blocks/Embed/config'
+import { MediaBlock } from '../blocks/MediaBlock/config'
 import {
   BoldFeature,
   ItalicFeature,
-  LinkFeature,
-  ParagraphFeature,
-  lexicalEditor,
   UnderlineFeature,
+  StrikethroughFeature,
+  ParagraphFeature,
+  HeadingFeature,
+  AlignFeature,
+  LinkFeature,
   type LinkFields,
+  UploadFeature,
+  BlockquoteFeature,
+  BlocksFeature,
+  OrderedListFeature,
+  UnorderedListFeature,
+  SubscriptFeature,
+  SuperscriptFeature,
+  InlineCodeFeature,
+  InlineToolbarFeature,
+  HorizontalRuleFeature,
+  FixedToolbarFeature,
+  lexicalEditor,
 } from '@payloadcms/richtext-lexical'
+
+// Define VideoBlock
+const VideoBlock: Block = {
+  slug: 'video',
+  labels: {
+    singular: 'Video',
+    plural: 'Videos',
+  },
+  fields: [
+    {
+      name: 'url',
+      label: 'Video URL',
+      type: 'text',
+      required: true,
+      admin: {
+        placeholder: 'Enter the URL of the video (e.g., YouTube, Vimeo).',
+      },
+    },
+  ],
+}
 
 export const defaultLexical = lexicalEditor({
   features: [
     ParagraphFeature(),
-    UnderlineFeature(),
     BoldFeature(),
     ItalicFeature(),
+    UnderlineFeature(),
+    StrikethroughFeature(),
+    InlineToolbarFeature(),
+    SubscriptFeature(),
+    SuperscriptFeature(),
+    InlineCodeFeature(),
+    BlockquoteFeature(),
+    OrderedListFeature(),
+    UnorderedListFeature(),
+    HorizontalRuleFeature(),
+    FixedToolbarFeature(),
+    AlignFeature(),
+    HeadingFeature({ enabledHeadingSizes: ['h1', 'h2', 'h3', 'h4'] }),
+    BlocksFeature({ blocks: [Banner, Code, MediaBlock, Embed, VideoBlock] }),
     LinkFeature({
-      enabledCollections: ['pages', 'posts'],
-      fields: ({ defaultFields }) => {
-        const defaultFieldsWithoutUrl = defaultFields.filter((field) => {
-          if ('name' in field && field.name === 'url') return false
-          return true
-        })
-
-        return [
-          ...defaultFieldsWithoutUrl,
-          {
-            name: 'url',
-            type: 'text',
-            admin: {
-              condition: (_data, siblingData) => siblingData?.linkType !== 'internal',
-            },
-            label: ({ t }) => t('fields:enterURL'),
-            required: true,
-            validate: ((value, options) => {
-              if ((options?.siblingData as LinkFields)?.linkType === 'internal') {
-                return true // no validation needed, as no url should exist for internal links
-              }
-              return value ? true : 'URL is required'
-            }) as TextFieldSingleValidation,
+      fields: ({ defaultFields }) => [
+        ...defaultFields,
+        {
+          name: 'rel',
+          label: 'Rel Attribute',
+          type: 'select',
+          hasMany: true,
+          options: ['noopener', 'noreferrer', 'nofollow'],
+          admin: {
+            description:
+              'The rel attribute defines the relationship between a linked resource and the current document. This is a custom link field.',
           },
-        ]
+        },
+      ],
+    }),
+    UploadFeature({
+      collections: {
+        media: {
+          fields: [
+            {
+              name: 'caption',
+              type: 'text',
+              label: 'Caption',
+            },
+            {
+              name: 'alt',
+              type: 'text',
+              label: 'Alt Text',
+            },
+          ],
+        },
       },
     }),
   ],

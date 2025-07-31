@@ -1,19 +1,9 @@
 import type { CollectionConfig } from 'payload'
 
-import {
-  BlocksFeature,
-  FixedToolbarFeature,
-  HeadingFeature,
-  HorizontalRuleFeature,
-  InlineToolbarFeature,
-  lexicalEditor,
-} from '@payloadcms/richtext-lexical'
+import { defaultLexical } from '../../fields/defaultLexical'
 
 import { authenticated } from '../../access/authenticated'
 import { authenticatedOrPublished } from '../../access/authenticatedOrPublished'
-import { Banner } from '../../blocks/Banner/config'
-import { Code } from '../../blocks/Code/config'
-import { MediaBlock } from '../../blocks/MediaBlock/config'
 import { generatePreviewPath } from '../../utilities/generatePreviewPath'
 import { populateAuthors } from './hooks/populateAuthors'
 import { revalidateDelete, revalidatePost } from './hooks/revalidatePost'
@@ -35,9 +25,6 @@ export const Posts: CollectionConfig<'posts'> = {
     read: authenticatedOrPublished,
     update: authenticated,
   },
-  // This config controls what's populated by default when a post is referenced
-  // https://payloadcms.com/docs/queries/select#defaultpopulate-collection-config-property
-  // Type safe if the collection slug generic is passed to `CollectionConfig` - `CollectionConfig<'posts'>
   defaultPopulate: {
     title: true,
     slug: true,
@@ -56,7 +43,6 @@ export const Posts: CollectionConfig<'posts'> = {
           collection: 'posts',
           req,
         })
-
         return path
       },
     },
@@ -87,18 +73,7 @@ export const Posts: CollectionConfig<'posts'> = {
             {
               name: 'content',
               type: 'richText',
-              editor: lexicalEditor({
-                features: ({ rootFeatures }) => {
-                  return [
-                    ...rootFeatures,
-                    HeadingFeature({ enabledHeadingSizes: ['h1', 'h2', 'h3', 'h4'] }),
-                    BlocksFeature({ blocks: [Banner, Code, MediaBlock] }),
-                    FixedToolbarFeature(),
-                    InlineToolbarFeature(),
-                    HorizontalRuleFeature(),
-                  ]
-                },
-              }),
+              editor: defaultLexical,
               label: false,
               required: true,
             },
@@ -113,13 +88,9 @@ export const Posts: CollectionConfig<'posts'> = {
               admin: {
                 position: 'sidebar',
               },
-              filterOptions: ({ id }) => {
-                return {
-                  id: {
-                    not_in: [id],
-                  },
-                }
-              },
+              filterOptions: ({ id }) => ({
+                id: { not_in: [id] },
+              }),
               hasMany: true,
               relationTo: 'posts',
             },
@@ -144,19 +115,11 @@ export const Posts: CollectionConfig<'posts'> = {
               descriptionPath: 'meta.description',
               imagePath: 'meta.image',
             }),
-            MetaTitleField({
-              hasGenerateFn: true,
-            }),
-            MetaImageField({
-              relationTo: 'media',
-            }),
-
+            MetaTitleField({ hasGenerateFn: true }),
+            MetaImageField({ relationTo: 'media' }),
             MetaDescriptionField({}),
             PreviewField({
-              // if the `generateUrl` function is configured
               hasGenerateFn: true,
-
-              // field paths to match the target field for data
               titlePath: 'meta.title',
               descriptionPath: 'meta.description',
             }),
@@ -168,9 +131,7 @@ export const Posts: CollectionConfig<'posts'> = {
       name: 'publishedAt',
       type: 'date',
       admin: {
-        date: {
-          pickerAppearance: 'dayAndTime',
-        },
+        date: { pickerAppearance: 'dayAndTime' },
         position: 'sidebar',
       },
       hooks: {
@@ -184,54 +145,72 @@ export const Posts: CollectionConfig<'posts'> = {
         ],
       },
     },
-
     {
       name: 'tags',
       type: 'relationship',
-      admin: {
-        position: 'sidebar',
-      },
+      admin: { position: 'sidebar' },
       hasMany: true,
       relationTo: 'tags',
     },
     {
       name: 'authors',
       type: 'relationship',
-      admin: {
-        position: 'sidebar',
-      },
+      admin: { position: 'sidebar' },
       hasMany: true,
       relationTo: 'users',
     },
-    // This field is only used to populate the user data via the `populateAuthors` hook
-    // This is because the `user` collection has access control locked to protect user privacy
-    // GraphQL will also not return mutated user data that differs from the underlying schema
     {
       name: 'populatedAuthors',
       type: 'array',
-      access: {
-        update: () => false,
-      },
-      admin: {
-        disabled: true,
-        readOnly: true,
-      },
+      access: { update: () => false },
+      admin: { disabled: true, readOnly: true },
       fields: [
-        {
-          name: 'id',
-          type: 'text',
-        },
-        {
-          name: 'name',
-          type: 'text',
-        },
-        {
-          name: 'slug',
-          type: 'text',
-        },
+        { name: 'id', type: 'text' },
+        { name: 'name', type: 'text' },
+        { name: 'slug', type: 'text' },
       ],
     },
-    ...slugField(),
+    // Add customId field
+    {
+      name: 'customId',
+      type: 'number',
+      required: true,
+      defaultValue: 0, // Will be overridden by hook
+      admin: {
+        hidden: true, // Hide from UI as it's managed automatically
+      },
+      hooks: {
+        beforeChange: [
+          async ({ operation, data, req }) => {
+            if (operation === 'create') {
+              const posts = await req.payload.find({
+                collection: 'posts',
+                sort: '-customId',
+                limit: 1,
+              })
+              const lastCustomId =
+                posts.docs.length > 0 && typeof posts.docs[0]?.customId === 'number'
+                  ? posts.docs[0].customId
+                  : 966803
+              return Math.max(lastCustomId + 1, 966804)
+            }
+            return data?.customId || 0
+          },
+        ],
+      },
+    },
+    ...slugField('title', {
+      slugOverrides: {
+        admin: {
+          components: {
+            Field: {
+              path: '@/fields/slug/SlugComponent#SlugComponent',
+              clientProps: { fieldToUse: 'title', checkboxFieldPath: 'slugLock' },
+            },
+          },
+        },
+      },
+    }),
   ],
   hooks: {
     afterChange: [revalidatePost],
@@ -239,12 +218,7 @@ export const Posts: CollectionConfig<'posts'> = {
     afterDelete: [revalidateDelete],
   },
   versions: {
-    drafts: {
-      autosave: {
-        interval: 100, // We set this interval for optimal live preview
-      },
-      schedulePublish: true,
-    },
+    drafts: { autosave: { interval: 100 }, schedulePublish: true },
     maxPerDoc: 50,
   },
 }

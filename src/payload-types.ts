@@ -252,6 +252,7 @@ export interface Post {
         slug?: string | null;
       }[]
     | null;
+  customId: number;
   slug?: string | null;
   slugLock?: boolean | null;
   updatedAt: string;
@@ -280,6 +281,7 @@ export interface Media {
     };
     [k: string]: unknown;
   } | null;
+  prefix?: string | null;
   updatedAt: string;
   createdAt: string;
   url?: string | null;
@@ -1166,6 +1168,7 @@ export interface PostsSelect<T extends boolean = true> {
         name?: T;
         slug?: T;
       };
+  customId?: T;
   slug?: T;
   slugLock?: T;
   updatedAt?: T;
@@ -1179,6 +1182,7 @@ export interface PostsSelect<T extends boolean = true> {
 export interface MediaSelect<T extends boolean = true> {
   alt?: T;
   caption?: T;
+  prefix?: T;
   updatedAt?: T;
   createdAt?: T;
   url?: T;

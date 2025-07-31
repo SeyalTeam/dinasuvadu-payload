@@ -264,5 +264,6 @@ export const post3: (args: PostArgs) => RequiredDataFromCollectionSlug<'posts'> 
     },
     relatedPosts: [], // this is populated by the seed script
     title: 'Dollar and Sense: The Financial Forecast',
+    customId: 2, // Ensure customId is set for this post
   }
 }

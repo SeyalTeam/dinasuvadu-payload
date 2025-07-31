@@ -17,7 +17,9 @@ export const formatSlugHook =
       const fallbackData = data?.[fallback] || data?.[fallback]
 
       if (fallbackData && typeof fallbackData === 'string') {
-        return formatSlug(fallbackData)
+        // Append the post ID if it exists
+        const postId = data?.id ? `-${data.id}` : ''
+        return `${formatSlug(fallbackData)}${postId}`
       }
     }
 

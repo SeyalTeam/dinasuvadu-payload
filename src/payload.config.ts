@@ -14,36 +14,39 @@ import { Footer } from './Footer/config'
 import { Header } from './Header/config'
 import { plugins } from './plugins'
 import { defaultLexical } from '@/fields/defaultLexical'
-import { getServerSideURL } from './utilities/getURL'
 import { s3Storage } from '@payloadcms/storage-s3'
+
+const serverURL =
+  process.env.NODE_ENV === 'production' && process.env.LOCAL_TEST
+    ? 'http://localhost:3000'
+    : process.env.NODE_ENV === 'production'
+      ? 'https://editor.dinasuvadu.com'
+      : 'http://localhost:3000'
+
+process.env.PAYLOAD_PUBLIC_SERVER_URL = serverURL
+
+const date = new Date()
+const year = date.getFullYear()
+const month = String(date.getMonth() + 1).padStart(2, '0')
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
-// Define the allowed origins dynamically based on the environment
 const allowedOrigins =
-  process.env.NODE_ENV === 'production'
-    ? ['https://admin.dinasuvadu.com']
-    : ['http://localhost:3000', 'http://localhost:3001']
+  process.env.NODE_ENV === 'production' && process.env.LOCAL_TEST
+    ? [
+        'http://localhost:3000',
+        'http://localhost:3001',
+        'https://editor.dinasuvadu.com',
+        'https://sub.dinasuvadu.com',
+      ]
+    : process.env.NODE_ENV === 'production'
+      ? ['https://editor.dinasuvadu.com', 'https://sub.dinasuvadu.com']
+      : ['http://localhost:3000', 'http://localhost:3001']
 
-// Debug: Log environment variables to ensure they're set correctly
-console.log('Debug: Environment Variables Check')
-console.log('NODE_ENV:', process.env.NODE_ENV)
-console.log('MONGODB_URI:', process.env.MONGODB_URI ? 'Set' : 'Not Set')
-console.log('PAYLOAD_SECRET:', process.env.PAYLOAD_SECRET ? 'Set' : 'Not Set')
-console.log('S3_BUCKET:', process.env.S3_BUCKET ? 'Set' : 'Not Set')
-console.log('S3_ACCESS_KEY_ID:', process.env.S3_ACCESS_KEY_ID ? 'Set' : 'Not Set')
-console.log('S3_SECRET_ACCESS_KEY:', process.env.S3_SECRET_ACCESS_KEY ? 'Set' : 'Not Set')
-console.log('S3_REGION:', process.env.S3_REGION ? 'Set' : 'Not Set')
-console.log('S3_ENDPOINT:', process.env.S3_ENDPOINT ? 'Set' : 'Not Set')
-
-// Debug: Log collections before initialization
 const collections = [Pages, Posts, Media, Categories, Users, Tags]
-console.log('Debug: Collections Before Initialization')
 collections.forEach((collection, index) => {
-  console.log(`Collection ${index}:`, collection?.slug || 'undefined')
   if (!collection || !collection.slug) {
-    console.error(`Error: Collection at index ${index} is invalid:`, collection)
     throw new Error(`Collection at index ${index} is missing a slug`)
   }
 })
@@ -60,33 +63,16 @@ export default buildConfig({
     user: Users.slug,
     livePreview: {
       breakpoints: [
-        {
-          label: 'Mobile',
-          name: 'mobile',
-          width: 375,
-          height: 667,
-        },
-        {
-          label: 'Tablet',
-          name: 'tablet',
-          width: 768,
-          height: 1024,
-        },
-        {
-          label: 'Desktop',
-          name: 'desktop',
-          width: 1440,
-          height: 900,
-        },
+        { label: 'Mobile', name: 'mobile', width: 375, height: 667 },
+        { label: 'Tablet', name: 'tablet', width: 768, height: 1024 },
+        { label: 'Desktop', name: 'desktop', width: 1440, height: 900 },
       ],
     },
   },
   editor: defaultLexical,
   db: mongooseAdapter({
     url: process.env.MONGODB_URI || '',
-    connectOptions: {
-      // Add valid mongoose connect options here if needed
-    },
+    connectOptions: {},
   }),
   collections,
   cors: allowedOrigins,
@@ -96,7 +82,9 @@ export default buildConfig({
     ...plugins,
     s3Storage({
       collections: {
-        media: true,
+        media: {
+          prefix: `uploads/${year}/${month}`,
+        },
       },
       bucket: process.env.S3_BUCKET || '',
       config: {
@@ -124,9 +112,5 @@ export default buildConfig({
       },
     },
     tasks: [],
-  },
-  // Debug: Log when Payload is fully initialized
-  onInit: async (payload) => {
-    console.log('Debug: Payload CMS initialized successfully')
   },
 })

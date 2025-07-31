@@ -12,7 +12,6 @@ import { anyone } from '../access/anyone'
 import { authenticated } from '../access/authenticated'
 
 const filename = fileURLToPath(import.meta.url)
-const dirname = path.dirname(filename)
 
 export const Media: CollectionConfig = {
   slug: 'media',
@@ -26,7 +25,6 @@ export const Media: CollectionConfig = {
     {
       name: 'alt',
       type: 'text',
-      //required: true,
     },
     {
       name: 'caption',
@@ -39,7 +37,9 @@ export const Media: CollectionConfig = {
     },
   ],
   upload: {
-    adminThumbnail: 'thumbnail',
+    disableLocalStorage: true,
+    adminThumbnail: ({ doc }: { doc: { sizes?: { thumbnail?: { url?: string } } } }) =>
+      doc.sizes?.thumbnail?.url ?? null,
     focalPoint: true,
     imageSizes: [
       {
@@ -79,14 +79,26 @@ export const Media: CollectionConfig = {
     afterRead: [
       async ({ doc }) => {
         if (doc.filename) {
-          const bucket = process.env.S3_BUCKET
-          const region = process.env.S3_REGION
-          const baseUrl = `https://${bucket}.${region}.digitaloceanspaces.com`
-          doc.url = `${baseUrl}/${doc.filename}`
+          const baseUrl = `https://media.dinasuvadu.in`
+          const date = new Date(doc.createdAt || Date.now())
+          const year = date.getFullYear()
+          const month = String(date.getMonth() + 1).padStart(2, '0')
+          const folderPath = `uploads/${year}/${month}`
+
+          // Set the main file URL (assuming original is unchanged)
+          doc.url = `${baseUrl}/${folderPath}/${doc.filename}`
+
+          // Set URLs for image sizes with custom suffix
           if (doc.sizes) {
             Object.keys(doc.sizes).forEach((size) => {
               if (doc.sizes[size].filename) {
-                doc.sizes[size].url = `${baseUrl}/${size}-${doc.filename}`
+                const originalWithoutExt = doc.filename.split('.').slice(0, -1).join('.')
+                const ext = doc.filename.split('.').pop()
+                const width = doc.sizes[size].width
+                const height = doc.sizes[size].height
+                const customFilename = `${originalWithoutExt}-${width}x${height}.${ext}`
+                doc.sizes[size].filename = customFilename // Optional: Update metadata if needed
+                doc.sizes[size].url = `${baseUrl}/${folderPath}/${customFilename}`
               }
             })
           }
@@ -95,23 +107,4 @@ export const Media: CollectionConfig = {
       },
     ],
   },
-
-  //   hooks: {
-  //   afterRead: [
-  //     async ({ doc }) => {
-  //       if (doc.filename) {
-  //         const baseUrl = `https://media.dinasuvadu.com` // Use the custom subdomain
-  //         doc.url = `${baseUrl}/${doc.filename}`
-  //         if (doc.sizes) {
-  //           Object.keys(doc.sizes).forEach((size) => {
-  //             if (doc.sizes[size].filename) {
-  //               doc.sizes[size].url = `${baseUrl}/${size}-${doc.filename}`
-  //             }
-  //           })
-  //         }
-  //       }
-  //       return doc
-  //     },
-  //   ],
-  // },
 }
