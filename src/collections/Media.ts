@@ -79,7 +79,7 @@ export const Media: CollectionConfig = {
     afterRead: [
       async ({ doc }) => {
         if (doc.filename) {
-          const baseUrl = `https://media.dinasuvadu.in`
+          const baseUrl = `https://media.dinasuvadu.com`
           const date = new Date(doc.createdAt || Date.now())
           const year = date.getFullYear()
           const month = String(date.getMonth() + 1).padStart(2, '0')
