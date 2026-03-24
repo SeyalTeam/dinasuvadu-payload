@@ -287,10 +287,10 @@ export default async function TagPage({
                           )}
                         </Link>
                         <div className="post-first-tag">
-                          {(post.tags ?? []).length > 0 && (
-                            <Link href={`/tag/${post.tags![0].slug}`}>
+                          {Array.isArray(post.tags) && post.tags.length > 0 && post.tags[0] && (
+                            <Link href={`/tag/${post.tags[0].slug}`}>
                               <span className="text-blue-600 hover:underline">
-                                {post.tags![0].name}
+                                {post.tags[0].name}
                               </span>
                             </Link>
                           )}

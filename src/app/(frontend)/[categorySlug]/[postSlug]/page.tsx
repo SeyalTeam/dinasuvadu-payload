@@ -397,13 +397,13 @@ export default async function PostOrSubCategoryPage({
                           )}
                         </Link>
                         <div className="post-first-tag">
-                          {(post.tags ?? []).length > 0 && (
-                            <Link href={`/tag/${(post.tags ?? [])[0].slug}`}>
-                              <span className="text-blue-600 hover:underline">
-                                {(post.tags ?? [])[0].name}
-                              </span>
-                            </Link>
-                          )}
+                        {Array.isArray(post.tags) && post.tags.length > 0 && post.tags[0] && (
+                          <Link href={`/tag/${post.tags[0].slug}`}>
+                            <span className="text-blue-600 hover:underline">
+                              {post.tags[0].name}
+                            </span>
+                          </Link>
+                        )}
                           <ShareButton
                             url={`${baseUrl}/${categorySlug}/${postSlug}/${post.slug}`}
                             title={post.title}
