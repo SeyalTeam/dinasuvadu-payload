@@ -3,6 +3,10 @@
 import config from '@payload-config'
 import { GRAPHQL_POST, REST_OPTIONS } from '@payloadcms/next/routes'
 
-export const POST = GRAPHQL_POST(config)
+export async function POST(request: Request) {
+  return (GRAPHQL_POST(config) as any)(request, { params: Promise.resolve({}) })
+}
 
-export const OPTIONS = REST_OPTIONS(config)
+export async function OPTIONS(request: Request) {
+  return (REST_OPTIONS(config) as any)(request, { params: Promise.resolve({}) })
+}
