@@ -16,7 +16,7 @@ export async function GET(request: Request) {
   const pathname = url.pathname;
   if (!pageParam && pathname.startsWith('/post-sitemap')) {
     const pageMatch = pathname.match(/post-sitemap(\d+)\.xml/);
-    if (pageMatch) {
+    if (pageMatch && pageMatch[1]) {
       page = parseInt(pageMatch[1], 10);
       console.log('Extracted page from URL path:', page);
     }
@@ -32,7 +32,7 @@ export async function GET(request: Request) {
   const postsPerPage = 2;
 
   // Fetch all posts from Payload CMS (without pagination initially)
-  let allPosts = [];
+  const allPosts: any[] = [];
   let totalPosts = 0;
   const limit = 100; // Fetch in batches of 100 to avoid overloading the API
   let currentPage = 1;

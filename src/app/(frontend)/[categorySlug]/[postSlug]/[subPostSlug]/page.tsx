@@ -1086,7 +1086,7 @@ export default async function SubCategoryPostPage({
             <div className="post-tags mt-8">
               <div className="tags flex flex-wrap gap-2">
                 {(post.tags ?? []).map((tag) => (
-                  <Link href={`/tag/${post.tags[0].slug}`}>
+                  <Link key={tag.id} href={`/tag/${tag.slug}`}>
                     <span className="inline-block bg-gray-100 rounded-full px-4 py-1.5 text-sm font-medium text-gray-700 hover:bg-indigo-100 hover:text-indigo-700 transition-colors">
                       {tag.name}
                     </span>
