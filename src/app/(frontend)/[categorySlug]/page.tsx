@@ -45,6 +45,7 @@ type Post = {
 
 // API base URL
 const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3001";
 
 // Fetch a category by slug
 async function fetchCategoryBySlug(slug: string): Promise<Category | null> {
@@ -329,10 +330,10 @@ export default async function CategoryPage({
                             </Space>
                           </span> */}
                         <ShareButton
-                          url={`http://localhost:3001/${categorySlug}/${post.slug}`}
-                          title={post.title}
-                          description={post.meta?.description}
-                        />
+                            url={`${baseUrl}/${categorySlug}/${post.slug}`}
+                            title={post.title}
+                            description={post.meta?.description}
+                          />
                       </div>
                     </div>
                     {/* Image */}

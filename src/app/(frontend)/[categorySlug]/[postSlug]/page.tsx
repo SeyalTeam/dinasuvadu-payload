@@ -85,6 +85,7 @@ type Post = {
 
 // API base URL
 const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3001";
 
 // Define the clamping style for text overflow
 const clampStyle = {
@@ -404,7 +405,7 @@ export default async function PostOrSubCategoryPage({
                             </Link>
                           )}
                           <ShareButton
-                            url={`http://localhost:3001/${categorySlug}/${postSlug}/${post.slug}`}
+                            url={`${baseUrl}/${categorySlug}/${postSlug}/${post.slug}`}
                             title={post.title}
                             description={post.meta?.description}
                           />
