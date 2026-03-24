@@ -20,7 +20,7 @@ const serverURL =
   process.env.NODE_ENV === 'production' && process.env.LOCAL_TEST
     ? 'http://localhost:3000'
     : process.env.NODE_ENV === 'production'
-      ? 'https://editor.dinasuvadu.com'
+      ? 'https://dinasuvadu.com'
       : 'http://localhost:3000'
 
 process.env.PAYLOAD_PUBLIC_SERVER_URL = serverURL

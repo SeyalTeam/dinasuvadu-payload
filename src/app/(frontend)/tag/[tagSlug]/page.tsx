@@ -5,6 +5,8 @@ import Link from "next/link";
 // import Text from "antd/es/typography/Text";
 import "antd/dist/reset.css"; // Import Ant Design CSS
 import ShareButton from "@/components/ShareButton";
+import { getPayload } from "payload";
+import config from "@/payload.config";
 
 type Tag = {
   id: string;
@@ -61,29 +63,15 @@ function getImageUrl(url: string | undefined): string | null {
 
 async function fetchTags(): Promise<Tag[]> {
   try {
-    const res = await axios.get(`${apiUrl}/api/tags?depth=1`, {
-      timeout: 10000,
+    const payload = await getPayload({ config });
+    const res = await payload.find({
+      collection: "tags",
+      depth: 1,
+      limit: 1000,
     });
-    const tags = res.data.docs || [];
-    console.log("Fetched tags:", tags);
-    return tags;
+    return (res.docs as unknown as Tag[]) || [];
   } catch (err) {
-    if (
-      err &&
-      typeof err === "object" &&
-      "response" in err &&
-      err.response &&
-      typeof err.response === "object" &&
-      "data" in err.response
-    ) {
-      // @ts-ignore
-      console.error("Error fetching tags:", err.response.data);
-    } else if (err && typeof err === "object" && "message" in err) {
-      // @ts-ignore
-      console.error("Error fetching tags:", err.message);
-    } else {
-      console.error("Error fetching tags:", err);
-    }
+    console.error("Error fetching tags:", err);
     return [];
   }
 }
@@ -131,38 +119,25 @@ async function fetchPostsByTag(
   limit: number = 10
 ): Promise<{ posts: Post[]; total: number }> {
   try {
-    const res = await axios.get(
-      `${apiUrl}/api/posts?limit=${limit}&page=${page}&depth=3&where[tags][contains]=${tagId}`,
-      { timeout: 10000 }
-    );
-    console.log(
-      `Fetched ${res.data.docs.length} posts for tag ID ${tagId}, page: ${page}, limit: ${limit}`
-    );
+    const payload = await getPayload({ config });
+    const res = await payload.find({
+      collection: "posts",
+      where: {
+        tags: {
+          contains: tagId,
+        },
+      },
+      limit,
+      page,
+      depth: 3,
+      sort: "-publishedAt",
+    });
     return {
-      posts: res.data.docs || [],
-      total: res.data.totalDocs || 0,
+      posts: (res.docs as unknown as Post[]) || [],
+      total: res.totalDocs,
     };
   } catch (err) {
-    let errorMessage = "";
-    if (err && typeof err === "object") {
-      if (
-        "response" in err &&
-        err.response &&
-        typeof err.response === "object" &&
-        "data" in err.response
-      ) {
-        // @ts-ignore
-        errorMessage = err.response.data;
-      } else if ("message" in err) {
-        // @ts-ignore
-        errorMessage = err.message;
-      } else {
-        errorMessage = JSON.stringify(err);
-      }
-    } else {
-      errorMessage = String(err);
-    }
-    console.error(`Error fetching posts for tag ID ${tagId}:`, errorMessage);
+    console.error(`Error fetching posts for tag ID ${tagId}:`, err);
     return { posts: [], total: 0 };
   }
 }
@@ -171,45 +146,20 @@ async function fetchParentCategory(
   parentId: string
 ): Promise<{ slug: string; title: string } | null> {
   try {
-    const res = await axios.get(
-      `${apiUrl}/api/categories/${parentId}?depth=1`,
-      {
-        timeout: 10000,
-      }
-    );
-    const parentCategory = res.data || null;
-    if (!parentCategory) {
-      console.log(`No parent category found for ID: ${parentId}`);
-      return null;
-    }
+    const payload = await getPayload({ config });
+    const res = await payload.findByID({
+      collection: "categories",
+      id: parentId,
+      depth: 1,
+    });
+    const parentCategory = (res as unknown as Category) || null;
+    if (!parentCategory) return null;
     return {
       slug: parentCategory.slug || "uncategorized",
       title: parentCategory.title || "Uncategorized",
     };
   } catch (err) {
-    let errorMessage = "";
-    if (err && typeof err === "object") {
-      if (
-        "response" in err &&
-        err.response &&
-        typeof err.response === "object" &&
-        "data" in err.response
-      ) {
-        // @ts-ignore
-        errorMessage = err.response.data;
-      } else if ("message" in err) {
-        // @ts-ignore
-        errorMessage = err.message;
-      } else {
-        errorMessage = JSON.stringify(err);
-      }
-    } else {
-      errorMessage = String(err);
-    }
-    console.error(
-      `Error fetching parent category with ID ${parentId}:`,
-      errorMessage
-    );
+    console.error(`Error fetching parent category with ID ${parentId}:`, err);
     return null;
   }
 }

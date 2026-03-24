@@ -4,6 +4,8 @@ import Link from "next/link";
 import { Row, Col, Card, Space } from "antd";
 // import { ClockCircleOutlined } from '@ant-design/icons';
 import Text from "antd/es/typography/Text";
+import { getPayload } from "payload";
+import config from "@/payload.config";
 
 // Type definitions
 type Category = {
@@ -42,24 +44,16 @@ const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 // Fetch categories
 async function fetchCategories(): Promise<Category[]> {
   try {
-    const res = await axios.get(`${apiUrl}/api/categories?depth=2`);
-    const categories = res.data.docs || [];
-    console.log("Fetched categories:", categories);
+    const payload = await getPayload({ config });
+    const res = await payload.find({
+      collection: "categories",
+      depth: 2,
+    });
+    const categories = (res.docs as unknown as Category[]) || [];
+    console.log("Fetched categories:", categories.length);
     return categories;
   } catch (err) {
-    if (
-      typeof err === "object" &&
-      err !== null &&
-      "response" in err &&
-      typeof (err as any).response === "object"
-    ) {
-      console.error(
-        "Error fetching categories:",
-        (err as any).response?.data || (err as any).message
-      );
-    } else {
-      console.error("Error fetching categories:", (err as any)?.message || err);
-    }
+    console.error("Error fetching categories:", err);
     return [];
   }
 }
@@ -67,29 +61,18 @@ async function fetchCategories(): Promise<Category[]> {
 // Fetch latest posts
 async function fetchLatestPosts(): Promise<Post[]> {
   try {
-    const res = await axios.get(
-      `${apiUrl}/api/posts?limit=34&depth=2&sort=-publishedAt`
-    );
-    const posts = res.data.docs || [];
-    console.log("Fetched latest posts:", JSON.stringify(posts, null, 2));
+    const payload = await getPayload({ config });
+    const res = await payload.find({
+      collection: "posts",
+      limit: 34,
+      depth: 2,
+      sort: "-publishedAt",
+    });
+    const posts = (res.docs as unknown as Post[]) || [];
+    console.log("Fetched latest posts:", posts.length);
     return posts;
   } catch (err) {
-    if (
-      typeof err === "object" &&
-      err !== null &&
-      "response" in err &&
-      typeof (err as any).response === "object"
-    ) {
-      console.error(
-        "Error fetching latest posts:",
-        (err as any).response?.data || (err as any).message
-      );
-    } else {
-      console.error(
-        "Error fetching latest posts:",
-        (err as any)?.message || err
-      );
-    }
+    console.error("Error fetching latest posts:", err);
     return [];
   }
 }
@@ -97,31 +80,21 @@ async function fetchLatestPosts(): Promise<Post[]> {
 // Fetch posts by category
 async function fetchPostsByCategory(categoryId: string): Promise<Post[]> {
   try {
-    const res = await axios.get(
-      `${apiUrl}/api/posts?limit=7&depth=2&where[categories][contains]=${categoryId}`
-    );
-    console.log(
-      `Fetched ${res.data.docs.length} posts for category ID ${categoryId}:`,
-      JSON.stringify(res.data.docs, null, 2)
-    );
-    return res.data.docs || [];
+    const payload = await getPayload({ config });
+    const res = await payload.find({
+      collection: "posts",
+      limit: 7,
+      depth: 2,
+      where: {
+        categories: {
+          contains: categoryId,
+        },
+      },
+    });
+    console.log(`Fetched ${res.docs.length} posts for category ID ${categoryId}`);
+    return (res.docs as unknown as Post[]) || [];
   } catch (err) {
-    if (
-      typeof err === "object" &&
-      err !== null &&
-      "response" in err &&
-      typeof (err as any).response === "object"
-    ) {
-      console.error(
-        `Error fetching posts for category ID ${categoryId}:`,
-        (err as any).response?.data || (err as any).message
-      );
-    } else {
-      console.error(
-        `Error fetching posts for category ID ${categoryId}:`,
-        (err as any)?.message || err
-      );
-    }
+    console.error(`Error fetching posts for category ID ${categoryId}:`, err);
     return [];
   }
 }
@@ -131,34 +104,24 @@ async function fetchParentCategory(
   parentId: string
 ): Promise<{ slug: string; title: string } | null> {
   try {
-    const res = await axios.get(`${apiUrl}/api/categories/${parentId}?depth=1`);
-    const parentCategory = res.data || null;
+    const payload = await getPayload({ config });
+    const res = await payload.findByID({
+      collection: "categories",
+      id: parentId,
+      depth: 1,
+    });
+    const parentCategory = (res as unknown as Category) || null;
     if (!parentCategory) {
       console.log(`No parent category found for ID: ${parentId}`);
       return null;
     }
-    console.log(`Fetched parent category for ID ${parentId}:`, parentCategory);
+    console.log(`Fetched parent category for ID ${parentId}:`, parentCategory.title);
     return {
       slug: parentCategory.slug || "uncategorized",
       title: parentCategory.title || "Uncategorized",
     };
   } catch (err) {
-    if (
-      typeof err === "object" &&
-      err !== null &&
-      "response" in err &&
-      typeof (err as any).response === "object"
-    ) {
-      console.error(
-        `Error fetching parent category with ID ${parentId}:`,
-        (err as any).response?.data || (err as any).message
-      );
-    } else {
-      console.error(
-        `Error fetching parent category with ID ${parentId}:`,
-        (err as any)?.message || err
-      );
-    }
+    console.error(`Error fetching parent category with ID ${parentId}:`, err);
     return null;
   }
 }

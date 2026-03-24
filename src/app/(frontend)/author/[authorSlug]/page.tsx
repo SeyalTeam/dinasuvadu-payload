@@ -5,6 +5,8 @@ import Link from "next/link";
 // import Text from "antd/es/typography/Text";
 import "antd/dist/reset.css"; // Import Ant Design CSS
 import ShareButton from "@/components/ShareButton";
+import { getPayload } from "payload";
+import config from "@/payload.config";
 
 type Author = {
   id: string;
@@ -68,25 +70,15 @@ function getImageUrl(url: string | undefined): string {
 
 async function fetchAuthors(): Promise<Author[]> {
   try {
-    const res = await axios.get(`${apiUrl}/api/users?depth=1`, {
-      timeout: 10000, // 10 seconds timeout
+    const payload = await getPayload({ config });
+    const res = await payload.find({
+      collection: "users",
+      depth: 1,
+      limit: 1000,
     });
-    const authors = res.data.docs || [];
-    console.log("Fetched authors:", JSON.stringify(authors, null, 2));
-    return authors;
+    return (res.docs as unknown as Author[]) || [];
   } catch (err) {
-    if (
-      typeof err === "object" &&
-      err !== null &&
-      "response" in err &&
-      (err as any).response?.data
-    ) {
-      console.error("Error fetching authors:", (err as any).response.data);
-    } else if (typeof err === "object" && err !== null && "message" in err) {
-      console.error("Error fetching authors:", (err as any).message);
-    } else {
-      console.error("Error fetching authors:", String(err));
-    }
+    console.error("Error fetching authors:", err);
     return [];
   }
 }

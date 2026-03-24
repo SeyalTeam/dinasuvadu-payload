@@ -7,6 +7,8 @@ import Text from "antd/es/typography/Text";
 import "antd/dist/reset.css"; // Import Ant Design CSS
 import { notFound } from "next/navigation";
 import ShareButton from "@/components/ShareButton";
+import { getPayload } from "payload";
+import config from "@/payload.config";
 
 // Type definitions
 type RichTextChild = {
@@ -114,51 +116,43 @@ function extractPlainTextFromRichText(content: Post["content"]): string {
 // Fetch a category by slug
 async function fetchCategoryBySlug(slug: string): Promise<Category | null> {
   try {
-    console.log(`Fetching category with slug: ${slug}`);
-    const response = await axios.get(
-      `${apiUrl}/api/categories?where[slug][equals]=${slug}&depth=2`
-    );
-    const category = response.data.docs[0] || null;
-    if (!category) {
-      console.log(`No category found for slug: ${slug}`);
-      return null;
-    }
-    console.log(`Fetched category ${slug}:`, JSON.stringify(category, null, 2));
-    return category;
+    const payload = await getPayload({ config });
+    const res = await payload.find({
+      collection: "categories",
+      where: {
+        slug: {
+          equals: slug,
+        },
+      },
+      depth: 2,
+    });
+    return (res.docs[0] as unknown as Category) || null;
   } catch (error) {
-    console.error(
-      `Error fetching category with slug ${slug}:`,
-      (error as any).response?.data || (error as any).message
-    );
+    console.error(`Error fetching category with slug ${slug}:`, error);
     return null;
   }
 }
 
 // Fetch parent category details by ID
+// Fetch parent category details by ID
 async function fetchParentCategory(
   parentId: string
 ): Promise<{ slug: string; title: string } | null> {
   try {
-    console.log(`Fetching parent category with ID: ${parentId}`);
-    const res = await axios.get(`${apiUrl}/api/categories/${parentId}?depth=1`);
-    const parentCategory = res.data || null;
-    if (!parentCategory) {
-      console.log(`No parent category found for ID: ${parentId}`);
-      return null;
-    }
-    console.log(
-      `Fetched parent category:`,
-      JSON.stringify(parentCategory, null, 2)
-    );
+    const payload = await getPayload({ config });
+    const res = await payload.findByID({
+      collection: "categories",
+      id: parentId,
+      depth: 1,
+    });
+    const parentCategory = (res as unknown as Category) || null;
+    if (!parentCategory) return null;
     return {
       slug: parentCategory.slug || "uncategorized",
       title: parentCategory.title || "Uncategorized",
     };
   } catch (err) {
-    console.error(
-      `Error fetching parent category with ID ${parentId}:`,
-      (err as any).response?.data || (err as any).message
-    );
+    console.error(`Error fetching parent category with ID ${parentId}:`, err);
     return null;
   }
 }
@@ -166,26 +160,19 @@ async function fetchParentCategory(
 // Fetch a single post by slug
 async function fetchPost(slug: string): Promise<Post | null> {
   try {
-    console.log(`Fetching post with slug: ${slug}`);
-    const response = await axios.get(
-      `${apiUrl}/api/posts?where[slug][equals]=${slug}&depth=3` // Increased depth to 3 to ensure tags are populated
-    );
-    console.log(
-      `API response for post slug ${slug}:`,
-      JSON.stringify(response.data, null, 2)
-    );
-    const post = response.data.docs[0] || null;
-    if (!post) {
-      console.log(`No post found for slug: ${slug}`);
-    } else {
-      console.log(`Found post: ${post.title} (slug: ${slug})`);
-    }
-    return post;
+    const payload = await getPayload({ config });
+    const response = await payload.find({
+      collection: "posts",
+      where: {
+        slug: {
+          equals: slug,
+        },
+      },
+      depth: 3,
+    });
+    return (response.docs[0] as unknown as Post) || null;
   } catch (error) {
-    console.error(
-      "Error fetching post with slug " + slug + ":",
-      (error as any).response?.data || (error as any).message
-    );
+    console.error("Error fetching post with slug " + slug + ":", error);
     return null;
   }
 }
@@ -197,35 +184,33 @@ async function fetchPostsByCategory(
   limit: number = 10
 ): Promise<{ posts: Post[]; total: number }> {
   try {
-    console.log(`Fetching category ID for slug: ${categorySlug}`);
-    const categoryResponse = await axios.get(
-      `${apiUrl}/api/categories?where[slug][equals]=${categorySlug}&depth=0`
-    );
-    const category = categoryResponse.data.docs[0] || null;
-    if (!category) {
-      console.log(`Category not found for slug: ${categorySlug}`);
-      return { posts: [], total: 0 };
-    }
-    const categoryId = category.id;
-    console.log(`Category ID for ${categorySlug}: ${categoryId}`);
+    const payload = await getPayload({ config });
+    const categoryRes = await payload.find({
+      collection: "categories",
+      where: { slug: { equals: categorySlug } },
+      depth: 0,
+    });
+    const category = categoryRes.docs[0] || null;
+    if (!category) return { posts: [], total: 0 };
 
-    console.log(
-      `Fetching posts for category ID: ${categoryId}, page: ${page}, limit: ${limit}`
-    );
-    const response = await axios.get(
-      `${apiUrl}/api/posts?where[categories][in]=${categoryId}&sort=-publishedAt&depth=2&limit=${limit}&page=${page}`
-    );
-    const posts = response.data.docs || [];
-    const total = response.data.totalDocs || 0;
-    console.log(
-      `Fetched ${posts.length} posts for category ${categorySlug} (ID: ${categoryId}), total: ${total}`
-    );
-    return { posts, total };
+    const response = await payload.find({
+      collection: "posts",
+      where: {
+        categories: {
+          in: [category.id],
+        },
+      },
+      sort: "-publishedAt",
+      depth: 2,
+      limit,
+      page,
+    });
+    return {
+      posts: (response.docs as unknown as Post[]) || [],
+      total: response.totalDocs,
+    };
   } catch (error) {
-    console.error(
-      "Error fetching posts for category " + categorySlug + ":",
-      (error as any).response?.data || (error as any).message
-    );
+    console.error("Error fetching posts for category " + categorySlug + ":", error);
     return { posts: [], total: 0 };
   }
 }
@@ -233,18 +218,21 @@ async function fetchPostsByCategory(
 // Fetch the latest posts (excluding the current post)
 async function fetchLatestPosts(currentPostSlug: string): Promise<Post[]> {
   try {
-    console.log(`Fetching latest posts excluding slug: ${currentPostSlug}`);
-    const response = await axios.get(
-      `${apiUrl}/api/posts?limit=5&sort=-publishedAt&where[slug][not_equals]=${currentPostSlug}&depth=2`
-    );
-    const posts = response.data.docs || [];
-    console.log(`Fetched ${posts.length} latest posts`);
-    return posts;
+    const payload = await getPayload({ config });
+    const response = await payload.find({
+      collection: "posts",
+      limit: 5,
+      sort: "-publishedAt",
+      where: {
+        slug: {
+          not_equals: currentPostSlug,
+        },
+      },
+      depth: 2,
+    });
+    return (response.docs as unknown as Post[]) || [];
   } catch (error) {
-    console.error(
-      "Error fetching latest posts:",
-      (error as any).response?.data || (error as any).message
-    );
+    console.error("Error fetching latest posts:", error);
     return [];
   }
 }
@@ -1411,91 +1399,84 @@ export default async function PostOrSubCategoryPage({
 }
 
 export async function generateStaticParams() {
-  console.log("Entering generateStaticParams for [categorySlug]/[postSlug]");
-
-  const params: { categorySlug: string; postSlug: string }[] = [];
-
   try {
+    const payload = await getPayload({ config });
+
     // Fetch all posts
-    const postRes = await axios.get(`${apiUrl}/api/posts?limit=1000&depth=3`);
-    const posts: Post[] = postRes.data.docs || [];
-    console.log(`Fetched ${posts.length} posts for static generation`);
+    const postRes = await payload.find({
+      collection: "posts",
+      limit: 1000,
+      depth: 2,
+    });
+    const posts = postRes.docs;
+
+    const params: { categorySlug: string; postSlug: string }[] = [];
 
     // Generate paths for posts
     for (const post of posts) {
-      if (!post.slug) {
-        console.warn(`Skipping post with missing slug: ${post.id}`);
-        continue;
-      }
+      if (!post.slug) continue;
 
-      const category = post.categories?.[0];
-      if (!category) {
-        console.warn(`Skipping post ${post.slug} with no categories`);
-        continue;
-      }
+      let categorySlug = "uncategorized";
+      if (post.categories && post.categories.length > 0) {
+        const primaryCategory = post.categories[0] as any;
+        if (primaryCategory && primaryCategory.slug) {
+          categorySlug = primaryCategory.slug;
 
-      let categorySlug = category.slug || "uncategorized";
-      if (category.parent) {
-        const parent =
-          typeof category.parent === "string"
-            ? await fetchParentCategory(category.parent)
-            : category.parent;
-        if (!parent || !parent.slug) {
-          console.warn(
-            `Skipping post ${post.slug} due to missing parent category`
-          );
-          continue;
+          if (primaryCategory.parent) {
+            const parent =
+              typeof primaryCategory.parent === "string"
+                ? await payload.findByID({
+                    collection: "categories",
+                    id: primaryCategory.parent,
+                    depth: 0,
+                  })
+                : primaryCategory.parent;
+            if (parent && parent.slug) {
+              categorySlug = parent.slug;
+            }
+          }
         }
-        categorySlug = parent.slug;
       }
 
       params.push({
         categorySlug,
         postSlug: post.slug,
       });
-      console.log(`Generated path: ${categorySlug}/${post.slug}`);
     }
 
     // Fetch all categories
-    const categoryRes = await axios.get(
-      `${apiUrl}/api/categories?limit=1000&depth=2`
-    );
-    const categories: Category[] = categoryRes.data.docs || [];
-    console.log(`Fetched ${categories.length} categories`);
+    const categoryRes = await payload.find({
+      collection: "categories",
+      limit: 1000,
+      depth: 2,
+    });
+    const categories = categoryRes.docs;
 
-    // Generate paths for subcategories
+    // Generate paths for subcategories acting as "postSlug" for the detail page layout if needed
     for (const category of categories) {
-      if (!category.slug) {
-        console.warn(`Skipping category with missing slug: ${category.id}`);
-        continue;
-      }
+      if (!category.slug) continue;
 
       if (category.parent) {
         const parent =
           typeof category.parent === "string"
-            ? await fetchParentCategory(category.parent)
+            ? await payload.findByID({
+                collection: "categories",
+                id: category.parent,
+                depth: 0,
+              })
             : category.parent;
         if (parent && parent.slug) {
           params.push({
             categorySlug: parent.slug,
             postSlug: category.slug,
           });
-          console.log(`Generated subcategory path: ${parent.slug}/${category.slug}`);
-        } else {
-          console.warn(
-            `Skipping subcategory ${category.slug} due to missing parent`
-          );
         }
       }
     }
 
-    console.log(`Total static params generated: ${params.length}`);
     return params;
   } catch (error) {
-    console.error(
-      "Error generating static params:",
-      (error as any).response?.data || (error as any).message
-    );
+    console.error("Error generating static params for [postSlug]:", error);
     return [];
   }
 }
