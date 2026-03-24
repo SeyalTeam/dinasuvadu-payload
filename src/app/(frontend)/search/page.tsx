@@ -274,7 +274,7 @@ export default async function SearchPage({
                           )}
                         </Link>
                         <div className="post-first-tag">
-                          {post.tags && post.tags.length > 0 && (
+                          {Array.isArray(post.tags) && post.tags.length > 0 && post.tags[0] && (
                             <Link href={`/tag/${post.tags[0].slug}`}>
                               <span className="text-blue-600 hover:underline">
                                 {post.tags[0].name}
