@@ -58,6 +58,25 @@ function extractCategory(categories, linkUrl) {
   return cats[0] || null
 }
 
+function decodeHtml(html) {
+  if (!html) return '';
+  return html
+    .replace(/&#8230;/g, '...')
+    .replace(/&#8211;/g, '–')
+    .replace(/&#8212;/g, '—')
+    .replace(/&hellip;/g, '...')
+    .replace(/&quot;/g, '"')
+    .replace(/&amp;/g, '&')
+    .replace(/&#038;/g, '&')
+    .replace(/&#8217;/g, "'")
+    .replace(/&#8216;/g, "'")
+    .replace(/&#8220;/g, '"')
+    .replace(/&#8221;/g, '"')
+    .replace(/&#(\d+);/g, (match, dec) => String.fromCharCode(dec))
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>');
+}
+
 function generateObjectId() {
   return new ObjectId().toHexString()
 }
@@ -274,10 +293,21 @@ async function main() {
       await categories.insertOne(categoryDoc)
     }
 
-    let authorDoc = await authors.findOne({ name: creatorName })
+    // Handle Author
+    let authorDoc = await authors.findOne({ name: creatorName });
     if (!authorDoc) {
-      authorDoc = { _id: new ObjectId(), name: creatorName, email: `${creatorName}@example.com`, role: 'admin', createdAt, updatedAt, __v: 0 }
-      await authors.insertOne(authorDoc)
+      const creatorSlug = slugify(creatorName);
+      authorDoc = { 
+        _id: new ObjectId(), 
+        name: creatorName, 
+        slug: creatorSlug,
+        email: `${creatorSlug}@example.com`, 
+        role: 'admin', 
+        createdAt, 
+        updatedAt, 
+        __v: 0 
+      };
+      await authors.insertOne(authorDoc);
     }
 
     let heroImageId = null
@@ -316,7 +346,7 @@ async function main() {
 
     const postDoc = {
       _id: new ObjectId(), createdAt, updatedAt,
-      meta: { title, image: heroImageId, description: metaRaw.summary || '' },
+      meta: { title: decodedTitle, image: heroImageId, description: decodeHtml(metaRaw.summary || '') },
       customId: postId, slugLock: false, _status: 'published', __v: 0,
       authors: [authorDoc._id], categories: [categoryDoc._id], content: lexicalContent,
       heroImage: heroImageId, populatedAuthors: [], publishedAt: createdAt, slug, tags: tagIds, title,

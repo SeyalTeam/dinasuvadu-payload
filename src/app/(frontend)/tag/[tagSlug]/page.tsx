@@ -1,9 +1,9 @@
 import axios from "axios";
 import Link from "next/link";
-import { Space } from "antd";
-import { ClockCircleOutlined } from "@ant-design/icons";
-import Text from "antd/es/typography/Text";
-import "antd/dist/reset.css";
+// import { Space } from "antd";
+// import { ClockCircleOutlined } from "@ant-design/icons";
+// import Text from "antd/es/typography/Text";
+import "antd/dist/reset.css"; // Import Ant Design CSS
 import ShareButton from "@/components/ShareButton";
 
 type Tag = {
@@ -53,119 +53,120 @@ const getPageNumber = (pageParam: string | string[] | undefined): number => {
   return parseInt(pageParam || "1", 10);
 };
 
-// Helper function to get the search query (string | string[] | undefined)
-const getSearchQuery = (queryParam: string | string[] | undefined): string => {
-  if (Array.isArray(queryParam)) {
-    return queryParam[0] || ""; // Take the first value if it's an array
-  }
-  return queryParam || "";
-};
-
 // Helper function to get the image URL with proper base URL
 function getImageUrl(url: string | undefined): string | null {
   if (!url) return null;
   return url.startsWith("http") ? url : `${apiUrl}${url}`;
 }
 
-// Helper function to calculate read time
-function calculateReadTime(description: string | undefined): string {
-  if (!description) return "1 Min Read";
-  const words = description.split(/\s+/).length;
-  const minutes = Math.ceil(words / 200);
-  return `${minutes} Min Read`;
+async function fetchTags(): Promise<Tag[]> {
+  try {
+    const res = await axios.get(`${apiUrl}/api/tags?depth=1`, {
+      timeout: 10000,
+    });
+    const tags = res.data.docs || [];
+    console.log("Fetched tags:", tags);
+    return tags;
+  } catch (err) {
+    if (
+      err &&
+      typeof err === "object" &&
+      "response" in err &&
+      err.response &&
+      typeof err.response === "object" &&
+      "data" in err.response
+    ) {
+      // @ts-ignore
+      console.error("Error fetching tags:", err.response.data);
+    } else if (err && typeof err === "object" && "message" in err) {
+      // @ts-ignore
+      console.error("Error fetching tags:", err.message);
+    } else {
+      console.error("Error fetching tags:", err);
+    }
+    return [];
+  }
 }
 
-// Fetch posts by search query with pagination
-async function fetchPostsBySearch(
-  query: string,
+async function fetchTagBySlug(slug: string): Promise<Tag | null> {
+  try {
+    const res = await axios.get(
+      `${apiUrl}/api/tags?where[slug][equals]=${slug}&depth=1`,
+      { timeout: 10000 }
+    );
+    const tag = res.data.docs[0] || null;
+    if (!tag) {
+      console.log(`No tag found for slug: ${slug}`);
+    }
+    return tag;
+  } catch (err) {
+    if (err && typeof err === "object") {
+      if (
+        "response" in err &&
+        err.response &&
+        typeof err.response === "object" &&
+        "data" in err.response
+      ) {
+        // @ts-ignore
+        console.error(
+          `Error fetching tag with slug ${slug}:`,
+          err.response.data
+        );
+      } else if ("message" in err) {
+        // @ts-ignore
+        console.error(`Error fetching tag with slug ${slug}:`, err.message);
+      } else {
+        console.error(`Error fetching tag with slug ${slug}:`, err);
+      }
+    } else {
+      console.error(`Error fetching tag with slug ${slug}:`, err);
+    }
+    return null;
+  }
+}
+
+async function fetchPostsByTag(
+  tagId: string,
   page: number = 1,
   limit: number = 10
 ): Promise<{ posts: Post[]; total: number }> {
   try {
-    console.log(
-      `Fetching posts for search query: ${query}, page: ${page}, limit: ${limit}`
-    );
     const res = await axios.get(
-      `${apiUrl}/api/posts?limit=${limit}&page=${page}&depth=5`,
-      { timeout: 10000 } // 10 seconds timeout
+      `${apiUrl}/api/posts?limit=${limit}&page=${page}&depth=3&where[tags][contains]=${tagId}`,
+      { timeout: 10000 }
     );
-    const allPosts: Post[] = res.data.docs || [];
-    const total = res.data.totalDocs || 0;
-
-    // Normalize the query to lowercase for case-insensitive matching
-    const normalizedQuery = query.toLowerCase();
-
-    // Filter posts on the client side
-    const filteredPosts = allPosts.filter((post) => {
-      // Check title
-      if (post.title?.toLowerCase().includes(normalizedQuery)) return true;
-
-      // Check meta.description
-      if (post.meta?.description?.toLowerCase().includes(normalizedQuery))
-        return true;
-
-      // Check slug
-      if (post.slug?.toLowerCase().includes(normalizedQuery)) return true;
-
-      // Check tags.name
-      if (
-        post.tags?.some((tag) =>
-          tag.name?.toLowerCase().includes(normalizedQuery)
-        )
-      )
-        return true;
-
-      // Check layout.media.alt
-      if (
-        post.layout?.some((block) =>
-          block.media?.alt?.toLowerCase().includes(normalizedQuery)
-        )
-      )
-        return true;
-
-      // Check categories.title
-      if (
-        post.categories?.some((category) =>
-          category.title?.toLowerCase().includes(normalizedQuery)
-        )
-      )
-        return true;
-
-      return false;
-    });
-
     console.log(
-      `Filtered ${filteredPosts.length} posts for search query: ${query}`
+      `Fetched ${res.data.docs.length} posts for tag ID ${tagId}, page: ${page}, limit: ${limit}`
     );
     return {
-      posts: filteredPosts,
-      total: filteredPosts.length,
+      posts: res.data.docs || [],
+      total: res.data.totalDocs || 0,
     };
   } catch (err) {
     let errorMessage = "";
-    if (typeof err === "object" && err !== null) {
+    if (err && typeof err === "object") {
       if (
         "response" in err &&
-        typeof (err as any).response?.data !== "undefined"
+        err.response &&
+        typeof err.response === "object" &&
+        "data" in err.response
       ) {
-        errorMessage = (err as any).response.data;
-      } else if ("message" in err && typeof (err as any).message === "string") {
-        errorMessage = (err as any).message;
+        // @ts-ignore
+        errorMessage = err.response.data;
+      } else if ("message" in err) {
+        // @ts-ignore
+        errorMessage = err.message;
       } else {
         errorMessage = JSON.stringify(err);
       }
     } else {
       errorMessage = String(err);
     }
-    console.error(
-      `Error fetching posts for search query ${query}:`,
-      errorMessage
-    );
+    console.error(`Error fetching posts for tag ID ${tagId}:`, errorMessage);
     return { posts: [], total: 0 };
   }
 }
 
-// Fetch parent category details by ID
 async function fetchParentCategory(
   parentId: string
 ): Promise<{ slug: string; title: string } | null> {
@@ -187,14 +188,18 @@ async function fetchParentCategory(
     };
   } catch (err) {
     let errorMessage = "";
-    if (typeof err === "object" && err !== null) {
+    if (err && typeof err === "object") {
       if (
         "response" in err &&
-        typeof (err as any).response?.data !== "undefined"
+        err.response &&
+        typeof err.response === "object" &&
+        "data" in err.response
       ) {
-        errorMessage = (err as any).response.data;
-      } else if ("message" in err && typeof (err as any).message === "string") {
-        errorMessage = (err as any).message;
+        // @ts-ignore
+        errorMessage = err.response.data;
+      } else if ("message" in err) {
+        // @ts-ignore
+        errorMessage = err.message;
       } else {
         errorMessage = JSON.stringify(err);
       }
@@ -209,54 +214,61 @@ async function fetchParentCategory(
   }
 }
 
-export default async function SearchPage({
+export default async function TagPage({
+  params,
   searchParams,
 }: {
+  params: Promise<{ tagSlug: string }>;
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
-  const queryParams = await searchParams;
-  const query = getSearchQuery(queryParams.s);
-  const page = getPageNumber(queryParams.page);
+  const { tagSlug } = await params;
+  const query = await searchParams;
+  const page = getPageNumber(query.page);
   const limit = 10;
 
-  if (!query) {
-    return <div className="site">Please provide a search query.</div>;
+  const tag = await fetchTagBySlug(tagSlug);
+
+  if (!tag) {
+    return <div className="site">Tag not found</div>;
   }
 
-  const { posts, total } = await fetchPostsBySearch(query, page, limit);
+  const { posts, total } = await fetchPostsByTag(tag.id, page, limit);
   const totalPages = Math.ceil(total / limit);
 
   return (
     <div className="site">
       <div className="site-main">
-        <h1 className="category-title">Search Results for: {query}</h1>
+        <h1 className="category-title">Tag: {tag.name}</h1>{" "}
+        {/* Changed tag.title to tag.name */}
       </div>
 
       {posts.length === 0 ? (
-        <p className="text-gray-500">No posts found for this search query.</p>
+        <p className="text-gray-500">No posts found for this tag.</p>
       ) : (
         <>
           <div className="category-grid">
             {await Promise.all(
               posts.map(async (post) => {
+                // const mediaBlock = post.layout?.find(
+                //   (block) => block.blockType === "mediaBlock"
+                // );
                 const imageUrl = getImageUrl(post.heroImage?.url);
                 const imageAlt = post.heroImage?.alt || post.title;
 
                 const category = post.categories?.[0];
                 const categorySlug = category?.slug || "uncategorized";
+                // const categoryTitle = category?.title || "Uncategorized";
 
-                let postUrl = `/${categorySlug}/${post.slug}`;
+                let postUrl = `/${categorySlug}/${post.slug}`; // Default for top-level category
                 if (category?.parent) {
                   const parent =
                     typeof category.parent === "string"
                       ? await fetchParentCategory(category.parent)
                       : category.parent;
                   if (parent) {
-                    postUrl = `/${parent.slug}/${categorySlug}/${post.slug}`;
+                    postUrl = `/${parent.slug}/${categorySlug}/${post.slug}`; // For subcategory
                   }
                 }
-
-                const readTime = calculateReadTime(post.meta?.description);
 
                 return (
                   <article
@@ -265,6 +277,7 @@ export default async function SearchPage({
                   >
                     <div className="post-item-category api-title bor-1">
                       <div className="flex-1 site-main">
+                        {/* Wrap only the title and description in the Link */}
                         <Link href={postUrl} className="flex flex-col h-full">
                           <h3 className="post-title-1">{post.title}</h3>
                           {post.meta?.description && (
@@ -274,45 +287,34 @@ export default async function SearchPage({
                           )}
                         </Link>
                         <div className="post-first-tag">
-                          {post.tags && post.tags.length > 0 && (
-                            <Link href={`/tag/${post.tags[0].slug}`}>
+                          {(post.tags ?? []).length > 0 && (
+                            <Link href={`/tag/${post.tags![0].slug}`}>
                               <span className="text-blue-600 hover:underline">
-                                {post.tags[0].name}
+                                {post.tags![0].name}
                               </span>
                             </Link>
                           )}
-                          <span style={{ marginTop: "4px" }}>
-                            <Space size={4}>
-                              <ClockCircleOutlined
-                                style={{ fontSize: "12px", color: "#8c8c8c" }}
-                              />
-                              <Text
-                                type="secondary"
-                                style={{ fontSize: "12px" }}
-                              >
-                                {readTime}
-                              </Text>
-                            </Space>
-                          </span>
                           <ShareButton
-                            url={`${baseUrl}${postUrl}`} // Updated to use dynamic baseUrl
+                            url={`${baseUrl}${postUrl}`}
                             title={post.title}
                             description={post.meta?.description}
                           />
                         </div>
                       </div>
+                      {/* Image */}
                       {imageUrl ? (
                         <Link
-                          href={postUrl} className="relative w-full md:w-48 h-48 overflow-hidden rounded-t-lg site-main">
+                          href={postUrl}
+                          className="relative w-full h-48 overflow-hidden rounded-t-lg site-main"
+                        >
                           <img
                             src={imageUrl}
                             alt={imageAlt}
                             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                            style={{ borderRadius: "10px" }}
                           />
                         </Link>
                       ) : (
-                        <div className="w-full md:w-48 h-48 bg-gray-100 rounded-t-lg flex items-center justify-center">
+                        <div className="w-full h-48 bg-gray-100 rounded-t-lg flex items-center justify-center">
                           <span className="text-gray-400 text-sm">
                             No Image
                           </span>
@@ -330,42 +332,43 @@ export default async function SearchPage({
             <div className="flex justify-center space-x-2 mt-8 web-stories-pagination">
               {page > 1 && (
                 <Link
-                  href={`/search?s=${encodeURIComponent(query)}&page=${
-                    page - 1
-                  }`}
+                  href={`/tag/${tagSlug}?page=${page - 1}`}
                   className="pagination-link"
                 >
                   Prev
                 </Link>
               )}
 
+              {/* First Page */}
               <Link
-                href={`/search?s=${encodeURIComponent(query)}&page=1`}
+                href={`/tag/${tagSlug}?page=1`}
                 className={`pagination-link ${page === 1 ? "active" : ""}`}
               >
                 1
               </Link>
 
+              {/* Ellipsis after first page if current page is greater than 2 */}
               {page > 2 && <span className="pagination-ellipsis">…</span>}
 
+              {/* Current Page (only if it's not the first or last page) */}
               {page !== 1 && page !== totalPages && (
                 <Link
-                  href={`/search?s=${encodeURIComponent(query)}&page=${page}`}
+                  href={`/tag/${tagSlug}?page=${page}`}
                   className="pagination-link active"
                 >
                   {page}
                 </Link>
               )}
 
+              {/* Ellipsis before last page if current page is less than totalPages - 1 */}
               {page < totalPages - 1 && (
                 <span className="pagination-ellipsis">…</span>
               )}
 
+              {/* Last Page (only if totalPages > 1) */}
               {totalPages > 1 && (
                 <Link
-                  href={`/search?s=${encodeURIComponent(
-                    query
-                  )}&page=${totalPages}`}
+                  href={`/tag/${tagSlug}?page=${totalPages}`}
                   className={`pagination-link ${
                     page === totalPages ? "active" : ""
                   }`}
@@ -376,9 +379,7 @@ export default async function SearchPage({
 
               {page < totalPages && (
                 <Link
-                  href={`/search?s=${encodeURIComponent(query)}&page=${
-                    page + 1
-                  }`}
+                  href={`/tag/${tagSlug}?page=${page + 1}`}
                   className="pagination-link"
                 >
                   Next
@@ -390,4 +391,24 @@ export default async function SearchPage({
       )}
     </div>
   );
+}
+
+export async function generateStaticParams() {
+  const tags = await fetchTags();
+  const validTags = tags.filter((tag: Tag) => {
+    if (!tag.slug || typeof tag.slug !== "string") {
+      console.warn(`Skipping tag with invalid slug:`, tag);
+      return false;
+    }
+    return true;
+  });
+
+  const params = validTags.map((tag: Tag) => ({
+    tagSlug: tag.slug,
+  }));
+  console.log(
+    `Generated static params for ${params.length} tags:`,
+    JSON.stringify(params, null, 2)
+  );
+  return params;
 }

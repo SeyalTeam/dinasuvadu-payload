@@ -39,9 +39,16 @@ const allowedOrigins =
         'http://localhost:3001',
         'https://editor.dinasuvadu.com',
         'https://sub.dinasuvadu.com',
+        'https://www.dinasuvadu.com',
+        'https://dinasuvadu.com',
       ]
     : process.env.NODE_ENV === 'production'
-      ? ['https://editor.dinasuvadu.com', 'https://sub.dinasuvadu.com']
+      ? [
+          'https://editor.dinasuvadu.com', 
+          'https://sub.dinasuvadu.com',
+          'https://www.dinasuvadu.com',
+          'https://dinasuvadu.com',
+        ]
       : ['http://localhost:3000', 'http://localhost:3001']
 
 const collections = [Pages, Posts, Media, Categories, Users, Tags]
