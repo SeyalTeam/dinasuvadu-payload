@@ -30,7 +30,7 @@ export function middleware(request: NextRequest) {
   // Existing sitemap rewrite logic
   if (pathname.startsWith('/post-sitemap') && pathname.endsWith('.xml')) {
     const pageMatch = pathname.match(/post-sitemap(\d+)\.xml/);
-    if (pageMatch) {
+    if (pageMatch && pageMatch[1]) {
       const page = pageMatch[1];
       url.pathname = '/sitemap-post';
       url.searchParams.set('page', page);
