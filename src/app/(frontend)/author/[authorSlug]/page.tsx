@@ -74,7 +74,7 @@ async function fetchAuthors(): Promise<Author[]> {
     const res = await payload.find({
       collection: "users",
       depth: 1,
-      limit: 1000,
+      limit: 50,
     });
     return (res.docs as unknown as Author[]) || [];
   } catch (err) {

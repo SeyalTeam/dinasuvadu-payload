@@ -651,10 +651,16 @@ export default async function SubCategoryPostPage({
             <section className="mb-12">
               <div className="prose prose-lg prose-gray max-w-none text-gray-800 leading-relaxed">
                 {postContent.split("\n").map((paragraph, index) => {
-                  // Skip first paragraph if it matches the summary/meta description to avoid repetition
-                  if (index === 0 && post.meta?.description && (post.meta.description.includes(paragraph.substring(0, 50)) || paragraph.includes(post.meta.description.substring(0, 50)))) {
-                    return null;
+                  if (!paragraph.trim()) return null;
+                  
+                  // Aggressively skip any of the first few paragraphs if they are already in the summary box
+                  if (index < 5 && post.meta?.description) {
+                    const cleanPara = paragraph.trim();
+                    if (cleanPara.length > 10 && (post.meta.description.includes(cleanPara.substring(0, 50)) || cleanPara.includes(post.meta.description.substring(0, 50)))) {
+                      return null;
+                    }
                   }
+                  
                   return (
                     <p className="post-desc" key={index}>
                       {paragraph}

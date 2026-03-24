@@ -67,7 +67,7 @@ async function fetchTags(): Promise<Tag[]> {
     const res = await payload.find({
       collection: "tags",
       depth: 1,
-      limit: 1000,
+      limit: 100,
     });
     return (res.docs as unknown as Tag[]) || [];
   } catch (err) {
