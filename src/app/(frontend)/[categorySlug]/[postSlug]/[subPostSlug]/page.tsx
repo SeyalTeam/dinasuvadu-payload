@@ -5,6 +5,8 @@ import Link from "next/link";
 // import { ClockCircleOutlined } from "@ant-design/icons";
 import Text from "antd/es/typography/Text";
 import { notFound } from "next/navigation";
+import { getPayload } from "payload";
+import config from "@/payload.config";
 
 // Type definitions
 type RichTextChild = {
@@ -76,37 +78,19 @@ function getImageUrl(url: string | undefined): string | null {
 // Fetch a category by slug
 async function fetchCategoryBySlug(slug: string): Promise<Category | null> {
   try {
-    console.log(`Fetching category with slug: ${slug}`);
-    const response = await axios.get(
-      `${apiUrl}/api/categories?where[slug][equals]=${slug}&depth=2`
-    );
-    const category = response.data.docs[0] || null;
-    if (!category) {
-      console.log(`No category found for slug: ${slug}`);
-      return null;
-    }
-    console.log(`Fetched category ${slug}:`, JSON.stringify(category, null, 2));
-    return category;
+    const payload = await getPayload({ config });
+    const res = await payload.find({
+      collection: "categories",
+      where: {
+        slug: {
+          equals: slug,
+        },
+      },
+      depth: 2,
+    });
+    return (res.docs[0] as unknown as Category) || null;
   } catch (error) {
-    let errorMsg = "";
-    if (typeof error === "object" && error !== null) {
-      if (
-        "response" in error &&
-        typeof (error as any).response?.data !== "undefined"
-      ) {
-        errorMsg = (error as any).response.data;
-      } else if (
-        "message" in error &&
-        typeof (error as any).message === "string"
-      ) {
-        errorMsg = (error as any).message;
-      } else {
-        errorMsg = JSON.stringify(error);
-      }
-    } else {
-      errorMsg = String(error);
-    }
-    console.error(`Error fetching category with slug ${slug}:`, errorMsg);
+    console.error(`Error fetching category with slug ${slug}:`, error);
     return null;
   }
 }
@@ -116,41 +100,20 @@ async function fetchParentCategory(
   parentId: string
 ): Promise<{ slug: string; title: string } | null> {
   try {
-    console.log(`Fetching parent category with ID: ${parentId}`);
-    const res = await axios.get(`${apiUrl}/api/categories/${parentId}?depth=1`);
-    const parentCategory = res.data || null;
-    if (!parentCategory) {
-      console.log(`No parent category found for ID: ${parentId}`);
-      return null;
-    }
-    console.log(
-      `Fetched parent category:`,
-      JSON.stringify(parentCategory, null, 2)
-    );
+    const payload = await getPayload({ config });
+    const res = await payload.findByID({
+      collection: "categories",
+      id: parentId,
+      depth: 1,
+    });
+    const parentCategory = (res as unknown as Category) || null;
+    if (!parentCategory) return null;
     return {
       slug: parentCategory.slug || "uncategorized",
       title: parentCategory.title || "Uncategorized",
     };
   } catch (err) {
-    let errorMsg = "";
-    if (typeof err === "object" && err !== null) {
-      if (
-        "response" in err &&
-        typeof (err as any).response?.data !== "undefined"
-      ) {
-        errorMsg = (err as any).response.data;
-      } else if ("message" in err && typeof (err as any).message === "string") {
-        errorMsg = (err as any).message;
-      } else {
-        errorMsg = JSON.stringify(err);
-      }
-    } else {
-      errorMsg = String(err);
-    }
-    console.error(
-      `Error fetching parent category with ID ${parentId}:`,
-      errorMsg
-    );
+    console.error(`Error fetching parent category with ID ${parentId}:`, err);
     return null;
   }
 }
@@ -158,38 +121,19 @@ async function fetchParentCategory(
 // Fetch a single post by slug
 async function fetchPost(slug: string): Promise<Post | null> {
   try {
-    console.log(`Fetching post with slug: ${slug}`);
-    const response = await axios.get(
-      `${apiUrl}/api/posts?where[slug][equals]=${slug}&depth=2`
-    );
-    console.log(`API response for post slug ${slug}:`, response.data);
-    const post = response.data.docs[0] || null;
-    if (!post) {
-      console.log(`No post found for slug: ${slug}`);
-    } else {
-      console.log(`Found post: ${post.title} (slug: ${slug})`);
-    }
-    return post;
+    const payload = await getPayload({ config });
+    const response = await payload.find({
+      collection: "posts",
+      where: {
+        slug: {
+          equals: slug,
+        },
+      },
+      depth: 3,
+    });
+    return (response.docs[0] as unknown as Post) || null;
   } catch (error) {
-    let errorMsg = "";
-    if (typeof error === "object" && error !== null) {
-      if (
-        "response" in error &&
-        typeof (error as any).response?.data !== "undefined"
-      ) {
-        errorMsg = (error as any).response.data;
-      } else if (
-        "message" in error &&
-        typeof (error as any).message === "string"
-      ) {
-        errorMsg = (error as any).message;
-      } else {
-        errorMsg = JSON.stringify(error);
-      }
-    } else {
-      errorMsg = String(error);
-    }
-    console.error("Error fetching post with slug " + slug + ":", errorMsg);
+    console.error("Error fetching post with slug " + slug + ":", error);
     return null;
   }
 }
@@ -197,33 +141,21 @@ async function fetchPost(slug: string): Promise<Post | null> {
 // Fetch the latest posts (excluding the current post)
 async function fetchLatestPosts(currentPostSlug: string): Promise<Post[]> {
   try {
-    console.log(`Fetching latest posts excluding slug: ${currentPostSlug}`);
-    const response = await axios.get(
-      `${apiUrl}/api/posts?limit=5&sort=-publishedAt&where[slug][not_equals]=${currentPostSlug}&depth=2`
-    );
-    const posts = response.data.docs || [];
-    console.log(`Fetched ${posts.length} latest posts`);
-    return posts;
+    const payload = await getPayload({ config });
+    const response = await payload.find({
+      collection: "posts",
+      limit: 5,
+      sort: "-publishedAt",
+      where: {
+        slug: {
+          not_equals: currentPostSlug,
+        },
+      },
+      depth: 2,
+    });
+    return (response.docs as unknown as Post[]) || [];
   } catch (error) {
-    let errorMsg = "";
-    if (typeof error === "object" && error !== null) {
-      if (
-        "response" in error &&
-        typeof (error as any).response?.data !== "undefined"
-      ) {
-        errorMsg = (error as any).response.data;
-      } else if (
-        "message" in error &&
-        typeof (error as any).message === "string"
-      ) {
-        errorMsg = (error as any).message;
-      } else {
-        errorMsg = JSON.stringify(error);
-      }
-    } else {
-      errorMsg = String(error);
-    }
-    console.error("Error fetching latest posts:", errorMsg);
+    console.error("Error fetching latest posts:", error);
     return [];
   }
 }
@@ -233,36 +165,17 @@ async function fetchCategoryById(
   categoryId: string
 ): Promise<{ title: string } | null> {
   try {
-    console.log(`Fetching category with ID: ${categoryId}`);
-    const res = await axios.get(
-      `${apiUrl}/api/categories/${categoryId}?depth=1`
-    );
-    const category = res.data || null;
-    if (!category) {
-      console.log(`No category found for ID: ${categoryId}`);
-      return null;
-    }
-    console.log(`Fetched category by ID:`, JSON.stringify(category, null, 2));
+    const payload = await getPayload({ config });
+    const res = await payload.findByID({
+      collection: "categories",
+      id: categoryId,
+      depth: 1,
+    });
     return {
-      title: category.title || "Uncategorized",
+      title: (res as any)?.title || "Uncategorized",
     };
   } catch (err) {
-    let errorMsg = "";
-    if (typeof err === "object" && err !== null) {
-      if (
-        "response" in err &&
-        typeof (err as any).response?.data !== "undefined"
-      ) {
-        errorMsg = (err as any).response.data;
-      } else if ("message" in err && typeof (err as any).message === "string") {
-        errorMsg = (err as any).message;
-      } else {
-        errorMsg = JSON.stringify(err);
-      }
-    } else {
-      errorMsg = String(err);
-    }
-    console.error(`Error fetching category with ID ${categoryId}:`, errorMsg);
+    console.error(`Error fetching category with ID ${categoryId}:`, err);
     return null;
   }
 }

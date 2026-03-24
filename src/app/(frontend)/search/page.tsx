@@ -5,6 +5,8 @@ import { ClockCircleOutlined } from "@ant-design/icons";
 import Text from "antd/es/typography/Text";
 import "antd/dist/reset.css";
 import ShareButton from "@/components/ShareButton";
+import { getPayload } from "payload";
+import config from "@/payload.config";
 
 type Tag = {
   id: string;
