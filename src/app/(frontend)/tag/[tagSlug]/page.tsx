@@ -78,37 +78,19 @@ async function fetchTags(): Promise<Tag[]> {
 
 async function fetchTagBySlug(slug: string): Promise<Tag | null> {
   try {
-    const res = await axios.get(
-      `${apiUrl}/api/tags?where[slug][equals]=${slug}&depth=1`,
-      { timeout: 10000 }
-    );
-    const tag = res.data.docs[0] || null;
-    if (!tag) {
-      console.log(`No tag found for slug: ${slug}`);
-    }
-    return tag;
+    const payload = await getPayload({ config });
+    const res = await payload.find({
+      collection: "tags",
+      where: {
+        slug: {
+          equals: slug,
+        },
+      },
+      depth: 1,
+    });
+    return (res.docs[0] as unknown as Tag) || null;
   } catch (err) {
-    if (err && typeof err === "object") {
-      if (
-        "response" in err &&
-        err.response &&
-        typeof err.response === "object" &&
-        "data" in err.response
-      ) {
-        // @ts-ignore
-        console.error(
-          `Error fetching tag with slug ${slug}:`,
-          err.response.data
-        );
-      } else if ("message" in err) {
-        // @ts-ignore
-        console.error(`Error fetching tag with slug ${slug}:`, err.message);
-      } else {
-        console.error(`Error fetching tag with slug ${slug}:`, err);
-      }
-    } else {
-      console.error(`Error fetching tag with slug ${slug}:`, err);
-    }
+    console.error(`Error fetching tag with slug ${slug}:`, err);
     return null;
   }
 }
@@ -129,8 +111,8 @@ async function fetchPostsByTag(
       },
       limit,
       page,
-      depth: 3,
       sort: "-publishedAt",
+      depth: 2,
     });
     return {
       posts: (res.docs as unknown as Post[]) || [],

@@ -361,6 +361,9 @@ export interface Category {
   title: string;
   slug?: string | null;
   slugLock?: boolean | null;
+  /**
+   * Select a parent category if this is a sub-category
+   */
   parent?: (string | null) | Category;
   breadcrumbs?:
     | {

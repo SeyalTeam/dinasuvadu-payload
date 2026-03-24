@@ -85,32 +85,19 @@ async function fetchAuthors(): Promise<Author[]> {
 
 async function fetchAuthorBySlug(slug: string): Promise<Author | null> {
   try {
-    console.log(`Fetching author with slug: ${slug}`);
-    const res = await axios.get(
-      `${apiUrl}/api/users?where[slug][equals]=${slug}&depth=1`,
-      { timeout: 10000 }
-    );
-    const author = res.data.docs[0] || null;
-    if (!author) {
-      console.log(`No author found for slug: ${slug}`);
-    } else {
-      console.log(
-        `Fetched author with slug ${slug}:`,
-        JSON.stringify(author, null, 2)
-      );
-    }
-    return author;
+    const payload = await getPayload({ config });
+    const res = await payload.find({
+      collection: "users",
+      where: {
+        slug: {
+          equals: slug,
+        },
+      },
+      depth: 1,
+    });
+    return (res.docs[0] as unknown as Author) || null;
   } catch (err) {
-    console.error(
-      `Error fetching author with slug ${slug}:`,
-      (typeof err === "object" &&
-        err !== null &&
-        "response" in err &&
-        (err as any).response?.data) ||
-        (typeof err === "object" && err !== null && "message" in err
-          ? (err as any).message
-          : String(err))
-    );
+    console.error(`Error fetching author with slug ${slug}:`, err);
     return null;
   }
 }
@@ -121,33 +108,25 @@ async function fetchPostsByAuthor(
   limit: number = 10
 ): Promise<{ posts: Post[]; total: number }> {
   try {
-    console.log(
-      `Fetching posts for author ID: ${authorId}, page: ${page}, limit: ${limit}`
-    );
-    const res = await axios.get(
-      `${apiUrl}/api/posts?limit=${limit}&page=${page}&depth=3&where[authors][contains]=${authorId}`,
-      { timeout: 10000 }
-    );
-    const posts = res.data.docs || [];
-    console.log(
-      `Fetched ${posts.length} posts for author ID ${authorId}:`,
-      JSON.stringify(posts, null, 2)
-    );
+    const payload = await getPayload({ config });
+    const res = await payload.find({
+      collection: "posts",
+      where: {
+        authors: {
+          contains: authorId,
+        },
+      },
+      limit,
+      page,
+      sort: "-publishedAt",
+      depth: 2,
+    });
     return {
-      posts,
-      total: res.data.totalDocs || 0,
+      posts: (res.docs as unknown as Post[]) || [],
+      total: res.totalDocs || 0,
     };
   } catch (err) {
-    console.error(
-      `Error fetching posts for author ID ${authorId}:`,
-      (typeof err === "object" &&
-        err !== null &&
-        "response" in err &&
-        (err as any).response?.data) ||
-        (typeof err === "object" && err !== null && "message" in err
-          ? (err as any).message
-          : String(err))
-    );
+    console.error(`Error fetching posts for author ID ${authorId}:`, err);
     return { posts: [], total: 0 };
   }
 }
