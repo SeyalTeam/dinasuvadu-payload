@@ -508,9 +508,21 @@ export default async function PostOrSubCategoryPage({
     };
   }
 
-  if (postCategory.slug !== categorySlug) {
+  let isMatch = postCategory.slug === categorySlug;
+  
+  // If not a direct match, check if the URL categorySlug is the parent of the post's category
+  if (!isMatch && postCategory.parent) {
+    const parent = typeof postCategory.parent === 'string' 
+      ? await fetchParentCategory(postCategory.parent)
+      : postCategory.parent;
+    if (parent && parent.slug === categorySlug) {
+      isMatch = true;
+    }
+  }
+
+  if (!isMatch) {
     console.log(
-      `Post category ${postCategory.slug} does not match URL category ${categorySlug}`
+      `Post category ${postCategory.slug} (or its parent) does not match URL category ${categorySlug}`
     );
     notFound();
   }

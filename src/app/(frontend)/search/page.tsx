@@ -84,85 +84,35 @@ async function fetchPostsBySearch(
   limit: number = 10
 ): Promise<{ posts: Post[]; total: number }> {
   try {
-    console.log(
-      `Fetching posts for search query: ${query}, page: ${page}, limit: ${limit}`
-    );
-    const res = await axios.get(
-      `${apiUrl}/api/posts?limit=${limit}&page=${page}&depth=5`,
-      { timeout: 10000 } // 10 seconds timeout
-    );
-    const allPosts: Post[] = res.data.docs || [];
-    const total = res.data.totalDocs || 0;
-
-    // Normalize the query to lowercase for case-insensitive matching
-    const normalizedQuery = query.toLowerCase();
-
-    // Filter posts on the client side
-    const filteredPosts = allPosts.filter((post) => {
-      // Check title
-      if (post.title?.toLowerCase().includes(normalizedQuery)) return true;
-
-      // Check meta.description
-      if (post.meta?.description?.toLowerCase().includes(normalizedQuery))
-        return true;
-
-      // Check slug
-      if (post.slug?.toLowerCase().includes(normalizedQuery)) return true;
-
-      // Check tags.name
-      if (
-        post.tags?.some((tag) =>
-          tag.name?.toLowerCase().includes(normalizedQuery)
-        )
-      )
-        return true;
-
-      // Check layout.media.alt
-      if (
-        post.layout?.some((block) =>
-          block.media?.alt?.toLowerCase().includes(normalizedQuery)
-        )
-      )
-        return true;
-
-      // Check categories.title
-      if (
-        post.categories?.some((category) =>
-          category.title?.toLowerCase().includes(normalizedQuery)
-        )
-      )
-        return true;
-
-      return false;
+    const payload = await getPayload({ config });
+    const res = await payload.find({
+      collection: "posts",
+      where: {
+        or: [
+          {
+            title: {
+              contains: query,
+            },
+          },
+          {
+            "meta.description": {
+              contains: query,
+            },
+          },
+        ],
+      },
+      limit,
+      page,
+      sort: "-publishedAt",
+      depth: 2,
     });
 
-    console.log(
-      `Filtered ${filteredPosts.length} posts for search query: ${query}`
-    );
     return {
-      posts: filteredPosts,
-      total: filteredPosts.length,
+      posts: (res.docs as unknown as Post[]) || [],
+      total: res.totalDocs || 0,
     };
   } catch (err) {
-    let errorMessage = "";
-    if (typeof err === "object" && err !== null) {
-      if (
-        "response" in err &&
-        typeof (err as any).response?.data !== "undefined"
-      ) {
-        errorMessage = (err as any).response.data;
-      } else if ("message" in err && typeof (err as any).message === "string") {
-        errorMessage = (err as any).message;
-      } else {
-        errorMessage = JSON.stringify(err);
-      }
-    } else {
-      errorMessage = String(err);
-    }
-    console.error(
-      `Error fetching posts for search query ${query}:`,
-      errorMessage
-    );
+    console.error(`Error fetching posts for search query ${query}:`, err);
     return { posts: [], total: 0 };
   }
 }

@@ -36,6 +36,7 @@ type Post = {
     description?: string;
   };
   tags?: Tag[];
+  categories?: { id: string; slug: string; parent?: any }[];
   layout?: {
     blockType: string;
     media?: {
@@ -236,6 +237,23 @@ export default async function CategoryPage({
               const imageUrl = getImageUrl(post.heroImage?.url);
               const imageAlt = post.heroImage?.alt || post.title;
 
+              // Correct URL generation logic
+              let postLink = `/${categorySlug}/${post.slug}`;
+              const primaryCategory = post.categories?.[0];
+              if (primaryCategory) {
+                if (primaryCategory.parent) {
+                  // It's a subcategory, so we need /parent/sub/slug
+                  // categorySlug is already the parent in this view's context usually,
+                  // but let's be safe and use the actual parent slug if available.
+                  const parent = primaryCategory.parent as any;
+                  const parentSlug = parent?.slug || categorySlug;
+                  postLink = `/${parentSlug}/${primaryCategory.slug}/${post.slug}`;
+                } else {
+                  // Top level category, but check if it matches current view
+                  postLink = `/${primaryCategory.slug}/${post.slug}`;
+                }
+              }
+
               return (
                 <article
                   key={post.id}
@@ -244,7 +262,7 @@ export default async function CategoryPage({
                   <div className="post-item-category api-title bor-1">
                     <div className="flex-1 site-main">
                       <Link
-                        href={`/${categorySlug}/${post.slug}`}
+                        href={postLink}
                         className="flex flex-col h-full"
                       >
                         <h3 className="post-title-1">{post.title}</h3>
@@ -262,24 +280,11 @@ export default async function CategoryPage({
                             </span>
                           </Link>
                         )}
-                        {/* <span style={{ marginTop: "4px" }}>
-                            <Space size={4}>
-                              <ClockCircleOutlined
-                                style={{ fontSize: "12px", color: "#8c8c8c" }}
-                              />
-                              <Text
-                                type="secondary"
-                                style={{ fontSize: "12px" }}
-                              >
-                                5 Min Read
-                              </Text>
-                            </Space>
-                          </span> */}
                         <ShareButton
-                            url={`${baseUrl}/${categorySlug}/${post.slug}`}
+                            url={`${baseUrl}${postLink}`}
                             title={post.title}
                             description={post.meta?.description}
-                          />
+                        />
                       </div>
                     </div>
                     {/* Image */}
