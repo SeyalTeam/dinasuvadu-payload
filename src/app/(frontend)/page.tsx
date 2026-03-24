@@ -180,7 +180,7 @@ async function getPostUrl(post: Post): Promise<string> {
   }
 
   const primaryCategory = post.categories[0];
-  if (primaryCategory.parent) {
+  if (primaryCategory && primaryCategory.parent) {
     let parentCategorySlug = "uncategorized";
     const parent =
       typeof primaryCategory.parent === "string"
@@ -193,6 +193,10 @@ async function getPostUrl(post: Post): Promise<string> {
         post.slug || "fallback-slug"
       }`;
     }
+  }
+
+  if (!primaryCategory) {
+    return `/uncategorized/${post.slug || "fallback-slug"}`;
   }
 
   return `/${primaryCategory.slug}/${post.slug || "fallback-slug"}`;
@@ -481,15 +485,17 @@ export default async function Home() {
                           let categoryTitle = "Uncategorized";
                           if (post.categories && post.categories.length > 0) {
                             const cat = post.categories[0];
-                            categoryLink = `/${cat.slug}`;
-                            categoryTitle = cat.title;
-                            if (cat.parent) {
-                              const parent =
-                                typeof cat.parent === "string"
-                                  ? null
-                                  : cat.parent;
-                              if (parent) {
-                                categoryLink = `/${parent.slug}/${cat.slug}`;
+                            if (cat) {
+                              categoryLink = `/${cat.slug}`;
+                              categoryTitle = cat.title || "Uncategorized";
+                              if (cat.parent) {
+                                const parent =
+                                  typeof cat.parent === "string"
+                                    ? null
+                                    : cat.parent;
+                                if (parent) {
+                                  categoryLink = `/${parent.slug}/${cat.slug}`;
+                                }
                               }
                             }
                           }
@@ -784,28 +790,28 @@ export async function generateStaticParams() {
 
     // Generate paths for posts
     for (const post of posts) {
+      let categorySlug = "uncategorized";
       if (post.categories && post.categories.length > 0) {
         const primaryCategory = post.categories[0];
-        let categorySlug = primaryCategory.slug;
+        if (primaryCategory) {
+          categorySlug = primaryCategory.slug;
 
-        // Handle subcategories
-        if (primaryCategory.parent) {
-          const parent =
-            typeof primaryCategory.parent === "string"
-              ? await fetchParentCategory(primaryCategory.parent)
-              : primaryCategory.parent;
-          if (parent) {
-            categorySlug = parent.slug;
-          } else {
-            continue; // Skip if parent category is not found
+          // Handle subcategories
+          if (primaryCategory.parent) {
+            const parent =
+              typeof primaryCategory.parent === "string"
+                ? await fetchParentCategory(primaryCategory.parent)
+                : primaryCategory.parent;
+            if (parent) {
+              categorySlug = parent.slug;
+            }
           }
         }
-
-        paths.push({
-          categorySlug,
-          postSlug: post.slug || "fallback-slug",
-        });
       }
+      paths.push({
+        categorySlug,
+        postSlug: post.slug || "fallback-slug",
+      });
     }
 
     // Generate paths for top-level categories as postSlug (if they act as a category page)
