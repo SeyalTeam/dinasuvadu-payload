@@ -380,26 +380,4 @@ export default async function CategoryPage({
   );
 }
 
-export async function generateStaticParams() {
-  try {
-    const payload = await getPayload({ config });
-    const res = await payload.find({
-      collection: "categories",
-      limit: 1000,
-      depth: 1,
-    });
 
-    const params = [];
-    for (const category of res.docs) {
-      if (!category.parent) {
-        params.push({
-          categorySlug: category.slug,
-        });
-      }
-    }
-    return params;
-  } catch (error) {
-    console.error("Error generating static params for [categorySlug]:", error);
-    return [];
-  }
-}
