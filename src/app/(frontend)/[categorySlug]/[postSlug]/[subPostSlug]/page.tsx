@@ -1,4 +1,5 @@
 export const revalidate = 60; // Revalidate every 60 seconds
+export const dynamicParams = true; // Enable on-demand rendering
 import axios from "axios";
 import Link from "next/link";
 // import { Space } from "antd";
@@ -7,6 +8,7 @@ import Text from "antd/es/typography/Text";
 import { notFound } from "next/navigation";
 import { getPayload } from "payload";
 import config from "@/payload.config";
+import RichText from "@/components/RichText";
 
 // Type definitions
 type RichTextChild = {
@@ -208,10 +210,13 @@ const clampStyle = {
 };
 
 // Utility function to extract plain text from richText content
-function extractPlainTextFromRichText(content: Post["content"]): string {
+function extractPlainTextFromRichText(content: any): string {
   if (!content?.root?.children) return "";
   return content.root.children
-    .map((block) => block.children.map((child) => child.text).join(""))
+    .map((block: any) => {
+      if (!block.children) return "";
+      return block.children.map((child: any) => child.text || "").join("");
+    })
     .join("\n");
 }
 
@@ -663,33 +668,10 @@ export default async function SubCategoryPostPage({
             </figure>
           )}
 
-          {/* Post Content (Plain Text) */}
-          {postContent && (
+          {/* Post Content (Rich Text) */}
+          {post.content && (
             <section className="mb-12">
-              <div className="prose prose-lg prose-gray max-w-none text-gray-800 leading-relaxed">
-                {postContent.split("\n").map((paragraph, index) => {
-                  if (!paragraph.trim()) return null;
-                  
-                  // Skip any of the first few paragraphs if they are already in the summary box
-                  if (index < 5 && post.meta?.description) {
-                    // Normalize by stripping ALL whitespace and punctuation for a 'fingerprint' match
-                    const fingerprint = (str: string) => str.replace(/[^a-zA-Z0-9\u0B80-\u0BFF]/g, '');
-                    const fPara = fingerprint(paragraph);
-                    const fSummary = fingerprint(post.meta.description);
-                    
-                    // If either includes a substantial part of the other (fingerprint based)
-                    if (fPara.length > 20 && (fSummary.includes(fPara.substring(0, 40)) || fPara.includes(fSummary.substring(0, 40)))) {
-                      return null;
-                    }
-                  }
-                  
-                  return (
-                    <p className="post-desc" key={index}>
-                      {paragraph}
-                    </p>
-                  );
-                })}
-              </div>
+              <RichText data={post.content as any} />
             </section>
           )}
 
@@ -1154,13 +1136,19 @@ export async function generateStaticParams() {
   );
 
   try {
-    const res = await axios.get(`${apiUrl}/api/posts?limit=1000&depth=2`);
-    const data = await res.data;
-    console.log(`Fetched ${data.docs.length} posts for static generation`);
+    const payload = await getPayload({ config });
+    
+    // Fetch only the latest 10 posts for the build (Scalable approach)
+    const postRes = await payload.find({
+      collection: "posts",
+      limit: 10,
+      sort: "-publishedAt",
+      depth: 2,
+    });
 
     const params = [];
-    for (const post of data.docs) {
-      const category = post.categories?.[0];
+    for (const post of postRes.docs) {
+      const category = post.categories?.[0] as any;
       if (category?.parent) {
         const parent =
           typeof category.parent === "string"

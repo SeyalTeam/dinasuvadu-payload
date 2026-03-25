@@ -5,6 +5,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { getPayload } from "payload";
 import config from "@/payload.config";
+import Script from "next/script";
 
 type Category = {
   id: string;
@@ -46,6 +47,15 @@ export default async function RootLayout({
         <Header categories={categories} />
         {children}
         <Footer />
+        {/* Social Media Embed Scripts */}
+        <Script
+          src="https://platform.twitter.com/widgets.js"
+          strategy="lazyOnload"
+        />
+        <Script
+          src="https://www.instagram.com/embed.js"
+          strategy="lazyOnload"
+        />
       </body>
     </html>
   );

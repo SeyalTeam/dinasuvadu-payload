@@ -21,7 +21,7 @@
   "dependencies": {
     "@ant-design/icons": "^6.1.0",
     "@lexical/code": "0.28.0",
-    "@lexical/html": "^0.33.1",
+    "@lexical/html": "0.28.0",
     "@payloadcms/admin-bar": "3.39.1",
     "@payloadcms/db-mongodb": "3.39.1",
     "@payloadcms/email-nodemailer": "3.39.1",
@@ -64,7 +64,7 @@
     "react-hook-form": "7.45.4",
     "rss": "^1.2.2",
     "sanitize-html": "^2.17.0",
-    "sharp": "^0.32.6",
+    "sharp": "^0.34.5",
     "ssh2-sftp-client": "^12.1.0",
     "tailwind-merge": "^2.3.0",
     "tailwindcss-animate": "^1.0.7",
@@ -95,6 +95,22 @@
   "pnpm": {
     "onlyBuiltDependencies": [
       "sharp"
-    ]
+    ],
+    "overrides": {
+      "@lexical/code": "0.28.0",
+      "@lexical/html": "0.28.0",
+      "@lexical/selection": "0.28.0",
+      "@lexical/utils": "0.28.0",
+      "@lexical/list": "0.28.0",
+      "@lexical/rich-text": "0.28.0",
+      "@lexical/plain-text": "0.28.0",
+      "@lexical/clipboard": "0.28.0",
+      "@lexical/link": "0.28.0",
+      "@lexical/table": "0.28.0",
+      "@lexical/yjs": "0.28.0",
+      "@lexical/overflow": "0.28.0",
+      "@lexical/markdown": "0.28.0",
+      "lexical": "0.28.0"
+    }
   }
 }

@@ -81,17 +81,34 @@ async function fetchLatestPosts(): Promise<Post[]> {
 async function fetchPostsByCategory(categoryId: string): Promise<Post[]> {
   try {
     const payload = await getPayload({ config });
+
+    // Fetch child categories to include their posts in the parent view
+    const childrenRes = await payload.find({
+      collection: "categories",
+      where: {
+        parent: {
+          equals: categoryId,
+        },
+      },
+      depth: 0,
+      limit: 100,
+    });
+
+    const childIds = childrenRes.docs.map((c: any) => c.id);
+    const allCategoryIds = [categoryId, ...childIds];
+
     const res = await payload.find({
       collection: "posts",
       limit: 7,
       depth: 2,
+      sort: "-publishedAt",
       where: {
         categories: {
-          contains: categoryId,
+          in: allCategoryIds,
         },
       },
     });
-    console.log(`Fetched ${res.docs.length} posts for category ID ${categoryId}`);
+    console.log(`Fetched ${res.docs.length} posts for category ID ${categoryId} (including children)`);
     return (res.docs as unknown as Post[]) || [];
   } catch (err) {
     console.error(`Error fetching posts for category ID ${categoryId}:`, err);
@@ -172,7 +189,13 @@ function getImageUrl(url: string | undefined): string | null {
 }
 
 export default async function Home() {
-  const categories = await fetchCategories();
+  const allCategories = await fetchCategories();
+  const categories = allCategories.filter((category) => {
+    if (!category.parent) return true;
+    const parent = typeof category.parent === "string" ? null : category.parent;
+    if (parent && parent.slug === "news") return true;
+    return false;
+  });
   const latestPosts = await fetchLatestPosts();
 
   const featuredPost = latestPosts.length > 0 ? latestPosts[0] : null;
@@ -181,9 +204,10 @@ export default async function Home() {
     latestPosts.length > 4 ? latestPosts.slice(4, 34) : [];
 
   const categoryOrder: { [key: string]: number } = {
-    தமிழ்நாடு: 0,
-    இந்தியா: 1,
-    உலகம்: 2,
+    செய்திகள்: 0,
+    தமிழ்நாடு: 1,
+    இந்தியா: 2,
+    உலகம்: 3,
   };
 
   const sortedCategories = [...categories].sort((a, b) => {
@@ -739,58 +763,4 @@ export default async function Home() {
       )}
     </div>
   );
-}
-
-
-export async function generateStaticParams() {
-  const categories = await fetchCategories();
-  const paths: { categorySlug: string; postSlug: string }[] = [];
-
-  // Fetch all posts
-  try {
-    const res = await axios.get(`${apiUrl}/api/posts?limit=1000&depth=2`);
-    const posts: Post[] = res.data.docs || [];
-
-    // Generate paths for posts
-    for (const post of posts) {
-      let categorySlug = "uncategorized";
-      if (post.categories && post.categories.length > 0) {
-        const primaryCategory = post.categories[0];
-        if (primaryCategory) {
-          categorySlug = primaryCategory.slug;
-
-          // Handle subcategories
-          if (primaryCategory.parent) {
-            const parent =
-              typeof primaryCategory.parent === "string"
-                ? await fetchParentCategory(primaryCategory.parent)
-                : primaryCategory.parent;
-            if (parent) {
-              categorySlug = parent.slug;
-            }
-          }
-        }
-      }
-      paths.push({
-        categorySlug,
-        postSlug: post.slug || "fallback-slug",
-      });
-    }
-
-    // Generate paths for top-level categories as postSlug (if they act as a category page)
-    for (const category of categories) {
-      if (!category.parent) {
-        paths.push({
-          categorySlug: category.slug,
-          postSlug: category.slug, // Treat category as a postSlug for category pages
-        });
-      }
-    }
-
-    console.log(`Generated ${paths.length} static paths`);
-    return paths;
-  } catch (err) {
-    console.error("Error in generateStaticParams:", err);
-    return [];
-  }
 }

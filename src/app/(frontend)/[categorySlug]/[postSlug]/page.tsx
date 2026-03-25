@@ -1,4 +1,5 @@
 export const revalidate = 60; // Revalidate every 60 seconds
+export const dynamicParams = true; // Enable on-demand rendering for non-pre-rendered posts
 import axios from "axios";
 import Link from "next/link";
 // import { Space } from "antd";
@@ -125,7 +126,12 @@ function getImageUrl(media: any): string | null {
 function extractPlainTextFromRichText(content: Post["content"]): string {
   if (!content?.root?.children) return "";
   return content.root.children
-    .map((block) => block.children.map((child) => child.text).join(""))
+    .map((block) => {
+      if (block && block.children && Array.isArray(block.children)) {
+        return block.children.map((child: any) => child?.text || "").join("");
+      }
+      return "";
+    })
     .join("\n");
 }
 
@@ -1438,10 +1444,10 @@ export async function generateStaticParams() {
   try {
     const payload = await getPayload({ config });
 
-    // Fetch the latest 200 posts for pre-rendering
+    // Fetch the latest 10 posts for pre-rendering (Saves hours of build time)
     const postRes = await payload.find({
       collection: "posts",
-      limit: 200,
+      limit: 10,
       sort: "-publishedAt",
       depth: 2,
     });

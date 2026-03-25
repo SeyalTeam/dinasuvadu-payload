@@ -23,7 +23,10 @@ function wrapInCDATA(content: string): string {
 function extractPlainTextFromRichText(content: any): string {
   if (!content?.root?.children) return '';
   return content.root.children
-    .map((block: any) => block.children.map((child: any) => child.text).join(''))
+    .map((block: any) => {
+      if (!block.children) return '';
+      return block.children.map((child: any) => child.text || '').join('');
+    })
     .join('\n');
 }
 

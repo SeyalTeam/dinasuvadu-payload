@@ -18,9 +18,9 @@ body {
   overflow-x: hidden;
 }
 
-p {
+/* p {
   margin-bottom: 0px !important;
-}
+} */
 
 ul,
 ol {

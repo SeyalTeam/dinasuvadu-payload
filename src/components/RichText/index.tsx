@@ -21,10 +21,13 @@ import type {
 import { BannerBlock } from '@/blocks/Banner/Component'
 import { CallToActionBlock } from '@/blocks/CallToAction/Component'
 import { cn } from '@/utilities/ui'
+import { EmbedHydrator } from './EmbedHydrator'
 
 type NodeTypes =
   | DefaultNodeTypes
-  | SerializedBlockNode<CTABlockProps | MediaBlockProps | BannerBlockProps | CodeBlockProps>
+  | SerializedBlockNode<
+      CTABlockProps | MediaBlockProps | BannerBlockProps | CodeBlockProps | { url: string }
+    >
 
 const internalDocToHref = ({ linkNode }: { linkNode: SerializedLinkNode }) => {
   const { value, relationTo } = linkNode.fields.doc!
@@ -51,7 +54,13 @@ const jsxConverters: JSXConvertersFunction<NodeTypes> = ({ defaultConverters }) 
       />
     ),
     code: ({ node }) => <CodeBlock className="col-start-2" {...node.fields} />,
-    cta: ({ node }) => <CallToActionBlock {...node.fields} />,
+    cta: ({ node }: { node: SerializedBlockNode<any> }) => <CallToActionBlock {...node.fields} />,
+    embed: ({ node }: { node: SerializedBlockNode<{ url: string }> }) => (
+      <div
+        className="col-start-2 my-8 w-full flex justify-center overflow-hidden"
+        dangerouslySetInnerHTML={{ __html: node.fields.url }}
+      />
+    ),
   },
 })
 
@@ -64,7 +73,9 @@ type Props = {
 export default function RichText(props: Props) {
   const { className, enableProse = true, enableGutter = true, ...rest } = props
   return (
-    <ConvertRichText
+    <div className="relative">
+      <EmbedHydrator />
+      <ConvertRichText
       converters={jsxConverters}
       className={cn(
         'payload-richtext',
@@ -77,5 +88,6 @@ export default function RichText(props: Props) {
       )}
       {...rest}
     />
+    </div>
   )
 }

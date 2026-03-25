@@ -1,3 +1,5 @@
+export const revalidate = 60;
+export const dynamicParams = true;
 import axios from "axios";
 import Link from "next/link";
 // import { Space } from "antd";

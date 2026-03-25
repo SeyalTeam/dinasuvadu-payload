@@ -87,17 +87,23 @@ async function htmlToLexical(htmlContent, media, createdAt, updatedAt) {
         });
       });
       if (text.match(/\n\s*$/)) pushParagraph();
-    } else if (node.nodeType === 1 && node.tagName === 'IFRAME') {
-      const src = node.getAttribute('src') || '';
-      if (src.startsWith('https://www.youtube.com/embed/') || 
-          src.startsWith('https://www.facebook.com/plugins/') ||
-          src.startsWith('https://www.linkedin.com/embed/')) {
+    } else if (node.nodeType === 1 && (node.tagName === 'IFRAME' || node.tagName === 'BLOCKQUOTE')) {
+      const nodeClass = node.getAttribute ? node.getAttribute('class') : '';
+      const src = node.getAttribute ? node.getAttribute('src') : '';
+      
+      if (node.tagName === 'IFRAME' && (src?.startsWith('https://www.youtube.com/embed/') || 
+          src?.startsWith('https://www.facebook.com/plugins/') ||
+          src?.startsWith('https://www.linkedin.com/embed/'))) {
         pushParagraph();
         children.push({
           type: 'block', version: 2, format: '',
-          fields: {
-            id: generateObjectId(), url: node.outerHTML, blockName: '', blockType: 'embed',
-          },
+          fields: { id: generateObjectId(), url: node.outerHTML, blockName: '', blockType: 'embed' },
+        });
+      } else if (node.tagName === 'BLOCKQUOTE' && (nodeClass?.includes('twitter-tweet') || nodeClass?.includes('instagram-media'))) {
+        pushParagraph();
+        children.push({
+          type: 'block', version: 2, format: '',
+          fields: { id: generateObjectId(), url: node.outerHTML, blockName: '', blockType: 'embed' },
         });
       }
     } else if (node.nodeType === 1 && node.tagName === 'IMG') {
@@ -143,9 +149,10 @@ async function htmlToLexical(htmlContent, media, createdAt, updatedAt) {
   let i = 0;
   while (i < nodes.length) {
     const node = nodes[i];
+    const nodeClass = node.getAttribute ? node.getAttribute('class') : '';
 
     // Twitter Embed
-    if (node.nodeType === 1 && node.tagName === 'BLOCKQUOTE' && node.classNames.includes('twitter-tweet')) {
+    if (node.nodeType === 1 && node.tagName === 'BLOCKQUOTE' && nodeClass?.includes('twitter-tweet')) {
       let embedHtml = node.outerHTML;
       let j = i + 1;
       while (j < nodes.length && nodes[j].nodeType === 3 && nodes[j].text.trim() === '') j++;
@@ -163,7 +170,7 @@ async function htmlToLexical(htmlContent, media, createdAt, updatedAt) {
     }
 
     // Instagram Embed
-    if (node.nodeType === 1 && node.tagName === 'BLOCKQUOTE' && node.classNames.includes('instagram-media')) {
+    if (node.nodeType === 1 && node.tagName === 'BLOCKQUOTE' && nodeClass?.includes('instagram-media')) {
       let embedHtml = node.outerHTML;
       let j = i + 1;
       while (j < nodes.length && nodes[j].nodeType === 3 && nodes[j].text.trim() === '') j++;
@@ -181,7 +188,7 @@ async function htmlToLexical(htmlContent, media, createdAt, updatedAt) {
     }
 
     // Truth Social Embed
-    if (node.nodeType === 1 && node.tagName === 'IFRAME' && node.getAttribute('src')?.startsWith('https://truthsocial.com/') && node.classNames.includes('truthsocial-embed')) {
+    if (node.nodeType === 1 && node.tagName === 'IFRAME' && node.getAttribute('src')?.startsWith('https://truthsocial.com/') && nodeClass?.includes('truthsocial-embed')) {
       let embedHtml = node.outerHTML;
       let j = i + 1;
       while (j < nodes.length && nodes[j].nodeType === 3 && nodes[j].text.trim() === '') j++;
@@ -250,26 +257,58 @@ async function main() {
   const postsVersions = db.collection('_posts_versions');
 
   const args = process.argv.slice(2);
-  if (args.length !== 1 || !/^\d{4}-\d{2}$/.test(args[0])) {
-    console.error('❌ Please provide a specific Year and Month! Example: node migrate-api.cjs 2026-03');
+  let afterDate, beforeDate, displayDate, targetSlug, targetCategoryId, targetPostId;
+
+  if (args.length === 1 && args[0].startsWith('cat:')) {
+    // Handling Category-based Migration
+    const catSlug = args[0].split(':')[1];
+    displayDate = `Category: ${catSlug}`;
+    console.log(`📂 Target Category Slug detected: ${catSlug}`);
+    targetSlug = null;
+  } else if (args.length === 1 && args[0].startsWith('http')) {
+    // Handling Single Post URL
+    displayDate = 'Single Post';
+    const cleanUrl = args[0].replace(/\/$/, ''); // Remove trailing slash
+    const urlParts = cleanUrl.split('/');
+    const lastPart = urlParts.pop();
+    
+    // Check if the last part ends with a numeric ID (e.g., elon-musk-...-965049)
+    const idMatch = lastPart.match(/-(\d+)$/);
+    if (idMatch) {
+      targetPostId = idMatch[1];
+      console.log(`🎯 Target Post ID extracted from URL: ${targetPostId}`);
+    } else {
+      targetSlug = lastPart;
+      console.log(`🎯 Target Slug extracted from URL: ${targetSlug}`);
+    }
+  } else if (args.length === 1 && /^\d{4}-\d{2}-\d{2}$/.test(args[0])) {
+    // ... rest of the existing logic ...
+    const date = new Date(args[0]);
+    afterDate = `${args[0]}T00:00:00Z`;
+    const nextDay = new Date(date);
+    nextDay.setUTCDate(date.getUTCDate() + 1);
+    beforeDate = nextDay.toISOString().split('T')[0] + 'T00:00:00Z';
+    displayDate = args[0];
+  } else if (args.length === 1 && /^\d{4}-\d{2}$/.test(args[0])) {
+    const [yearStr, monthStr] = args[0].split('-');
+    const year = parseInt(yearStr, 10);
+    const month = parseInt(monthStr, 10);
+    let nextYear = year;
+    let nextMonth = month + 1;
+    if (nextMonth > 12) {
+      nextMonth = 1;
+      nextYear++;
+    }
+    afterDate = `${year}-${month.toString().padStart(2, '0')}-01T00:00:00Z`;
+    beforeDate = `${nextYear}-${nextMonth.toString().padStart(2, '0')}-01T00:00:00Z`;
+    displayDate = args[0];
+  } else {
+    console.error('❌ Please provide a Month (YYYY-MM), a Date (YYYY-MM-DD), a Post URL, or cat:slug!');
+    console.error('Examples:\n  node migrate-api.cjs 2025-03\n  node migrate-api.cjs cat:news');
     process.exit(1);
   }
 
-  const [yearStr, monthStr] = args[0].split('-');
-  const year = parseInt(yearStr, 10);
-  const month = parseInt(monthStr, 10);
-
-  let nextYear = year;
-  let nextMonth = month + 1;
-  if (nextMonth > 12) {
-    nextMonth = 1;
-    nextYear++;
-  }
-
-  const afterDate = `${year}-${month.toString().padStart(2, '0')}-01T00:00:00Z`;
-  const beforeDate = `${nextYear}-${nextMonth.toString().padStart(2, '0')}-01T00:00:00Z`;
-
-  console.log(`\n\n📡 Starting Migration for Month: ${year}-${month.toString().padStart(2, '0')} (fetching until ${beforeDate})...`);
+  console.log(`\n\n📡 Starting Migration for: ${displayDate}...`);
   
   const auth = Buffer.from('blogvault:5120d378').toString('base64');
   const wpHeaders = { Authorization: `Basic ${auth}` };
@@ -280,6 +319,17 @@ async function main() {
   const wpCatsData = await wpCatsRes.json();
   const wpCategoryMap = new Map(); // ID -> Category Object
   wpCatsData.forEach(c => wpCategoryMap.set(c.id, c));
+
+  if (args[0].startsWith('cat:')) {
+    const catSlug = args[0].split(':')[1];
+    const cat = wpCatsData.find(c => c.slug === catSlug);
+    if (!cat) {
+      console.error(`❌ Category with slug "${catSlug}" not found on staging site!`);
+      process.exit(1);
+    }
+    targetCategoryId = cat.id;
+    console.log(`✅ Found Category ID: ${targetCategoryId} for slug "${catSlug}"`);
+  }
 
   async function ensureCategory(catId) {
     const wpCat = wpCategoryMap.get(catId);
@@ -315,25 +365,48 @@ async function main() {
   let totalSkipped = 0;
 
   while (page <= totalPages) {
-    const url = `https://dinasuvadu17107.e.wpstage.net/wp-json/wp/v2/posts?after=${afterDate}&before=${beforeDate}&per_page=100&page=${page}&_embed=true`;
-    console.log(`\n⏳ Fetching Page ${page} of ${totalPages}...`);
+    let url = `https://dinasuvadu17107.e.wpstage.net/wp-json/wp/v2/posts`;
+    
+    if (targetPostId) {
+      url += `/${targetPostId}?_embed=true`;
+      totalPages = 1; // Only one page for a single post ID
+    } else {
+      url += `?_embed=true&per_page=100&page=${page}`;
+      if (targetSlug) {
+        url += `&slug=${targetSlug}`;
+        totalPages = 1; // Only one page for a single post slug
+      } else if (targetCategoryId) {
+        url += `&categories=${targetCategoryId}`;
+      } else {
+        url += `&after=${afterDate}&before=${beforeDate}`;
+      }
+    }
+    
+    console.log(`\n⏳ Fetching: ${targetPostId ? `Post ID ${targetPostId}` : (targetSlug ? 'Single Post' : (targetCategoryId ? 'By Category' : `Page ${page} of ${totalPages}`))}...`);
+    console.log(`🔗 API URL: ${url}`);
     
     const res = await fetch(url, { headers: wpHeaders });
     
     if (!res.ok) {
-      console.error(`❌ Failed to fetch page ${page}:`, res.status);
+      console.error(`❌ Failed to fetch:`, res.status);
+      const text = await res.text();
+      console.error(`📄 Response body snippet: ${text.substring(0, 500)}`);
       break;
     }
 
-    if (page === 1) {
+    if (page === 1 && !targetPostId && !targetSlug) {
       const headerTotal = res.headers.get('x-wp-totalpages');
       if (headerTotal) totalPages = parseInt(headerTotal, 10);
       console.log(`📊 Expected Total Pages to Process: ${totalPages}`);
     }
 
-    const items = await res.json();
-    if (items.length === 0) {
-      console.log('✅ Reached the end of available posts.');
+    let items = await res.json();
+    if (targetPostId) {
+      items = [items]; 
+    }
+    
+    if (items.length === 0 || (targetPostId && !items[0].id)) {
+      console.log('✅ Reached the end of available posts or post not found.');
       break;
     }
 
@@ -355,14 +428,40 @@ async function main() {
       const creatorName = wpAuthor?.name || 'Admin';
       const creatorSlug = wpAuthor?.slug || 'admin';
       
-      let excerpt = decodeHtml(item.excerpt?.rendered?.replace(/<[^>]*>?/gm, '') || '');
+      const createdAt = new Date(item.date_gmt + 'Z');
+      const updatedAt = new Date(item.modified_gmt + 'Z');
+
+      // Scraping logic for summary box (missing from API)
+      let summaryBoxContent = '';
+      try {
+        const postHtmlRes = await fetch(item.link, { headers: wpHeaders });
+        if (postHtmlRes.ok) {
+          const postHtml = await postHtmlRes.text();
+          const postRoot = parse(postHtml);
+          
+          // Source 1: Specific summary box element
+          const summaryBox = postRoot.querySelector('.post-summary-box');
+          if (summaryBox) {
+            summaryBoxContent = summaryBox.text.trim();
+            console.log(`✨ Scraped summary box: ${summaryBoxContent.substring(0, 50)}...`);
+          } else {
+            // Source 2: Meta description tag (often contains the Yoast SEO description)
+            const metaDesc = postRoot.querySelector('meta[name="description"]');
+            if (metaDesc) {
+              summaryBoxContent = metaDesc.getAttribute('content')?.trim() || '';
+              console.log(`✨ Scraped meta description: ${summaryBoxContent.substring(0, 50)}...`);
+            }
+          }
+        }
+      } catch (err) {
+        // Silently fallback to item data on scraping error
+      }
+
+      let excerpt = summaryBoxContent || item.yoast_head_json?.description || decodeHtml(item.excerpt?.rendered?.replace(/<[^>]*>?/gm, '') || '');
       if (!excerpt || excerpt.length < 20) {
         const firstPara = contentText.split(/[\n\r]+/)[0].replace(/<[^>]*>?/gm, '').trim();
         excerpt = firstPara.length > 20 ? firstPara.substring(0, 160) : title;
       }
-      
-      const createdAt = new Date(item.date_gmt + 'Z');
-      const updatedAt = new Date(item.modified_gmt + 'Z');
 
       const wpTermsMatch = item._embedded?.['wp:term'] || [];
       let postWpCategories = [];
