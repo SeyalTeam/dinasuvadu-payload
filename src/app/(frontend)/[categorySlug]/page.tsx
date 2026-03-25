@@ -290,7 +290,7 @@ export default async function CategoryPage({
                     {/* Image */}
                     {imageUrl ? (
                       <Link
-                          href={`/${categorySlug}/${post.slug}`} className="relative w-full h-48 overflow-hidden rounded-t-lg site-main">
+                          href={postLink} className="relative w-full h-48 overflow-hidden rounded-t-lg site-main">
                         <img
                           src={imageUrl}
                           alt={imageAlt}

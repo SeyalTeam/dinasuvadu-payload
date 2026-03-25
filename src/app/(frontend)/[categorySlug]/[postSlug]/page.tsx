@@ -100,9 +100,25 @@ const clampStyle = {
 };
 
 // Helper function to get the image URL with proper base URL
-function getImageUrl(url: string | undefined): string | null {
-  if (!url) return null;
-  return url.startsWith("http") ? url : `${apiUrl}${url}`;
+function getImageUrl(media: any): string | null {
+  if (!media) return null;
+  
+  // Use explicit URL if available
+  let path = typeof media === 'string' ? media : media.url;
+  
+  // Fallback to reconstructing from prefix and filename if URL is missing
+  if (!path && media.filename) {
+    const prefix = media.prefix ? media.prefix : 'media';
+    const cleanPrefix = prefix.endsWith('/') ? prefix : `${prefix}/`;
+    path = `/${cleanPrefix}${media.filename}`;
+  }
+  
+  if (!path) return null;
+  if (path.startsWith("http")) return path;
+  
+  // Ensure the path starts with a slash
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+  return `${apiUrl}${cleanPath}`;
 }
 
 // Utility function to extract plain text from richText content
@@ -363,7 +379,7 @@ export default async function PostOrSubCategoryPage({
           <>
             <div className="category-grid">
               {posts.map((post: Post) => {
-                const imageUrl = getImageUrl(post.heroImage?.url);
+                const imageUrl = getImageUrl(post.heroImage);
                 const imageAlt = post.heroImage?.alt || post.title;
 
                 return (
@@ -851,20 +867,20 @@ export default async function PostOrSubCategoryPage({
 
           {/* Hero Image */}
           {(post.layout?.[0]?.blockType === "mediaBlock" &&
-            post.layout[0].media) ||
-          post.heroImage ? (
+            post.layout[0].media?.url) ||
+          (post.heroImage && post.heroImage.url) ? (
             <figure className="mb-12">
               <div className="relative rounded-lg overflow-hidden shadow-lg">
                 {post.layout?.[0]?.blockType === "mediaBlock" &&
                 post.layout[0].media ? (
                   <img
-                    src={getImageUrl(post.layout[0].media.url) || undefined} // Applied getImageUrl
+                    src={getImageUrl(post.layout[0].media) || undefined} // Pass full media object
                     alt={post.layout[0].media.alt || "Hero Image"}
                     className="w-full h-80 object-cover"
                   />
                 ) : (
                   <img
-                    src={getImageUrl(post.heroImage?.url) || undefined}
+                    src={getImageUrl(post.heroImage) || undefined} // Pass full media object
                     alt={post.heroImage?.alt || "Hero Image"}
                     className="w-full h-80 object-cover"
                   />
@@ -908,7 +924,7 @@ export default async function PostOrSubCategoryPage({
                 {block.blockType === "mediaBlock" && block.media && (
                   <figure className="my-8">
                     <img
-                      src={getImageUrl(block.media.url) || undefined} // Applied getImageUrl
+                      src={getImageUrl(block.media) || undefined} // Pass full media object
                       alt={block.media.alt || "Media"}
                       className="w-full max-w-2xl mx-auto h-auto object-cover rounded-md shadow-md"
                     />
@@ -934,13 +950,18 @@ export default async function PostOrSubCategoryPage({
                 {postContent.split("\n").map((paragraph, index) => {
                    if (!paragraph.trim()) return null;
                    
-                   // Aggressively skip any of the first few paragraphs if they are already in the summary box
-                   if (index < 5 && post.meta?.description) {
-                     const cleanPara = paragraph.trim();
-                     if (cleanPara.length > 10 && (post.meta.description.includes(cleanPara.substring(0, 50)) || cleanPara.includes(post.meta.description.substring(0, 50)))) {
-                       return null;
-                     }
-                   }
+                    // Skip any of the first few paragraphs if they are already in the summary box
+                    if (index < 5 && post.meta?.description) {
+                      // Normalize by stripping ALL whitespace and punctuation for a 'fingerprint' match
+                      const fingerprint = (str: string) => str.replace(/[^a-zA-Z0-9\u0B80-\u0BFF]/g, '');
+                      const fPara = fingerprint(paragraph);
+                      const fSummary = fingerprint(post.meta.description);
+                      
+                      // If either includes a substantial part of the other (fingerprint based)
+                      if (fPara.length > 20 && (fSummary.includes(fPara.substring(0, 40)) || fPara.includes(fSummary.substring(0, 40)))) {
+                        return null;
+                      }
+                    }
                    
                    return (
                      <p className="post-desc" key={index}>
@@ -1329,12 +1350,9 @@ export default async function PostOrSubCategoryPage({
                   }
 
                   const imageUrl = getImageUrl(
-                    latestPost.heroImage?.url ||
-                      latestPost.meta?.image?.url ||
-                      latestPost.layout?.find(
-                        (block) =>
-                          block.blockType === "mediaBlock" && block.media?.url
-                      )?.media?.url
+                    latestPost.heroImage || 
+                    latestPost.meta?.image || 
+                    latestPost.layout?.find((b: any) => b.blockType === "mediaBlock" && b.media)?.media
                   );
                   const imageAlt =
                     latestPost.heroImage?.alt ||

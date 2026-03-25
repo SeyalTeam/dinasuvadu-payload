@@ -1,7 +1,6 @@
-import dotenv from 'dotenv';
-import { MongoClient, ObjectId } from 'mongodb';
-import { parse } from 'node-html-parser';
-import fetch from 'node-fetch';
+const dotenv = require('dotenv');
+const { MongoClient, ObjectId } = require('mongodb');
+const { parse } = require('node-html-parser');
 
 dotenv.config();
 const { MONGODB_URI } = process.env;
@@ -196,7 +195,7 @@ async function main() {
 
   const args = process.argv.slice(2);
   if (args.length !== 1 || !/^\d{4}-\d{2}$/.test(args[0])) {
-    console.error('❌ Please provide a specific Year and Month! Example: node migrate-api.js 2026-03');
+    console.error('❌ Please provide a specific Year and Month! Example: node migrate-api.cjs 2026-03');
     process.exit(1);
   }
 
@@ -300,13 +299,15 @@ async function main() {
       const creatorName = wpAuthor?.name || 'Admin';
       const creatorSlug = wpAuthor?.slug || 'admin';
       
-      const excerpt = decodeHtml(item.excerpt?.rendered?.replace(/<[^>]*>?/gm, '') || '');
+      let excerpt = decodeHtml(item.excerpt?.rendered?.replace(/<[^>]*>?/gm, '') || '');
+      if (!excerpt || excerpt.length < 20) {
+        const firstPara = contentText.split(/[\n\r]+/)[0].replace(/<[^>]*>?/gm, '').trim();
+        excerpt = firstPara.length > 20 ? firstPara.substring(0, 160) : title;
+      }
       
-      // Parse Dates
       const createdAt = new Date(item.date_gmt + 'Z');
       const updatedAt = new Date(item.modified_gmt + 'Z');
 
-      // Extract Categories and Tags from _embedded['wp:term']
       const wpTermsMatch = item._embedded?.['wp:term'] || [];
       let postWpCategories = [];
       let postWpTags = [];
@@ -323,7 +324,6 @@ async function main() {
         const id = await ensureCategory(cat.id);
         if (id) categoryIds.push(id);
       }
-      // Fallback if no categories
       if (!categoryIds.length) {
         let uncat = await categories.findOne({ slug: 'uncategorized' });
         if (!uncat) {
@@ -343,23 +343,16 @@ async function main() {
         tagIds.push(tagDoc._id);
       }
 
-      // Handle Author
       let authorDoc = await authors.findOne({ slug: creatorSlug });
       if (!authorDoc) {
         authorDoc = { 
-          _id: new ObjectId(), 
-          name: creatorName, 
-          slug: creatorSlug,
-          email: `${creatorSlug}@example.com`, 
-          role: 'admin', 
-          createdAt, 
-          updatedAt, 
-          __v: 0 
+          _id: new ObjectId(), name: creatorName, slug: creatorSlug,
+          email: `${creatorSlug}@example.com`, role: 'admin', 
+          createdAt, updatedAt, __v: 0 
         };
         await authors.insertOne(authorDoc);
       }
 
-      // Handle Featured Image
       let heroImageId = null;
       const featuredMedia = item._embedded?.['wp:featuredmedia']?.[0];
       if (featuredMedia && featuredMedia.source_url) {
@@ -386,7 +379,6 @@ async function main() {
         }
       }
 
-      // Convert HTML to Lexical
       const lexicalContent = await htmlToLexical(contentText, media, createdAt, updatedAt);
 
       const postDoc = {

@@ -1,77 +1,58 @@
 import dotenv from 'dotenv';
 import { MongoClient, ObjectId } from 'mongodb';
-import fetch from 'node-fetch';
 
 dotenv.config();
 const { MONGODB_URI } = process.env;
 
-async function fixSummaries() {
-  console.log('🔌 Connecting to MongoDB...');
+async function main() {
   const client = new MongoClient(MONGODB_URI);
   await client.connect();
-  const db = client.db('test');
+  const db = client.db();
   const posts = db.collection('posts');
 
-  // Find posts from March 2026
-  const allPosts = await posts.find({
-    publishedAt: { 
-      $gte: new Date('2026-03-01'),
-      $lt: new Date('2026-04-01')
-    }
+  console.log('\n🔄 Starting Automatic Summary Repair...\n');
+
+  const problematicPosts = await posts.find({
+    $or: [
+        { "meta.description": { $exists: false } },
+        { "meta.description": "" },
+        { "meta.description": null }
+    ]
   }).toArray();
 
-  console.log(`🔍 Found ${allPosts.length} posts to check.`);
-  const auth = 'Basic ' + Buffer.from('blogvault:5120d378').toString('base64');
+  console.log(`Found ${problematicPosts.length} posts missing summaries.`);
 
-  for (const post of allPosts) {
-    // We scrape the page directly because REST API is missing information
-    const wpUrl = `https://dinasuvadu17107.e.wpstage.net/?p=${post.customId}`;
-    
-    try {
-      console.log(`📡 Scraping summary for: ${post.title}`);
-      const res = await fetch(wpUrl, { headers: { Authorization: auth } });
-      const html = await res.text();
-      
-      // Look for <meta name="description" content="...">
-      // or <h2 class="post-summary-box">...</h2>
-      let summary = '';
-      
-      const metaMatch = html.match(/<meta\s+name=["']description["']\s+content=["']([^"']+)["']/i);
-      if (metaMatch && metaMatch[1]) {
-        summary = metaMatch[1];
-      } else {
-        const boxMatch = html.match(/class=["']post-summary-box["'][^>]*>([^<]+)</i);
-        if (boxMatch && boxMatch[1]) {
-          summary = boxMatch[1];
-        }
+  let fixCount = 0;
+  for (const post of problematicPosts) {
+      if (!post.content || !post.content.root || !post.content.root.children) continue;
+
+      // Extract first substantial paragraph
+      let firstPara = "";
+      for (const child of post.content.root.children) {
+          if (child.type === 'paragraph' && child.children) {
+              const text = child.children.map(c => c.text).join('').trim();
+              if (text.length > 20) {
+                  firstPara = text;
+                  break;
+              }
+          }
       }
-      
-      if (summary) {
-        // Decode common HTML entities
-        summary = summary.replace(/&#(\d+);/g, (match, dec) => String.fromCharCode(dec))
-                         .replace(/&hellip;/g, '...')
-                         .replace(/&quot;/g, '"')
-                         .replace(/&amp;/g, '&')
-                         .trim();
-        
-        console.log(`✅ Found: ${summary.substring(0, 50)}...`);
-        
-        await posts.updateOne(
-          { _id: post._id },
-          { $set: { 'meta.description': summary } }
-        );
-      } else {
-        console.log(`⚠️ No summary found for ${post.title}`);
+
+      if (firstPara) {
+          // Truncate to ~160 chars for SEO
+          const cleanSummary = firstPara.substring(0, 160) + (firstPara.length > 160 ? '...' : '');
+          
+          await posts.updateOne(
+              { _id: post._id },
+              { $set: { "meta.description": cleanSummary } }
+          );
+          console.log(`✅ Fixed: ${post.slug}`);
+          fixCount++;
       }
-    } catch (err) {
-      console.error(`❌ Error scraping ${post.title}:`, err.message);
-    }
-    // Small delay to avoid hammering the server
-    await new Promise(resolve => setTimeout(resolve, 500));
   }
 
-  console.log('🎉 Done!');
+  console.log(`\nSuccessfully fixed ${fixCount} posts.`);
   await client.close();
 }
 
-fixSummaries().catch(console.error);
+main().catch(console.error);

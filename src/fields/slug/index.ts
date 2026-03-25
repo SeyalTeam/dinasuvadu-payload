@@ -32,26 +32,32 @@ export const slugField: Slug = (fieldToUse = 'title', overrides = {}) => {
     hooks: {
       beforeChange: [
         ({ data, value, operation }) => {
-          const isUnlocked = !data?.slugLock
+          const isLocked = data?.slugLock !== false
           const customId = data?.customId ? `-${data.customId}` : ''
-          if (isUnlocked && data?.[fieldToUse] && typeof data[fieldToUse] === 'string') {
-            // Handle manual slug input when unlocked
-            if (value && typeof value === 'string' && value.trim() !== '') {
-              // If user enters a custom slug, append customId only if not already present
-              if (!value.includes(customId)) {
-                return `${value}${customId}`
-              }
-              return value
-            }
-            // If no manual input, generate slug from title and append customId on create
-            const defaultSlug = formatSlug(data[fieldToUse])
-            if (operation === 'create' || !value?.includes(customId)) {
-              return `${defaultSlug}${customId}`
-            }
-            return value
+          const targetValue = data?.[fieldToUse]
+
+          // Use the provided value or fallback to the target field's value
+          let result = value
+
+          if (isLocked && typeof targetValue === 'string') {
+            // When locked, always sync with the target field (title)
+            result = formatSlug(targetValue)
+          } else if (typeof result === 'string' && result !== '') {
+            // When unlocked, format the current value to ensure it's a valid slug
+            result = formatSlug(result)
+          } else if (typeof targetValue === 'string') {
+            // Fallback for unlocked but empty slug
+            result = formatSlug(targetValue)
           }
-          // If locked, return the existing value or let it be handled by default
-          return value
+
+          if (typeof result !== 'string') return value
+
+          // On create or if customId is missing, append it
+          if (customId && !result.includes(customId)) {
+            return `${result}${customId}`
+          }
+
+          return result
         },
       ],
     },
