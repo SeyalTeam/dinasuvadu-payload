@@ -67,6 +67,7 @@ async function htmlToLexical(htmlContent, media, createdAt, updatedAt) {
 
   async function processNode(node) {
     if (node.nodeType === 3) {
+      // Text node
       const text = node.text;
       const parts = text.split(/\n{2,}/g).map((p) => p.trim()).filter((p) => p);
       parts.forEach((part, index) => {
@@ -131,7 +132,74 @@ async function htmlToLexical(htmlContent, media, createdAt, updatedAt) {
         type: 'block', version: 2, format: '',
         fields: { id: generateObjectId(), media: mediaId, blockName: '', blockType: 'mediaBlock' },
       });
-    } else if (node.nodeType === 1 && /^H[1-6]$/.test(node.tagName)) {
+    } else if (node.childNodes && node.childNodes.length > 0) {
+      for (const child of node.childNodes) {
+        await processNode(child);
+      }
+    }
+  }
+
+  const nodes = root.childNodes;
+  let i = 0;
+  while (i < nodes.length) {
+    const node = nodes[i];
+
+    // Twitter Embed
+    if (node.nodeType === 1 && node.tagName === 'BLOCKQUOTE' && node.classNames.includes('twitter-tweet')) {
+      let embedHtml = node.outerHTML;
+      let j = i + 1;
+      while (j < nodes.length && nodes[j].nodeType === 3 && nodes[j].text.trim() === '') j++;
+      if (j < nodes.length && nodes[j].nodeType === 1) {
+        const nextNode = nodes[j];
+        const script = nextNode.tagName === 'SCRIPT' ? nextNode : nextNode.querySelector('script[src="https://platform.twitter.com/widgets.js"]');
+        if (script) {
+          embedHtml += script.outerHTML;
+          i = j;
+        }
+      }
+      pushParagraph();
+      children.push({ type: 'block', version: 2, format: '', fields: { id: generateObjectId(), url: embedHtml, blockName: '', blockType: 'embed' } });
+      i++; continue;
+    }
+
+    // Instagram Embed
+    if (node.nodeType === 1 && node.tagName === 'BLOCKQUOTE' && node.classNames.includes('instagram-media')) {
+      let embedHtml = node.outerHTML;
+      let j = i + 1;
+      while (j < nodes.length && nodes[j].nodeType === 3 && nodes[j].text.trim() === '') j++;
+      if (j < nodes.length && nodes[j].nodeType === 1) {
+        const nextNode = nodes[j];
+        const script = nextNode.tagName === 'SCRIPT' ? nextNode : nextNode.querySelector('script[src="//www.instagram.com/embed.js"]');
+        if (script) {
+          embedHtml += script.outerHTML;
+          i = j;
+        }
+      }
+      pushParagraph();
+      children.push({ type: 'block', version: 2, format: '', fields: { id: generateObjectId(), url: embedHtml, blockName: '', blockType: 'embed' } });
+      i++; continue;
+    }
+
+    // Truth Social Embed
+    if (node.nodeType === 1 && node.tagName === 'IFRAME' && node.getAttribute('src')?.startsWith('https://truthsocial.com/') && node.classNames.includes('truthsocial-embed')) {
+      let embedHtml = node.outerHTML;
+      let j = i + 1;
+      while (j < nodes.length && nodes[j].nodeType === 3 && nodes[j].text.trim() === '') j++;
+      if (j < nodes.length && nodes[j].nodeType === 1) {
+        const nextNode = nodes[j];
+        const script = nextNode.tagName === 'SCRIPT' ? nextNode : nextNode.querySelector('script[src="https://truthsocial.com/embed.js"]');
+        if (script) {
+          embedHtml += script.outerHTML;
+          i = j;
+        }
+      }
+      pushParagraph();
+      children.push({ type: 'block', version: 2, format: '', fields: { id: generateObjectId(), url: embedHtml, blockName: '', blockType: 'embed' } });
+      i++; continue;
+    }
+
+    // Headings
+    if (node.nodeType === 1 && /^H[1-6]$/.test(node.tagName)) {
       pushParagraph();
       const headingChildren = [];
       const oldCurrent = currentParagraph;
@@ -145,34 +213,22 @@ async function htmlToLexical(htmlContent, media, createdAt, updatedAt) {
         version: 1, tag: node.tagName.toLowerCase(),
         textFormat: headingChildren.some((n) => n.format !== 0) ? 1 : 0, textStyle: '',
       });
-    } else if (node.nodeType === 1 && (node.tagName === 'P' || node.tagName === 'DIV' || node.tagName === 'BLOCKQUOTE')) {
-      if (node.tagName === 'BLOCKQUOTE' && (node.classNames.includes('twitter-tweet') || node.classNames.includes('instagram-media'))) {
-         let embedHtml = node.outerHTML;
-         pushParagraph();
-         children.push({
-           type: 'block', version: 2, format: '',
-           fields: { id: generateObjectId(), url: embedHtml, blockName: '', blockType: 'embed' },
-         });
-      } else {
-         pushParagraph();
-         for (const child of node.childNodes) {
-           await processNode(child);
-         }
+      i++; continue;
+    }
+
+    // Paragraphs / DIVs / General Blockquotes
+    if (node.nodeType === 1 && (node.tagName === 'P' || node.tagName === 'DIV' || node.tagName === 'BLOCKQUOTE')) {
+      pushParagraph();
+      for (const child of node.childNodes) {
+        await processNode(child);
       }
     } else {
-      if (node.childNodes && node.childNodes.length > 0) {
-        for (const child of node.childNodes) {
-          await processNode(child);
-        }
-      }
+      await processNode(node);
     }
+    i++;
   }
 
-  for (const node of root.childNodes) {
-    await processNode(node);
-  }
   pushParagraph();
-
   if (!children.length) {
     children.push({ children: [], direction: null, format: 'start', indent: 0, type: 'paragraph', version: 1, textFormat: 0, textStyle: '' });
   }
