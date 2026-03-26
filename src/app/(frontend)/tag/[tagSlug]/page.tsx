@@ -1,6 +1,10 @@
 export const revalidate = 60;
 export const dynamicParams = true;
 import axios from "axios";
+import React from "react";
+import type { Metadata } from "next";
+
+import { buildMetadata, buildBreadcrumbLd } from "@/lib/seo";
 import Link from "next/link";
 // import { Space } from "antd";
 // import { ClockCircleOutlined } from "@ant-design/icons";
@@ -148,6 +152,21 @@ async function fetchParentCategory(
   }
 }
 
+export async function generateMetadata({ params }: { params: Promise<{ tagSlug: string }> }): Promise<Metadata> {
+  const { tagSlug } = await params;
+  const tag = await fetchTagBySlug(tagSlug);
+  if (tag) {
+    const title = `${tag.name} – Dinasuvadu`;
+    const description = `Explore the latest articles tagged with "${tag.name}" on Dinasuvadu.`;
+    return buildMetadata({
+      title,
+      description,
+      canonical: `https://www.dinasuvadu.com/tag/${tagSlug}`,
+    });
+  }
+  return { title: "Dinasuvadu - Latest Tamil News" };
+}
+
 export default async function TagPage({
   params,
   searchParams,
@@ -169,9 +188,35 @@ export default async function TagPage({
   const { posts, total } = await fetchPostsByTag(tag.id, page, limit);
   const totalPages = Math.ceil(total / limit);
 
+  // Generate pagination link tags for SEO
+  const paginationLinks: React.JSX.Element[] = [];
+  if (page > 1) {
+    paginationLinks.push(
+      <link key="prev" rel="prev" href={`/tag/${tagSlug}?page=${page - 1}`} />
+    );
+  }
+  if (page < totalPages) {
+    paginationLinks.push(
+      <link key="next" rel="next" href={`/tag/${tagSlug}?page=${page + 1}`} />
+    );
+  }
+
   return (
-    <div className="site">
-      <div className="site-main">
+    <>
+
+        {paginationLinks}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: buildBreadcrumbLd([
+              { name: "Home", url: "https://www.dinasuvadu.com/" },
+              { name: `Tag: ${tag.name}`, url: `https://www.dinasuvadu.com/tag/${tagSlug}` },
+            ]),
+          }}
+        />
+
+      <div className="site">
+        <div className="site-main">
         <h1 className="category-title">Tag: {tag.name}</h1>{" "}
         {/* Changed tag.title to tag.name */}
       </div>
@@ -324,6 +369,7 @@ export default async function TagPage({
         </>
       )}
     </div>
+    </>
   );
 }
 

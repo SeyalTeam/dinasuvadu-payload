@@ -1,6 +1,9 @@
-export const revalidate = 60;
+import React from "react";
 export const dynamicParams = true;
 import type { Metadata } from "next";
+
+import { buildMetadata, buildBreadcrumbLd } from "@/lib/seo";
+// Removed duplicate import of buildMetadata
 import axios from "axios";
 import Link from "next/link";
 // import { Space } from "antd";
@@ -180,24 +183,21 @@ export async function generateMetadata({
   params: Promise<{ categorySlug: string }>;
 }): Promise<Metadata> {
   const { categorySlug } = await params;
-
   const category = await fetchCategoryBySlug(categorySlug);
   if (category) {
     const title = `${category.title || "Category"} News`;
     const description = `Follow the latest ${category.title || "category"} news, updates, and analysis on Dinasuvadu.`;
-    return {
-      title: `${title} | Dinasuvadu`,
-      description: description,
-      openGraph: {
-        title: `${title} | Dinasuvadu`,
-        description: description,
-      },
-    };
+    return buildMetadata({
+      title,
+      description,
+      canonical: `https://www.dinasuvadu.com/${categorySlug}`,
+    });
   }
-
-  return {
-    title: "Category News | Dinasuvadu",
-  };
+  return buildMetadata({
+    title: "Category News",
+    description: "Explore category news on Dinasuvadu.",
+    canonical: `https://www.dinasuvadu.com/${categorySlug}`,
+  });
 }
 
 export default async function CategoryPage({
@@ -214,6 +214,7 @@ export default async function CategoryPage({
   const page = parseInt((query.page as string) || "1", 10); // Access the resolved value
   const limit = 10;
   console.log(`Handling route: /${categorySlug}?page=${page}`);
+
 
   const category = await fetchCategoryBySlug(categorySlug);
   if (!category) {
@@ -241,26 +242,59 @@ export default async function CategoryPage({
     page,
     limit
   );
+  // Compute totalPages first
   const totalPages = Math.ceil(total / limit);
 
+  // Build pagination link tags (next / prev) after totalPages is known
+  const paginationLinks = [] as JSX.Element[];
+  if (page > 1) {
+    paginationLinks.push(
+      <link
+        key="prev"
+        rel="prev"
+        href={`/${categorySlug}?page=${page - 1}`}
+      />
+    );
+  }
+  if (page < totalPages) {
+    paginationLinks.push(
+      <link
+        key="next"
+        rel="next"
+        href={`/${categorySlug}?page=${page + 1}`}
+      />
+    );
+  }
   return (
-    <div className="site">
-      {/* Breadcrumbs */}
-      <nav
-        aria-label="Breadcrumb"
-        className="mb-8 text-sm font-medium text-gray-500 site-main"
-      >
-        <div className="flex items-center space-x-2 breadcrumbs">
-          <Link
-            href="/"
-            className="text-blue-600 hover:text-blue-800 transition-colors"
-          >
-            Home
-          </Link>
-          <span className="text-gray-400">{">"}</span>
-          <span className="text-gray-700">{categoryTitle}</span>
-        </div>
-      </nav>
+    <>
+      {/* Head elements: pagination links and breadcrumb JSON‑LD */}
+
+        {paginationLinks}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: buildBreadcrumbLd([
+            { name: "Home", url: "https://www.dinasuvadu.com/" },
+            { name: categoryTitle, url: `https://www.dinasuvadu.com/${categorySlug}` },
+          ]) }}
+        />
+
+      <div className="site">
+        {/* Breadcrumbs */}
+        <nav
+          aria-label="Breadcrumb"
+          className="mb-8 text-sm font-medium text-gray-500 site-main"
+        >
+          <div className="flex items-center space-x-2 breadcrumbs">
+            <Link
+              href="/"
+              className="text-blue-600 hover:text-blue-800 transition-colors"
+            >
+              Home
+            </Link>
+            <span className="text-gray-400">{">"}</span>
+            <span className="text-gray-700">{categoryTitle}</span>
+          </div>
+        </nav>
 
       {/* Category Header */}
       <header className="mb-10 site-main">
@@ -413,6 +447,7 @@ export default async function CategoryPage({
         </p>
       )}
     </div>
+    </>
   );
 }
 

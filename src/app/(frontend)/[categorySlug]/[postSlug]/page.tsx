@@ -1,6 +1,8 @@
+import React from "react";
 export const revalidate = 60; // Revalidate every 60 seconds
 export const dynamicParams = true; // Enable on-demand rendering for non-pre-rendered posts
 import type { Metadata } from "next";
+
 import axios from "axios";
 import Link from "next/link";
 // import { Space } from "antd";
@@ -11,6 +13,7 @@ import { notFound } from "next/navigation";
 import ShareButton from "@/components/ShareButton";
 import { getPayload } from "payload";
 import config from "@/payload.config";
+import { buildMetadata, buildBreadcrumbLd } from "@/lib/seo";
 
 // Type definitions
 type RichTextChild = {
@@ -203,13 +206,48 @@ async function fetchPost(slug: string): Promise<Post | null> {
           { slug: { equals: encoded.toUpperCase() } },
         ],
       },
-      depth: 3,
+      depth: 2,
     });
-    return (response.docs[0] as unknown as Post) || null;
+    return (response?.docs?.[0] as unknown as Post) || null;
   } catch (error) {
-    console.error("Error fetching post with slug " + slug + ":", error);
+    console.error(`Error fetching post with slug ${slug}:`, error);
     return null;
   }
+}
+
+/**
+ * Generate SEO metadata for a post page.
+ */
+export async function generateMetadata({ params }: { params: Promise<{ categorySlug: string; postSlug: string }> }): Promise<Metadata> {
+  const { categorySlug, postSlug } = await params;
+  const post = await fetchPost(postSlug);
+  if (!post) {
+    return { title: "Post not found – Dinasuvadu" };
+  }
+  const title = post.title;
+  const description = post.meta?.description || "Read the latest article on Dinasuvadu.";
+  const imageUrl = post.meta?.image?.url ? `${apiUrl}${post.meta.image.url}` : undefined;
+  const canonical = `https://www.dinasuvadu.com/${categorySlug}/${postSlug}`;
+  return buildMetadata({ title, description, imageUrl, type: "article", canonical });
+}
+
+/**
+ * Build JSON‑LD for a NewsArticle.
+ */
+function buildArticleLd(post: Post, categorySlug: string, postSlug: string): string {
+  const url = `https://www.dinasuvadu.com/${categorySlug}/${postSlug}`;
+  const ld = {
+    "@context": "https://schema.org",
+    "@type": "NewsArticle",
+    headline: post.title,
+    description: post.meta?.description || "",
+    image: post.meta?.image?.url ? `${apiUrl}${post.meta.image.url}` : undefined,
+    author: post.populatedAuthors?.map(a => ({ "@type": "Person", name: a.name })) || [],
+    datePublished: post.publishedAt,
+    mainEntityOfPage: { "@type": "WebPage", "@id": url },
+    url,
+  };
+  return JSON.stringify(ld);
 }
 
 // Fetch posts by category slug (using category ID) with pagination
@@ -310,53 +348,7 @@ async function fetchCategoryById(
 }
 
 // Generate dynamic metadata for SEO
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ categorySlug: string; postSlug: string }>;
-}): Promise<Metadata> {
-  const { categorySlug, postSlug } = await params;
 
-  // Try finding post first
-  const post = await fetchPost(postSlug);
-  if (post) {
-    const title = post.title;
-    const description = post.meta?.description || extractPlainTextFromRichText(post.content).slice(0, 160);
-    const imageUrl = getImageUrl(post.heroImage);
-
-    return {
-      title: `${title} | Dinasuvadu`,
-      description: description,
-      openGraph: {
-        title: title,
-        description: description,
-        images: imageUrl ? [{ url: imageUrl }] : [],
-        type: "article",
-      },
-      twitter: {
-        card: "summary_large_image",
-        title: title,
-        description: description,
-        images: imageUrl ? [imageUrl] : [],
-      },
-    };
-  }
-
-  // If not post, check if it's a category
-  const category = await fetchCategoryBySlug(postSlug);
-  if (category) {
-    const title = `${category.title || "Category"} News`;
-    const description = `Read the latest ${category.title || "category"} news and updates on Dinasuvadu.`;
-    return {
-      title: `${title} | Dinasuvadu`,
-      description: description,
-    };
-  }
-
-  return {
-    title: "Dinasuvadu - Latest Tamil News",
-  };
-}
 
 export default async function PostOrSubCategoryPage({
   params,
@@ -643,7 +635,26 @@ export default async function PostOrSubCategoryPage({
     : "";
 
   return (
-    <div className="site site-main">
+    <>
+
+        {/* Breadcrumb JSON‑LD */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: buildBreadcrumbLd([
+              { name: "Home", url: "https://www.dinasuvadu.com/" },
+              { name: topLevelCategoryTitle, url: `https://www.dinasuvadu.com/${categorySlug}` },
+              { name: post.title, url: `https://www.dinasuvadu.com/${categorySlug}/${postSlug}` },
+            ]),
+          }}
+        />
+        {/* Article JSON‑LD */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: buildArticleLd(post, categorySlug, postSlug) }}
+        />
+
+      <div className="site site-main">
       <div className="post-grid lg:grid lg:grid-cols-3 lg:gap-8">
         {/* Main Article Content */}
         <article className="lg:col-span-2">
@@ -1509,6 +1520,7 @@ export default async function PostOrSubCategoryPage({
         </aside>
       </div>
     </div>
+    </>
   );
 }
 

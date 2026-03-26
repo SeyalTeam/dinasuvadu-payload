@@ -8,6 +8,35 @@ import Text from "antd/es/typography/Text";
 import { notFound } from "next/navigation";
 import { getPayload } from "payload";
 import config from "@/payload.config";
+import type { Metadata } from "next";
+
+// Generate dynamic metadata for subcategory post pages
+export async function generateMetadata({ params }: { params: Promise<{ categorySlug: string; postSlug: string; subPostSlug: string }> }): Promise<Metadata> {
+  const { subPostSlug } = await params;
+  const post = await fetchPost(subPostSlug);
+  if (post) {
+    const title = post.title;
+    const description = post.meta?.description || extractPlainTextFromRichText(post.content).slice(0, 160);
+    const imageUrl = getImageUrl(post.heroImage);
+    return {
+      title: `${title} | Dinasuvadu`,
+      description,
+      openGraph: {
+        title,
+        description,
+        images: imageUrl ? [{ url: imageUrl }] : [],
+        type: "article",
+      },
+      twitter: {
+        card: "summary_large_image",
+        title,
+        description,
+        images: imageUrl ? [imageUrl] : [],
+      },
+    };
+  }
+  return { title: "Dinasuvadu - Latest Tamil News" };
+}
 import RichText from "@/components/RichText";
 
 // Type definitions

@@ -47,6 +47,7 @@ async function fetchCategories(): Promise<Category[]> {
     const payload = await getPayload({ config });
     const res = await payload.find({
       collection: "categories",
+      limit: 100,
       depth: 2,
     });
     const categories = (res.docs as unknown as Category[]) || [];
