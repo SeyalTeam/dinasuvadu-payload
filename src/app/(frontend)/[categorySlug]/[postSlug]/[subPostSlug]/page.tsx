@@ -9,33 +9,20 @@ import { notFound } from "next/navigation";
 import { getPayload } from "payload";
 import config from "@/payload.config";
 import type { Metadata } from "next";
+import { buildMetadata, buildBreadcrumbLd, buildArticleLd } from "@/lib/seo";
 
 // Generate dynamic metadata for subcategory post pages
 export async function generateMetadata({ params }: { params: Promise<{ categorySlug: string; postSlug: string; subPostSlug: string }> }): Promise<Metadata> {
-  const { subPostSlug } = await params;
+  const { categorySlug, postSlug, subPostSlug } = await params;
   const post = await fetchPost(subPostSlug);
-  if (post) {
-    const title = post.title;
-    const description = post.meta?.description || extractPlainTextFromRichText(post.content).slice(0, 160);
-    const imageUrl = getImageUrl(post.heroImage);
-    return {
-      title: `${title} | Dinasuvadu`,
-      description,
-      openGraph: {
-        title,
-        description,
-        images: imageUrl ? [{ url: imageUrl }] : [],
-        type: "article",
-      },
-      twitter: {
-        card: "summary_large_image",
-        title,
-        description,
-        images: imageUrl ? [imageUrl] : [],
-      },
-    };
+  if (!post) {
+    return { title: "Post not found – Dinasuvadu" };
   }
-  return { title: "Dinasuvadu - Latest Tamil News" };
+  const title = post.title;
+  const description = post.meta?.description || "Read the latest article on Dinasuvadu.";
+  const imageUrl = getImageUrl(post.heroImage) || undefined;
+  const canonical = `https://www.dinasuvadu.com/${categorySlug}/${postSlug}/${subPostSlug}`;
+  return buildMetadata({ title, description, imageUrl, type: "article", canonical });
 }
 import RichText from "@/components/RichText";
 
@@ -358,6 +345,26 @@ export default async function SubCategoryPostPage({
 
   // Render the page
   return (
+    <>
+      {/* Breadcrumb JSON‑LD */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: buildBreadcrumbLd([
+            { name: "Home", url: "https://www.dinasuvadu.com/" },
+            { name: parentCategory.title, url: `https://www.dinasuvadu.com/${categorySlug}` },
+            { name: subCategoryTitle, url: `https://www.dinasuvadu.com/${categorySlug}/${postSlug}` },
+            { name: post.title, url: `https://www.dinasuvadu.com/${categorySlug}/${postSlug}/${subPostSlug}` },
+          ]),
+        }}
+      />
+      {/* Article JSON‑LD */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ 
+          __html: buildArticleLd({ post, categorySlug, postSlug, subPostSlug, apiUrl }) 
+        }}
+      />
     <div className="site site-main">
       <div className="post-grid lg:grid lg:grid-cols-3 lg:gap-8">
         {/* Main Article Content */}
@@ -1155,6 +1162,7 @@ export default async function SubCategoryPostPage({
         </aside>
       </div>
     </div>
+    </>
   );
 }
 

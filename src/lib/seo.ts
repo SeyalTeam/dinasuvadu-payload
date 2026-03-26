@@ -55,3 +55,41 @@ export function buildBreadcrumbLd(items: { name: string; url: string }[]): strin
   };
   return JSON.stringify(ld);
 }
+
+/**
+ * Build JSON‑LD for a NewsArticle.
+ */
+export function buildArticleLd({
+  post,
+  categorySlug,
+  postSlug,
+  subPostSlug,
+  apiUrl = "http://localhost:3000",
+}: {
+  post: any;
+  categorySlug: string;
+  postSlug: string;
+  subPostSlug?: string;
+  apiUrl?: string;
+}): string {
+  const url = subPostSlug
+    ? `https://www.dinasuvadu.com/${categorySlug}/${postSlug}/${subPostSlug}`
+    : `https://www.dinasuvadu.com/${categorySlug}/${postSlug}`;
+
+  const ld = {
+    "@context": "https://schema.org",
+    "@type": "NewsArticle",
+    headline: post.title,
+    description: post.meta?.description || "",
+    image: post.meta?.image?.url ? `${apiUrl}${post.meta.image.url}` : undefined,
+    author:
+      post.populatedAuthors?.map((a: any) => ({
+        "@type": "Person",
+        name: a.name,
+      })) || [],
+    datePublished: post.publishedAt,
+    mainEntityOfPage: { "@type": "WebPage", "@id": url },
+    url,
+  };
+  return JSON.stringify(ld);
+}

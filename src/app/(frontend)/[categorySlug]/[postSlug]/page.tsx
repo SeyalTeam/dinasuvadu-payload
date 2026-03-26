@@ -13,7 +13,7 @@ import { notFound } from "next/navigation";
 import ShareButton from "@/components/ShareButton";
 import { getPayload } from "payload";
 import config from "@/payload.config";
-import { buildMetadata, buildBreadcrumbLd } from "@/lib/seo";
+import { buildMetadata, buildBreadcrumbLd, buildArticleLd } from "@/lib/seo";
 
 // Type definitions
 type RichTextChild = {
@@ -231,24 +231,6 @@ export async function generateMetadata({ params }: { params: Promise<{ categoryS
   return buildMetadata({ title, description, imageUrl, type: "article", canonical });
 }
 
-/**
- * Build JSON‑LD for a NewsArticle.
- */
-function buildArticleLd(post: Post, categorySlug: string, postSlug: string): string {
-  const url = `https://www.dinasuvadu.com/${categorySlug}/${postSlug}`;
-  const ld = {
-    "@context": "https://schema.org",
-    "@type": "NewsArticle",
-    headline: post.title,
-    description: post.meta?.description || "",
-    image: post.meta?.image?.url ? `${apiUrl}${post.meta.image.url}` : undefined,
-    author: post.populatedAuthors?.map(a => ({ "@type": "Person", name: a.name })) || [],
-    datePublished: post.publishedAt,
-    mainEntityOfPage: { "@type": "WebPage", "@id": url },
-    url,
-  };
-  return JSON.stringify(ld);
-}
 
 // Fetch posts by category slug (using category ID) with pagination
 async function fetchPostsByCategory(
@@ -648,10 +630,9 @@ export default async function PostOrSubCategoryPage({
             ]),
           }}
         />
-        {/* Article JSON‑LD */}
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: buildArticleLd(post, categorySlug, postSlug) }}
+          dangerouslySetInnerHTML={{ __html: buildArticleLd({ post, categorySlug, postSlug, apiUrl }) }}
         />
 
       <div className="site site-main">

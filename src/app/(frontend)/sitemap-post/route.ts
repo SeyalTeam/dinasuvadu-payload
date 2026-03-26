@@ -24,6 +24,9 @@ export async function GET(request: Request) {
       collection: "categories",
       limit: 1000,
       depth: 0,
+      select: {
+        slug: true,
+      },
     });
     
     const categoryMap = new Map();
@@ -38,6 +41,13 @@ export async function GET(request: Request) {
       page,
       depth: 0,
       where: { _status: { equals: "published" } },
+      select: {
+        slug: true,
+        categories: true,
+        updatedAt: true,
+        publishedAt: true,
+        createdAt: true,
+      },
     });
 
     if (posts.length === 0) {

@@ -6,6 +6,8 @@ import { Row, Col, Card, Space } from "antd";
 import Text from "antd/es/typography/Text";
 import { getPayload } from "payload";
 import config from "@/payload.config";
+import type { Metadata } from "next";
+import { buildMetadata } from "@/lib/seo";
 
 // Type definitions
 type Category = {
@@ -189,6 +191,14 @@ function getImageUrl(url: string | undefined): string | null {
   return url.startsWith("http") ? url : `${apiUrl}${url}`;
 }
 
+export async function generateMetadata(): Promise<Metadata> {
+  return buildMetadata({
+    title: "Dinasuvadu - Latest Tamil News, Cinema, Politics & Sports",
+    description: "Dinasuvadu is your leading source for breaking Tamil news, insightful analysis, and the latest updates on cinema, politics, and sports from Tamil Nadu and across the globe.",
+    canonical: "https://www.dinasuvadu.com/",
+  });
+}
+
 export default async function Home() {
   const payload = await getPayload({ config });
   const homepageSettings = await payload.findGlobal({
@@ -243,6 +253,40 @@ export default async function Home() {
   );
 
   return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "WebSite",
+            "name": "Dinasuvadu",
+            "url": "https://www.dinasuvadu.com/",
+            "potentialAction": {
+              "@type": "SearchAction",
+              "target": "https://www.dinasuvadu.com/search?q={search_term_string}",
+              "query-input": "required name=search_term_string"
+            }
+          })
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Organization",
+            "name": "Dinasuvadu",
+            "url": "https://www.dinasuvadu.com/",
+            "logo": "https://www.dinasuvadu.com/logo.png",
+            "sameAs": [
+              "https://www.facebook.com/dinasuvadu",
+              "https://twitter.com/dinasuvadu",
+              "https://www.instagram.com/dinasuvadu"
+            ]
+          })
+        }}
+      />
     <div className="site">
       {/* Latest News Section */}
       {(featuredPost || smallerPosts.length > 0) && (
@@ -773,5 +817,6 @@ export default async function Home() {
         )
       )}
     </div>
+    </>
   );
 }
