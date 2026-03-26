@@ -30,4 +30,6 @@ const nextConfig = {
   redirects,
 }
 
+
+// Force restart dev server due to static asset 404s
 export default withPayload(nextConfig, { devBundleServerPackages: false })
