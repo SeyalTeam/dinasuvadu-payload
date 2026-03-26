@@ -4,7 +4,6 @@ import type { Metadata } from "next";
 
 import { buildMetadata, buildBreadcrumbLd } from "@/lib/seo";
 // Removed duplicate import of buildMetadata
-import axios from "axios";
 import Link from "next/link";
 // import { Space } from "antd";
 // import { ClockCircleOutlined } from "@ant-design/icons";
@@ -246,7 +245,7 @@ export default async function CategoryPage({
   const totalPages = Math.ceil(total / limit);
 
   // Build pagination link tags (next / prev) after totalPages is known
-  const paginationLinks = [] as JSX.Element[];
+  const paginationLinks: React.ReactNode[] = [];
   if (page > 1) {
     paginationLinks.push(
       <link

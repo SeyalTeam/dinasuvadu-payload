@@ -12,6 +12,7 @@ import { Users } from './collections/Users'
 import { Tags } from './collections/Tags'
 import { Footer } from './Footer/config'
 import { Header } from './Header/config'
+import { HomepageSettings } from './globals/HomepageSettings'
 import { plugins } from './plugins'
 import { defaultLexical } from '@/fields/defaultLexical'
 import { s3Storage } from '@payloadcms/storage-s3'
@@ -84,7 +85,7 @@ export default buildConfig({
   collections,
   cors: allowedOrigins,
   csrf: allowedOrigins,
-  globals: [Header, Footer],
+  globals: [Header, Footer, HomepageSettings],
   plugins: [
     ...plugins,
     s3Storage({

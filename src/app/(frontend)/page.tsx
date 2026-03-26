@@ -190,42 +190,52 @@ function getImageUrl(url: string | undefined): string | null {
 }
 
 export default async function Home() {
-  const allCategories = await fetchCategories();
-  const categories = allCategories.filter((category) => {
-    if (!category.parent) return true;
-    const parent = typeof category.parent === "string" ? null : category.parent;
-    if (parent && parent.slug === "news") return true;
-    return false;
-  });
+  const payload = await getPayload({ config });
+  const homepageSettings = await payload.findGlobal({
+    slug: 'homepage-settings',
+    depth: 2,
+  }) as { categories?: (string | Category)[] };
+
+  let sortedCategories: Category[] = [];
+
+  if (homepageSettings.categories && homepageSettings.categories.length > 0) {
+    // Use the explicitly ordered categories from the CMS
+    sortedCategories = homepageSettings.categories
+      .map((c) => (typeof c === "string" ? null : c))
+      .filter(Boolean) as Category[];
+  } else {
+    // Fallback if the CMS global is empty
+    const allCategories = await fetchCategories();
+    const categories = allCategories.filter((category) => {
+      if (!category.parent) return true;
+      const parent = typeof category.parent === "string" ? null : category.parent;
+      if (parent && parent.slug === "news") return true;
+      return false;
+    });
+
+    const categoryOrder: { [key: string]: number } = {
+      செய்திகள்: 0,
+      தமிழ்நாடு: 1,
+      இந்தியா: 2,
+      உலகம்: 3,
+    };
+
+    sortedCategories = [...categories].sort((a, b) => {
+      const orderA = categoryOrder[a.title] ?? 999;
+      const orderB = categoryOrder[b.title] ?? 999;
+      if (orderA !== 999 && orderB !== 999) return orderA - orderB;
+      if (orderA !== 999) return -1;
+      if (orderB !== 999) return 1;
+      return categories.indexOf(b) - categories.indexOf(a);
+    });
+  }
+
   const latestPosts = await fetchLatestPosts();
 
   const featuredPost = latestPosts.length > 0 ? latestPosts[0] : null;
   const smallerPosts = latestPosts.length > 1 ? latestPosts.slice(1, 4) : [];
   const additionalPosts =
     latestPosts.length > 4 ? latestPosts.slice(4, 34) : [];
-
-  const categoryOrder: { [key: string]: number } = {
-    செய்திகள்: 0,
-    தமிழ்நாடு: 1,
-    இந்தியா: 2,
-    உலகம்: 3,
-  };
-
-  const sortedCategories = [...categories].sort((a, b) => {
-    const orderA = categoryOrder[a.title] ?? 999;
-    const orderB = categoryOrder[b.title] ?? 999;
-
-    if (orderA !== 999 && orderB !== 999) {
-      return orderA - orderB;
-    }
-    if (orderA !== 999) {
-      return -1;
-    }
-    if (orderB !== 999) {
-      return 1;
-    }
-    return categories.indexOf(b) - categories.indexOf(a);
-  });
 
   console.log(
     "Sorted categories:",

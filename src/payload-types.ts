@@ -105,10 +105,12 @@ export interface Config {
   globals: {
     header: Header;
     footer: Footer;
+    'homepage-settings': HomepageSetting;
   };
   globalsSelect: {
     header: HeaderSelect<false> | HeaderSelect<true>;
     footer: FooterSelect<false> | FooterSelect<true>;
+    'homepage-settings': HomepageSettingsSelect<false> | HomepageSettingsSelect<true>;
   };
   locale: null;
   user: User & {
@@ -1635,6 +1637,21 @@ export interface Footer {
   createdAt?: string | null;
 }
 /**
+ * Control which categories appear on the homepage and their exact order.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "homepage-settings".
+ */
+export interface HomepageSetting {
+  id: string;
+  /**
+   * Select and drag to order the categories you want to display on the homepage.
+   */
+  categories?: (string | Category)[] | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "header_select".
  */
@@ -1676,6 +1693,16 @@ export interface FooterSelect<T extends boolean = true> {
             };
         id?: T;
       };
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "homepage-settings_select".
+ */
+export interface HomepageSettingsSelect<T extends boolean = true> {
+  categories?: T;
   updatedAt?: T;
   createdAt?: T;
   globalType?: T;
