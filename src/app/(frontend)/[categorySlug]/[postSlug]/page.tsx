@@ -1,5 +1,6 @@
 export const revalidate = 60; // Revalidate every 60 seconds
 export const dynamicParams = true; // Enable on-demand rendering for non-pre-rendered posts
+import type { Metadata } from "next";
 import axios from "axios";
 import Link from "next/link";
 // import { Space } from "antd";
@@ -139,12 +140,18 @@ function extractPlainTextFromRichText(content: Post["content"]): string {
 async function fetchCategoryBySlug(slug: string): Promise<Category | null> {
   try {
     const payload = await getPayload({ config });
+    const decoded = decodeURIComponent(slug);
+    const encoded = encodeURIComponent(decoded);
     const res = await payload.find({
       collection: "categories",
       where: {
-        slug: {
-          equals: slug,
-        },
+        or: [
+          { slug: { equals: slug } },
+          { slug: { equals: decoded } },
+          { slug: { equals: encoded } },
+          { slug: { equals: encoded.toLowerCase() } },
+          { slug: { equals: encoded.toUpperCase() } },
+        ],
       },
       depth: 2,
     });
@@ -183,12 +190,18 @@ async function fetchParentCategory(
 async function fetchPost(slug: string): Promise<Post | null> {
   try {
     const payload = await getPayload({ config });
+    const decoded = decodeURIComponent(slug);
+    const encoded = encodeURIComponent(decoded);
     const response = await payload.find({
       collection: "posts",
       where: {
-        slug: {
-          equals: slug,
-        },
+        or: [
+          { slug: { equals: slug } },
+          { slug: { equals: decoded } },
+          { slug: { equals: encoded } },
+          { slug: { equals: encoded.toLowerCase() } },
+          { slug: { equals: encoded.toUpperCase() } },
+        ],
       },
       depth: 3,
     });
@@ -207,9 +220,19 @@ async function fetchPostsByCategory(
 ): Promise<{ posts: Post[]; total: number }> {
   try {
     const payload = await getPayload({ config });
+    const decoded = decodeURIComponent(categorySlug);
+    const encoded = encodeURIComponent(decoded);
     const categoryRes = await payload.find({
       collection: "categories",
-      where: { slug: { equals: categorySlug } },
+      where: {
+        or: [
+          { slug: { equals: categorySlug } },
+          { slug: { equals: decoded } },
+          { slug: { equals: encoded } },
+          { slug: { equals: encoded.toLowerCase() } },
+          { slug: { equals: encoded.toUpperCase() } },
+        ],
+      },
       depth: 0,
     });
     const category = categoryRes.docs[0] || null;
@@ -284,6 +307,55 @@ async function fetchCategoryById(
     );
     return null;
   }
+}
+
+// Generate dynamic metadata for SEO
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ categorySlug: string; postSlug: string }>;
+}): Promise<Metadata> {
+  const { categorySlug, postSlug } = await params;
+
+  // Try finding post first
+  const post = await fetchPost(postSlug);
+  if (post) {
+    const title = post.title;
+    const description = post.meta?.description || extractPlainTextFromRichText(post.content).slice(0, 160);
+    const imageUrl = getImageUrl(post.heroImage);
+
+    return {
+      title: `${title} | Dinasuvadu`,
+      description: description,
+      openGraph: {
+        title: title,
+        description: description,
+        images: imageUrl ? [{ url: imageUrl }] : [],
+        type: "article",
+      },
+      twitter: {
+        card: "summary_large_image",
+        title: title,
+        description: description,
+        images: imageUrl ? [imageUrl] : [],
+      },
+    };
+  }
+
+  // If not post, check if it's a category
+  const category = await fetchCategoryBySlug(postSlug);
+  if (category) {
+    const title = `${category.title || "Category"} News`;
+    const description = `Read the latest ${category.title || "category"} news and updates on Dinasuvadu.`;
+    return {
+      title: `${title} | Dinasuvadu`,
+      description: description,
+    };
+  }
+
+  return {
+    title: "Dinasuvadu - Latest Tamil News",
+  };
 }
 
 export default async function PostOrSubCategoryPage({

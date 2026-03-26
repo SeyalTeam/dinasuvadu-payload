@@ -1,5 +1,6 @@
 export const revalidate = 60;
 export const dynamicParams = true;
+import type { Metadata } from "next";
 import axios from "axios";
 import Link from "next/link";
 // import { Space } from "antd";
@@ -56,12 +57,18 @@ const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3001";
 async function fetchCategoryBySlug(slug: string): Promise<Category | null> {
   try {
     const payload = await getPayload({ config });
+    const decoded = decodeURIComponent(slug);
+    const encoded = encodeURIComponent(decoded);
     const res = await payload.find({
       collection: "categories",
       where: {
-        slug: {
-          equals: slug,
-        },
+        or: [
+          { slug: { equals: slug } },
+          { slug: { equals: decoded } },
+          { slug: { equals: encoded } },
+          { slug: { equals: encoded.toLowerCase() } },
+          { slug: { equals: encoded.toUpperCase() } },
+        ],
       },
       depth: 2,
     });
@@ -114,6 +121,8 @@ async function fetchPostsByCategory(
     const childIds = childrenRes.docs.map((c: any) => c.id);
     const allCategoryIds = [categoryId, ...childIds];
 
+    const decoded = decodeURIComponent(categorySlug);
+    const encoded = encodeURIComponent(decoded);
     const response = await payload.find({
       collection: "posts",
       limit,
@@ -162,6 +171,33 @@ async function fetchCategoryById(
 function getImageUrl(url: string | undefined): string | null {
   if (!url) return null;
   return url.startsWith("http") ? url : `${apiUrl}${url}`;
+}
+
+// Generate dynamic metadata for SEO
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ categorySlug: string }>;
+}): Promise<Metadata> {
+  const { categorySlug } = await params;
+
+  const category = await fetchCategoryBySlug(categorySlug);
+  if (category) {
+    const title = `${category.title || "Category"} News`;
+    const description = `Follow the latest ${category.title || "category"} news, updates, and analysis on Dinasuvadu.`;
+    return {
+      title: `${title} | Dinasuvadu`,
+      description: description,
+      openGraph: {
+        title: `${title} | Dinasuvadu`,
+        description: description,
+      },
+    };
+  }
+
+  return {
+    title: "Category News | Dinasuvadu",
+  };
 }
 
 export default async function CategoryPage({
