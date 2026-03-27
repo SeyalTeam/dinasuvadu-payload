@@ -53,7 +53,7 @@ a {
 }
 
 .site {
-  max-width: 1000px;
+  max-width: 1140px;
   margin: auto;
 }
 
@@ -513,7 +513,7 @@ a:hover {
 
 .header-two {
   padding-block: 30px;
-  max-width: 1000px;
+  max-width: 1140px;
   margin: 0 auto;
   border-bottom: 1px solid #ebebeb;
 }
@@ -526,10 +526,12 @@ a:hover {
   background-color: #fff;
   z-index: 1000;
   border-bottom: 2px solid #e8e8e8;
-  max-width: 1000px;
+  max-width: 1140px;
   margin: 0 auto;
   width: 100%;
   box-sizing: border-box;
+  overflow: visible; /* Allowing dropdown menu visibility */
+  white-space: normal; /* Allowing standard flex behavior */
 }
 
 .header-one {
@@ -566,10 +568,33 @@ a:hover {
   display: flex;
   gap: 20px;
   list-style: none;
-  padding: 0 20px;
   margin: 0;
-  height: 100%;
+  padding: 0;
   align-items: center;
+}
+
+@media screen and (max-width: 900px) {
+  .header-two {
+    padding-block: 10px;
+  }
+  
+  .drawer-menu {
+    overflow-x: auto;
+    white-space: nowrap;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+    gap: 15px;
+    padding: 0 15px !important;
+    position: relative;
+  }
+  
+  .drawer-menu::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .drawer-menu li {
+    flex-shrink: 0;
+  }
 }
 
 .drawer-menu li {
@@ -597,23 +622,29 @@ a:hover {
 /* Dropdown Menu Styles */
 .dropdown-menu {
   position: absolute;
-  top: 100%;
+  top: calc(100% - 2px);
   left: 0;
   background: #ffffff;
-  min-width: 180px;
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
-  border-radius: 4px;
-  padding: 10px 0;
+  min-width: 200px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12), 0 5px 10px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 8px;
+  padding: 8px 0;
   list-style: none;
   margin: 0;
   opacity: 0;
   visibility: hidden;
-  transform: translateY(10px);
-  transition: all 0.3s ease;
+  transform: translateY(8px);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 1000;
 }
 
-.drawer-menu li:hover .dropdown-menu {
+.more-item .dropdown-menu {
+  left: auto;
+  right: 0;
+}
+
+.drawer-menu > li:hover > .dropdown-menu {
   opacity: 1;
   visibility: visible;
   transform: translateY(0);
@@ -628,19 +659,50 @@ a:hover {
 
 .dropdown-menu li a {
   display: block;
-  padding: 8px 20px;
-  font-size: 14px;
+  padding: 10px 24px;
+  font-size: 15px;
   color: #333;
   width: 100%;
   font-weight: 500;
+  font-family: "Mukta Malar";
+  transition: all 0.2s;
+  border-bottom: none;
 }
 
 .dropdown-menu li a:hover {
-  background-color: #f3f4f6;
-  color: #2563eb;
+  background-color: #f8fafc;
+  color: #194277;
+  padding-left: 28px; /* Subtle movement on hover */
 }
 
-.drawer-menu li.active a {
+/* Submenu inside dropdown (for 'More' menu) - dynamic direction */
+.has-dropdown-submenu {
+  position: relative;
+}
+
+.dropdown-submenu-dynamic {
+  position: absolute;
+  top: -8px;
+  background: #ffffff;
+  min-width: 200px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 8px;
+  padding: 8px 0;
+  list-style: none;
+  margin: 0;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s ease;
+  z-index: 1002;
+}
+
+.has-dropdown-submenu:hover .dropdown-submenu-dynamic {
+  opacity: 1;
+  visibility: visible;
+}
+
+.dropdown-menu li.active a {
   color: #2563eb;
   text-decoration: underline !important;
   text-decoration-color: #194277 !important;
@@ -668,7 +730,7 @@ a:hover {
   background: white;
   display: flex;
   gap: 8px;
-  max-width: 1000px;
+  max-width: 1140px;
   margin: 0 auto;
   opacity: 0;
   transform: translateY(-10px);
@@ -719,15 +781,24 @@ a:hover {
 .mobile-drawer {
   position: fixed;
   top: 0;
-  height: 100%;
-  background-color: #fff;
-  padding: 40px 40px 40px;
-  width: 350px;
+  left: -320px;
+  width: 320px;
+  max-width: 85%;
+  height: 100vh;
+  background: white;
   z-index: 2000;
-  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
-  transform: translateX(-100%);
-  transition: transform 0.3s ease-in-out;
-  will-change: transform;
+  transition: left 0.3s ease-in-out;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 5px 0 15px rgba(0, 0, 0, 0.1);
+  overflow-y: auto;
+  scrollbar-width: none; /* Hide scrollbar for Firefox */
+  -ms-overflow-style: none; /* Hide scrollbar for IE/Edge */
+}
+
+.mobile-drawer::-webkit-scrollbar {
+  display: none; /* Hide scrollbar for Chrome/Safari */
 }
 
 .mob-logo {
@@ -735,7 +806,19 @@ a:hover {
   height: auto;
 }
 
+.nav-wrapper {
+  overflow: visible;
+  white-space: normal;
+}
+
+.drawer-menu {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  overflow: visible !important;
+}
+
 .mobile-drawer.open {
+  left: 0;
   transform: translateX(0);
 }
 
@@ -743,16 +826,56 @@ a:hover {
   position: fixed;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.3);
-  z-index: 1999;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
   opacity: 0;
+  pointer-events: none;
   transition: opacity 0.3s ease-in-out;
 }
 
 .drawer-backdrop.open {
   opacity: 1;
+  pointer-events: auto;
+}
+
+.drawer-accordion li a {
+  font-family: "Mukta Malar", sans-serif;
+  font-weight: 700;
+  font-size: 18px;
+  color: #333;
+  text-decoration: none;
+  letter-spacing: -0.01em;
+}
+
+.drawer-accordion {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.accordion-item .accordion-trigger {
+  transition: background 0.2s;
+}
+
+.accordion-item .accordion-trigger:hover {
+  background: #fdfdfd;
+}
+
+.accordion-content {
+  transition: max-height 0.3s cubic-bezier(0, 1, 0, 1);
+}
+
+.accordion-content.open {
+  max-height: 1000px !important;
+  transition: max-height 0.3s ease-in;
+}
+
+.drawer-footer {
+  border-top: 1px dashed #eee;
+  padding-top: 20px;
+  margin-top: auto;
 }
 
 .close-btn {
@@ -785,12 +908,39 @@ a:hover {
   scrollbar-width: none;
 }
 
-.drawer-menu-vertical li a {
+.mobile-scroll-nav {
+  display: flex;
+  overflow-x: auto;
+  gap: 20px;
+  list-style: none;
+  width: 100%;
+  padding: 15px 0;
+  margin: 0;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.mobile-scroll-nav::-webkit-scrollbar {
+  display: none;
+}
+
+.mobile-scroll-nav li {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.mobile-scroll-nav li a {
   text-decoration: none;
   font-weight: 600;
   color: #000000;
   font-family: "Mukta Malar";
   font-size: 14px;
+}
+
+.mobile-scroll-nav li.active a {
+  color: #2563eb;
+  border-bottom: 2px solid #2563eb;
+  padding-bottom: 4px;
 }
 
 .search-btn svg {
@@ -932,14 +1082,14 @@ a:hover {
     display: none;
   }
   .header-two {
-    overflow-x: scroll;
+    overflow-x: auto;
+    scrollbar-width: none;
   }
   .header-two::-webkit-scrollbar {
     display: none;
   }
-  .header-two {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
+  .drawer-menu {
+    overflow-x: auto !important;
   }
 }
 

@@ -14,18 +14,38 @@ type Category = {
   parent?: { id: string; slug: string; title: string } | string;
 };
 
-async function fetchCategories(): Promise<Category[]> {
+async function fetchCategories(): Promise<{ all: Category[]; homepage: Category[] }> {
   try {
     const payload = await getPayload({ config });
-    const res = await payload.find({
+    
+    // Fetch all categories for sub-menu resolution
+    const allRes = await payload.find({
       collection: "categories",
       depth: 2,
       limit: 100,
     });
-    return (res.docs as unknown as Category[]) || [];
+    const allCategories = (allRes.docs as unknown as Category[]) || [];
+
+    // Fetch homepage settings for ordered top-level categories
+    const homepageSettings = await payload.findGlobal({
+      slug: 'homepage-settings',
+      depth: 2,
+    }) as { categories?: (string | Category)[] };
+
+    let homepageCategories: Category[] = [];
+    if (homepageSettings.categories && homepageSettings.categories.length > 0) {
+      homepageCategories = homepageSettings.categories
+        .map((c) => (typeof c === "string" ? null : c))
+        .filter(Boolean) as Category[];
+    }
+
+    return {
+      all: allCategories,
+      homepage: homepageCategories,
+    };
   } catch (err) {
     console.error("Error fetching categories for layout:", err);
-    return [];
+    return { all: [], homepage: [] };
   }
 }
 
@@ -39,12 +59,12 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const categories = await fetchCategories();
+  const { all, homepage } = await fetchCategories();
 
   return (
     <html lang="en" suppressHydrationWarning>
       <body suppressHydrationWarning>
-        <Header categories={categories} />
+        <Header categories={all} homepageCategories={homepage} />
         {children}
         <Footer />
         {/* Social Media Embed Scripts */}
