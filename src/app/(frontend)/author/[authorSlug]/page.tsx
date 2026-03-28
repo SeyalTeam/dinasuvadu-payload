@@ -7,6 +7,22 @@ import "antd/dist/reset.css"; // Import Ant Design CSS
 import ShareButton from "@/components/ShareButton";
 import { getPayload } from "payload";
 import config from "@/payload.config";
+import type { Metadata } from "next";
+import { buildMetadata, buildPersonLd } from "@/lib/seo";
+
+// Generate dynamic metadata for author pages
+export async function generateMetadata({ params }: { params: Promise<{ authorSlug: string }> }): Promise<Metadata> {
+  const { authorSlug } = await params;
+  const author = await fetchAuthorBySlug(authorSlug);
+  if (!author) {
+    return { title: "Author not found – Dinasuvadu" };
+  }
+  return buildMetadata({
+    title: `${author.name} | Author at Dinasuvadu`,
+    description: author.bio || `Articles written by ${author.name} on Dinasuvadu.`,
+    canonical: `https://www.dinasuvadu.com/author/${authorSlug}`,
+  });
+}
 
 type Author = {
   id: string;
@@ -167,6 +183,17 @@ export default async function AuthorPage({
   const totalPages = Math.ceil(total / limit);
 
   return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: buildPersonLd({
+            name: author.name,
+            description: author.bio,
+            url: `https://www.dinasuvadu.com/author/${authorSlug}`,
+          }),
+        }}
+      />
     <div className="site" style={{ minHeight: "100vh", padding: "20px" }}>
       <div className="site-main" style={{ marginBottom: "40px" }}>
         <h1 className="category-title">
@@ -289,6 +316,7 @@ export default async function AuthorPage({
         </>
       )}
     </div>
+    </>
   );
 }
 

@@ -88,8 +88,44 @@ export function buildArticleLd({
         name: a.name,
       })) || [],
     datePublished: post.publishedAt,
+    publisher: {
+      "@type": "Organization",
+      "name": "Dinasuvadu",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.dinasuvadu.com/logo.png"
+      }
+    },
     mainEntityOfPage: { "@type": "WebPage", "@id": url },
     url,
+  };
+  return JSON.stringify(ld);
+}
+
+/**
+ * Build JSON‑LD for a Person (Author).
+ */
+export function buildPersonLd({
+  name,
+  description,
+  imageUrl,
+  url,
+  sameAs = [],
+}: {
+  name: string;
+  description?: string;
+  imageUrl?: string;
+  url: string;
+  sameAs?: string[];
+}): string {
+  const ld = {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    name,
+    description,
+    image: imageUrl,
+    url,
+    sameAs,
   };
   return JSON.stringify(ld);
 }
