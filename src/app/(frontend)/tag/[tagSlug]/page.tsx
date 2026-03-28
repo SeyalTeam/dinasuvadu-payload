@@ -1,15 +1,10 @@
 export const revalidate = 60;
 export const dynamicParams = true;
-import axios from "axios";
 import React from "react";
 import type { Metadata } from "next";
-
 import { buildMetadata, buildBreadcrumbLd } from "@/lib/seo";
 import Link from "next/link";
-// import { Space } from "antd";
-// import { ClockCircleOutlined } from "@ant-design/icons";
-// import Text from "antd/es/typography/Text";
-import "antd/dist/reset.css"; // Import Ant Design CSS
+import "antd/dist/reset.css";
 import ShareButton from "@/components/ShareButton";
 import { getPayload } from "payload";
 import config from "@/payload.config";
@@ -40,30 +35,21 @@ type Post = {
     description?: string;
   };
   tags?: Tag[];
-  layout?: {
-    blockType: string;
-    media?: {
-      url: string;
-      alt?: string;
-    };
-  }[];
   categories?: Category[];
 };
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3001";
 
-// Helper function to handle query parameters (string | string[] | undefined)
 const getPageNumber = (pageParam: string | string[] | undefined): number => {
   if (Array.isArray(pageParam)) {
-    return parseInt(pageParam[0] || "1", 10); // Take the first value if it's an array
+    return parseInt(pageParam[0] || "1", 10);
   }
   return parseInt(pageParam || "1", 10);
 };
 
-// Helper function to get the image URL with proper base URL
-function getImageUrl(url: string | undefined): string | null {
-  if (!url) return null;
+function getImageUrl(url: string | undefined): string {
+  if (!url) return "/placeholder-image.jpg";
   return url.startsWith("http") ? url : `${apiUrl}${url}`;
 }
 
@@ -122,7 +108,7 @@ async function fetchPostsByTag(
     });
     return {
       posts: (res.docs as unknown as Post[]) || [],
-      total: res.totalDocs,
+      total: res.totalDocs || 0,
     };
   } catch (err) {
     console.error(`Error fetching posts for tag ID ${tagId}:`, err);
@@ -140,7 +126,7 @@ async function fetchParentCategory(
       id: parentId,
       depth: 1,
     });
-    const parentCategory = (res as unknown as Category) || null;
+    const parentCategory = (res as any) || null;
     if (!parentCategory) return null;
     return {
       slug: parentCategory.slug || "uncategorized",
@@ -182,29 +168,14 @@ export default async function TagPage({
   const tag = await fetchTagBySlug(tagSlug);
 
   if (!tag) {
-    return <div className="site">Tag not found</div>;
+    return <div className="site" style={{ padding: '20px' }}>Tag not found</div>;
   }
 
   const { posts, total } = await fetchPostsByTag(tag.id, page, limit);
   const totalPages = Math.ceil(total / limit);
 
-  // Generate pagination link tags for SEO
-  const paginationLinks: React.JSX.Element[] = [];
-  if (page > 1) {
-    paginationLinks.push(
-      <link key="prev" rel="prev" href={`/tag/${tagSlug}?page=${page - 1}`} />
-    );
-  }
-  if (page < totalPages) {
-    paginationLinks.push(
-      <link key="next" rel="next" href={`/tag/${tagSlug}?page=${page + 1}`} />
-    );
-  }
-
   return (
     <>
-
-        {paginationLinks}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -215,49 +186,40 @@ export default async function TagPage({
           }}
         />
 
-      <div className="site">
-        <div className="site-main">
-        <h1 className="category-title">Tag: {tag.name}</h1>{" "}
-        {/* Changed tag.title to tag.name */}
-      </div>
+      <div className="site" style={{ minHeight: "100vh", padding: "20px" }}>
+        <div className="site-main" style={{ marginBottom: "40px" }}>
+          <h1 className="category-title">
+            Tag: {tag.name}
+          </h1>
+        </div>
 
-      {posts.length === 0 ? (
-        <p className="text-gray-500">No posts found for this tag.</p>
-      ) : (
-        <>
-          <div className="category-grid">
-            {await Promise.all(
-              posts.map(async (post) => {
-                // const mediaBlock = post.layout?.find(
-                //   (block) => block.blockType === "mediaBlock"
-                // );
-                const imageUrl = getImageUrl(post.heroImage?.url);
-                const imageAlt = post.heroImage?.alt || post.title;
+        {posts.length === 0 ? (
+          <p className="text-gray-500 text-center">No posts found for this tag.</p>
+        ) : (
+          <>
+            <div className="category-grid">
+              {await Promise.all(
+                posts.map(async (post) => {
+                  const imageUrl = getImageUrl(post.heroImage?.url);
+                  const imageAlt = post.heroImage?.alt || post.title;
 
-                const category = post.categories?.[0];
-                const categorySlug = category?.slug || "uncategorized";
-                // const categoryTitle = category?.title || "Uncategorized";
+                  const category = post.categories?.[0];
+                  const categorySlug = category?.slug || "uncategorized";
 
-                let postUrl = `/${categorySlug}/${post.slug}`; // Default for top-level category
-                if (category?.parent) {
-                  const parent =
-                    typeof category.parent === "string"
+                  let postUrl = `/${categorySlug}/${post.slug}`;
+                  if (category?.parent) {
+                    const parentData = typeof category.parent === 'string' 
                       ? await fetchParentCategory(category.parent)
                       : category.parent;
-                  if (parent) {
-                    postUrl = `/${parent.slug}/${categorySlug}/${post.slug}`; // For subcategory
+                    if (parentData) {
+                      postUrl = `/${(parentData as any).slug}/${categorySlug}/${post.slug}`;
+                    }
                   }
-                }
 
-                return (
-                  <article
-                    key={post.id}
-                    className="flex flex-col md:flex-row gap-4 border-b pb-6 hover:bg-gray-50 transition"
-                  >
-                    <div className="post-item-category api-title bor-1">
-                      <div className="flex-1 site-main">
-                        {/* Wrap only the title and description in the Link */}
-                        <Link href={postUrl} className="flex flex-col h-full">
+                  return (
+                    <article key={post.id} className="post-item-category">
+                      <div className="flex-1">
+                        <Link href={postUrl}>
                           <h3 className="post-title-1">{post.title}</h3>
                           {post.meta?.description && (
                             <p className="post-description">
@@ -265,14 +227,15 @@ export default async function TagPage({
                             </p>
                           )}
                         </Link>
-                        <div className="post-first-tag">
-                          {Array.isArray(post.tags) && post.tags.length > 0 && post.tags[0] && (
-                            <Link href={`/tag/${post.tags[0].slug}`}>
-                              <span className="text-blue-600 hover:underline">
-                                {post.tags[0].name}
-                              </span>
-                            </Link>
-                          )}
+                        <div className="post-meta-footer">
+                          <div className="post-meta-left">
+                            {Array.isArray(post.tags) && post.tags.length > 0 && post.tags[0] && (
+                              <Link href={`/tag/${post.tags[0].slug}`} className="category-tag-link">
+                                #{post.tags[0].name}
+                              </Link>
+                            )}
+                            <span className="read-time">5 Min Read</span>
+                          </div>
                           <ShareButton
                             url={`${baseUrl}${postUrl}`}
                             title={post.title}
@@ -281,114 +244,80 @@ export default async function TagPage({
                         </div>
                       </div>
                       {/* Image */}
-                      {imageUrl ? (
-                        <Link
-                          href={postUrl}
-                          className="relative w-full h-48 overflow-hidden rounded-t-lg site-main"
-                        >
+                      {imageUrl && imageUrl !== "/placeholder-image.jpg" ? (
+                        <Link href={postUrl}>
                           <img
                             src={imageUrl}
                             alt={imageAlt}
-                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                           />
                         </Link>
                       ) : (
-                        <div className="w-full h-48 bg-gray-100 rounded-t-lg flex items-center justify-center">
-                          <span className="text-gray-400 text-sm">
-                            No Image
-                          </span>
+                        <div className="bg-gray-100 rounded-lg flex items-center justify-center shrink-0" style={{ width: '280px', height: '180px' }}>
+                          <span className="text-gray-400 text-sm">No Image</span>
                         </div>
                       )}
-                    </div>
-                  </article>
-                );
-              })
-            )}
-          </div>
-
-          {/* Pagination Controls */}
-          {totalPages > 1 && (
-            <div className="flex justify-center space-x-2 mt-8 web-stories-pagination">
-              {page > 1 && (
-                <Link
-                  href={`/tag/${tagSlug}?page=${page - 1}`}
-                  className="pagination-link"
-                >
-                  Prev
-                </Link>
-              )}
-
-              {/* First Page */}
-              <Link
-                href={`/tag/${tagSlug}?page=1`}
-                className={`pagination-link ${page === 1 ? "active" : ""}`}
-              >
-                1
-              </Link>
-
-              {/* Ellipsis after first page if current page is greater than 2 */}
-              {page > 2 && <span className="pagination-ellipsis">…</span>}
-
-              {/* Current Page (only if it's not the first or last page) */}
-              {page !== 1 && page !== totalPages && (
-                <Link
-                  href={`/tag/${tagSlug}?page=${page}`}
-                  className="pagination-link active"
-                >
-                  {page}
-                </Link>
-              )}
-
-              {/* Ellipsis before last page if current page is less than totalPages - 1 */}
-              {page < totalPages - 1 && (
-                <span className="pagination-ellipsis">…</span>
-              )}
-
-              {/* Last Page (only if totalPages > 1) */}
-              {totalPages > 1 && (
-                <Link
-                  href={`/tag/${tagSlug}?page=${totalPages}`}
-                  className={`pagination-link ${
-                    page === totalPages ? "active" : ""
-                  }`}
-                >
-                  {totalPages}
-                </Link>
-              )}
-
-              {page < totalPages && (
-                <Link
-                  href={`/tag/${tagSlug}?page=${page + 1}`}
-                  className="pagination-link"
-                >
-                  Next
-                </Link>
+                    </article>
+                  );
+                })
               )}
             </div>
-          )}
-        </>
-      )}
-    </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="web-stories-pagination">
+                {page > 1 && (
+                  <Link
+                    href={`/tag/${tagSlug}?page=${page - 1}`}
+                    className="pagination-link"
+                  >
+                    Prev
+                  </Link>
+                )}
+                {[...Array(totalPages)].map((_, i) => {
+                  const p = i + 1;
+                  if (p === 1 || p === totalPages || (p >= page - 2 && p <= page + 2)) {
+                    return (
+                      <Link
+                        key={p}
+                        href={`/tag/${tagSlug}?page=${p}`}
+                        className={`pagination-link ${page === p ? "active" : ""}`}
+                      >
+                        {p}
+                      </Link>
+                    );
+                  }
+                  if (p === 2 || p === totalPages - 1) {
+                    return <span key={p} className="pagination-ellipsis">…</span>;
+                  }
+                  return null;
+                })}
+                {page < totalPages && (
+                  <Link
+                    href={`/tag/${tagSlug}?page=${page + 1}`}
+                    className="pagination-link"
+                  >
+                    Next
+                  </Link>
+                )}
+              </div>
+            )}
+          </>
+        )}
+      </div>
     </>
   );
 }
 
 export async function generateStaticParams() {
-  const tags = await fetchTags();
-  const validTags = tags.filter((tag: Tag) => {
-    if (!tag.slug || typeof tag.slug !== "string") {
-      console.warn(`Skipping tag with invalid slug:`, tag);
-      return false;
-    }
-    return true;
-  });
-
-  const params = validTags.map((tag: Tag) => ({
-    tagSlug: tag.slug,
-  }));
-  console.log(
-    `Generated static params for ${params.length} tags:`,
-    JSON.stringify(params, null, 2)
-  );
-  return params;
+  try {
+    const tags = await fetchTags();
+    return tags
+      .filter(tag => tag.slug)
+      .map((tag: Tag) => ({
+        tagSlug: tag.slug,
+      }));
+  } catch (err) {
+    console.error("Error generating static params for tags:", err);
+    return [];
+  }
 }

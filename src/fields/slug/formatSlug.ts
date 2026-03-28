@@ -1,14 +1,16 @@
 import type { FieldHook } from 'payload'
 
-export const formatSlug = (val: string): string =>
-  val
+export const formatSlug = (val: string): string => {
+  if (!val) return ''
+  return val
     .replace(/ /g, '-')
-    .replace(/[^\w-]+/g, '-')
+    // Use Unicode aware word boundaries to support non-English characters
+    .replace(/[^\p{L}\p{N}-]+/gu, '-')
     .replace(/-+/g, '-')
     .replace(/^-+/, '')
     .replace(/-+$/, '')
     .toLowerCase()
-
+}
 export const formatSlugHook =
   (fallback: string): FieldHook =>
   ({ data, operation, value }) => {

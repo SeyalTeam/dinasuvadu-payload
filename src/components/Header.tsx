@@ -129,17 +129,19 @@ export default function Header({ categories, homepageCategories }: HeaderProps) 
         testDiv.style.position = 'absolute';
         testDiv.style.whiteSpace = 'nowrap';
         // USE WEIGHT 900 to match the UI
-        testDiv.style.font = '900 16px "Mukta Malar", sans-serif'; 
+        testDiv.style.font = '800 13.5px "Mukta Malar", sans-serif'; 
         testDiv.innerText = parentRef.title;
         document.body.appendChild(testDiv);
         
-        // icon (approx 18px) + gap (5px) + padding/margin (approx 10px) = +33px
-        const itemWidth = testDiv.offsetWidth + 33; 
+        // icon (22px) + gap (5px) + padding (10px) + margin = 45px base
+        // plus chevron (14px) if applicable
+        const hasSub = getSubcategories(parentRef.id).length > 0;
+        const itemWidth = testDiv.offsetWidth + 45 + (hasSub ? 15 : 0); 
         document.body.removeChild(testDiv);
         
         const isLast = i === sortedParents.length - 1;
-        // More buffer (icon + padding)
-        const moreBuffer = isLast ? 0 : 65;
+        // Buffer for the "More" icon + container padding
+        const moreBuffer = isLast ? 0 : 85;
         
         if (currentWidth + itemWidth + moreBuffer > availableWidth) {
            break;
@@ -264,6 +266,11 @@ export default function Header({ categories, homepageCategories }: HeaderProps) 
     return <Icon size={18} style={{ color }} strokeWidth={2.5} />;
   };
 
+  const getCategoryHref = (c: Category) => {
+    const parentSlug = c.parent && typeof c.parent !== 'string' ? c.parent.slug : null;
+    return parentSlug ? `/${parentSlug}/${c.slug}` : `/${c.slug}`;
+  };
+
   return (
     <>
       <header className="site site-main">
@@ -333,15 +340,15 @@ export default function Header({ categories, homepageCategories }: HeaderProps) 
                       className={`${selectedKey === parent.id ? "active" : ""} ${hasChildren ? "has-dropdown" : ""}`}
                     >
                       <Link 
-                        href={`/${parent.slug}`}
+                        href={getCategoryHref(parent)}
                         style={{ 
                           display: "flex", 
                           alignItems: "center", 
                           gap: "5px",
-                          fontWeight: "900",
+                          fontWeight: "800",
                           fontFamily: "'Mukta Malar', sans-serif",
-                          fontSize: "16px",
-                          letterSpacing: "-0.4px",
+                          fontSize: "13.5px",
+                          letterSpacing: "-0.2px",
                           textDecoration: "none",
                           color: "inherit"
                         }}
@@ -354,7 +361,7 @@ export default function Header({ categories, homepageCategories }: HeaderProps) 
                         <ul className="dropdown-menu">
                           {children.map(child => (
                             <li key={child.id}>
-                              <Link href={`/${parent.slug}/${child.slug}`}>{child.title}</Link>
+                              <Link href={getCategoryHref(child)}>{child.title}</Link>
                             </li>
                           ))}
                         </ul>
@@ -380,15 +387,15 @@ export default function Header({ categories, homepageCategories }: HeaderProps) 
                       {hiddenParents.map((parent) => (
                         <li key={parent.id} className="has-dropdown-submenu" onMouseEnter={handleSubmenuEnter}>
                           <Link 
-                            href={`/${parent.slug}`}
+                            href={getCategoryHref(parent)}
                             style={{ 
                                 display: "flex", 
                                 alignItems: "center", 
                                 gap: "8px",
                                 fontWeight: "800",
                                 fontFamily: "'Mukta Malar', sans-serif",
-                                fontSize: "15px",
-                                letterSpacing: "-0.3px"
+                                fontSize: "14px",
+                                letterSpacing: "-0.2px"
                             }}
                           >
                             {getCategoryIcon(parent.title)}
@@ -399,7 +406,7 @@ export default function Header({ categories, homepageCategories }: HeaderProps) 
                             <ul className="dropdown-submenu-dynamic">
                               {getSubcategories(parent.id).map(child => (
                                 <li key={child.id}>
-                                  <Link href={`/${parent.slug}/${child.slug}`}>{child.title}</Link>
+                                  <Link href={getCategoryHref(child)}>{child.title}</Link>
                                 </li>
                               ))}
                             </ul>
@@ -491,18 +498,18 @@ export default function Header({ categories, homepageCategories }: HeaderProps) 
                     <div style={{ display: "flex", alignItems: "center", gap: "10px", flex: 1 }}>
                       {getCategoryIcon(parent.title)}
                       <Link 
-                        href={children.length > 0 ? "#" : `/${parent.slug}`}
+                        href={children.length > 0 ? "#" : getCategoryHref(parent)}
                         onClick={(e) => {
                           if (children.length > 0) e.preventDefault();
                           else setDrawerVisible(false);
                         }}
                         style={{ 
-                          fontWeight: "900", 
+                          fontWeight: "800", 
                           color: "#333", 
                           textDecoration: "none", 
-                          fontSize: "16px", 
+                          fontSize: "14px", 
                           fontFamily: "'Mukta Malar', sans-serif",
-                          letterSpacing: "-0.4px",
+                          letterSpacing: "-0.2px",
                           display: "inline-block",
                           lineHeight: "1"
                         }}
@@ -523,9 +530,9 @@ export default function Header({ categories, homepageCategories }: HeaderProps) 
                         {children.map(child => (
                           <li key={child.id} style={{ padding: "8px 0", textAlign: "left" }}>
                             <Link 
-                              href={`/${parent.slug}/${child.slug}`} 
+                              href={getCategoryHref(child)} 
                               onClick={() => setDrawerVisible(false)}
-                              style={{ color: "#333", textDecoration: "none", fontSize: "16px", fontWeight: "600", display: "block", textAlign: "left" }}
+                              style={{ color: "#333", textDecoration: "none", fontSize: "13.5px", fontWeight: "600", display: "block", textAlign: "left" }}
                             >
                               {child.title}
                             </Link>

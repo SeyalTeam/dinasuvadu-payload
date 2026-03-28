@@ -220,6 +220,21 @@ async function fetchPost(slug: string): Promise<Post | null> {
  */
 export async function generateMetadata({ params }: { params: Promise<{ categorySlug: string; postSlug: string }> }): Promise<Metadata> {
   const { categorySlug, postSlug } = await params;
+  
+  // First, check if this is a subcategory index page
+  const possibleSubCategory = await fetchCategoryBySlug(postSlug);
+  if (possibleSubCategory && possibleSubCategory.parent) {
+    const title = `${possibleSubCategory.title || "Category"} News – Dinasuvadu`;
+    const description = `Read the latest ${possibleSubCategory.title || "category"} news and updates on Dinasuvadu.`;
+    const canonical = `https://www.dinasuvadu.com/${categorySlug}/${postSlug}`;
+    return buildMetadata({ 
+      title, 
+      description, 
+      canonical 
+    });
+  }
+
+  // Fallback to checking for a single post
   const post = await fetchPost(postSlug);
   if (!post) {
     return { title: "Post not found – Dinasuvadu" };
@@ -435,56 +450,45 @@ export default async function PostOrSubCategoryPage({
                 const imageAlt = post.heroImage?.alt || post.title;
 
                 return (
-                  <article
-                    key={post.id}
-                    className="group block bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-lg transition-all duration-300"
-                  >
-                    <div className="post-item-category api-title bor-1">
-                      <div className="flex-1 site-main">
-                        <Link
-                          href={`/${categorySlug}/${postSlug}/${post.slug}`}
-                          className="flex flex-col h-full"
-                        >
-                          <h3 className="post-title-1">{post.title}</h3>
-                          {post.meta?.description && (
-                            <p className="post-description">
-                              {post.meta.description}
-                            </p>
-                          )}
-                        </Link>
-                        <div className="post-first-tag">
-                        {Array.isArray(post.tags) && post.tags.length > 0 && post.tags[0] && (
-                          <Link href={`/tag/${post.tags[0].slug}`}>
-                            <span className="text-blue-600 hover:underline">
-                              {post.tags[0].name}
-                            </span>
-                          </Link>
+                  <article key={post.id} className="post-item-category">
+                    <div className="flex-1">
+                      <Link href={`/${categorySlug}/${postSlug}/${post.slug}`}>
+                        <h3 className="post-title-1">{post.title}</h3>
+                        {post.meta?.description && (
+                          <p className="post-description">
+                            {post.meta.description}
+                          </p>
                         )}
-                          <ShareButton
-                            url={`${baseUrl}/${categorySlug}/${postSlug}/${post.slug}`}
-                            title={post.title}
-                            description={post.meta?.description}
-                          />
+                      </Link>
+                      <div className="post-meta-footer">
+                        <div className="post-meta-left">
+                          {Array.isArray(post.tags) && post.tags.length > 0 && post.tags[0] && (
+                            <Link href={`/tag/${post.tags[0].slug}`} className="category-tag-link">
+                              #{post.tags[0].name}
+                            </Link>
+                          )}
+                          <span className="read-time">5 Min Read</span>
                         </div>
+                        <ShareButton
+                          url={`${baseUrl}/${categorySlug}/${postSlug}/${post.slug}`}
+                          title={post.title}
+                          description={post.meta?.description}
+                        />
                       </div>
-
-                      {imageUrl ? (
-                       <Link
-                          href={`/${categorySlug}/${postSlug}/${post.slug}`} className="relative w-full h-48 overflow-hidden rounded-t-lg site-main">
-                          <img
-                            src={imageUrl}
-                            alt={imageAlt}
-                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                          />
-                        </Link>
-                      ) : (
-                        <div className="w-full h-48 bg-gray-100 rounded-t-lg flex items-center justify-center">
-                          <span className="text-gray-400 text-sm">
-                            No Image
-                          </span>
-                        </div>
-                      )}
                     </div>
+                    {/* Image */}
+                    {imageUrl ? (
+                      <Link href={`/${categorySlug}/${postSlug}/${post.slug}`}>
+                        <img
+                          src={imageUrl}
+                          alt={imageAlt}
+                        />
+                      </Link>
+                    ) : (
+                      <div className="bg-gray-100 rounded-lg flex items-center justify-center shrink-0" style={{ width: '280px', height: '180px' }}>
+                        <span className="text-gray-400 text-sm">No Image</span>
+                      </div>
+                    )}
                   </article>
                 );
               })}

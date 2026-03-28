@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   const baseUrl = process.env.PAYLOAD_PUBLIC_SERVER_URL || "https://dinasuvadu.com";
-  const postsPerPage = 1000;
+  const postsPerPage = 500;
 
   try {
     const payload = await getPayload({ config });

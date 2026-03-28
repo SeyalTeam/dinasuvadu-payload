@@ -14,7 +14,7 @@ export async function GET(request: Request) {
     return new Response("Invalid page number", { status: 404 });
   }
 
-  const postsPerPage = 1000;
+  const postsPerPage = 500;
 
   try {
     const payload = await getPayload({ config });

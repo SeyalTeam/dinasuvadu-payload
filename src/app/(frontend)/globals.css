@@ -52,6 +52,33 @@ a {
   text-decoration: none;
 }
 
+.category-title {
+  font-family: 'Mukta Malar', sans-serif;
+  font-size: 38px;
+  font-weight: 900;
+  color: #1a1a1a;
+  position: relative;
+  display: inline-block;
+  padding-bottom: 12px;
+  margin-bottom: 30px;
+  letter-spacing: -1px;
+}
+
+.category-title::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 80px;
+  height: 5px;
+  background-color: #194277;
+}
+
+.category-title-wrapper {
+  margin-bottom: 40px;
+  border-bottom: 1px solid #efefef;
+}
+
 .site {
   max-width: 1140px;
   margin: auto;
@@ -177,38 +204,45 @@ img {
   justify-content: center;
   align-items: center;
   gap: 12px;
-  margin-top: 24px;
-  z-index: 2;
+  margin-top: 50px;
+  margin-bottom: 30px;
 }
 
 .web-stories-pagination .pagination-link {
-  border: 1px solid #d9d9d9;
-  color: #333;
-  font-size: 14px;
-  font-weight: 500;
-  padding: 4px 12px;
-  border-radius: 4px;
-  transition: all 0.3s ease;
+  min-width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e2e8f0;
+  color: #334155;
+  font-size: 15px;
+  font-weight: 600;
+  padding: 0 12px;
+  border-radius: 6px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   text-decoration: none;
   background-color: #fff;
 }
 
 .web-stories-pagination .pagination-link:hover {
-  background-color: #194277;
-  color: white;
+  background-color: #f1f5f9;
   border-color: #194277;
+  color: #194277;
 }
 
 .web-stories-pagination .pagination-link.active {
   background-color: #194277;
   color: white;
   border-color: #194277;
+  box-shadow: 0 4px 12px rgba(25, 66, 119, 0.2);
 }
 
 .web-stories-pagination .pagination-ellipsis {
-  color: #666;
-  font-size: 14px;
-  padding: 4px 8px;
+  color: #64748b;
+  font-size: 16px;
+  width: 30px;
+  text-align: center;
 }
 
 .container {
@@ -365,42 +399,102 @@ img {
 .category-grid {
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  max-width: 700px;
+  gap: 30px;
+  max-width: 850px;
+  margin: 0;
   padding: 0;
-  box-shadow: unset;
 }
 
 .post-item-category {
-  display: grid;
-  gap: 20px;
-  grid-template-columns: 62% 35%;
-  row-gap: 10px;
+  display: flex;
+  gap: 30px;
+  padding-bottom: 25px;
+  border-bottom: 1px solid #efefef;
+  align-items: flex-start;
 }
 
-.bor-1 {
-  border-bottom: 1px solid rgb(232 233 234);
-  padding-bottom: 20px;
+.post-item-category .flex-1 {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 180px;
 }
 
-.post-item-category img {
-  width: 300px;
-  height: auto;
-  object-fit: cover;
-  border-radius: 8px;
+.post-title-1 {
+  font-family: "Mukta Malar", sans-serif;
+  font-size: 22px;
+  font-weight: 800;
+  color: #1a1a1a;
+  line-height: 1.35;
+  margin-bottom: 12px;
+  transition: color 0.2s;
 }
 
-.post-first-tag {
-  margin-top: 10px;
+.post-title-1:hover {
+  color: #194277;
+}
+
+.post-description {
+  font-family: "Mukta Malar", sans-serif;
+  font-size: 16px;
+  color: #666;
+  line-height: 1.6;
+  margin-bottom: 15px;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.post-meta-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  margin-top: auto;
+  border-top: none;
+  padding-top: 0;
 }
 
-.post-first-tag a {
-  font-weight: 700;
+.post-meta-left {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.category-tag-link {
+  font-weight: 800;
   color: #194277;
   font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.read-time {
+  color: #888;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.post-item-category img {
+  width: 280px;
+  height: 180px;
+  object-fit: cover;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+@media screen and (max-width: 768px) {
+  .post-item-category {
+    flex-direction: column-reverse;
+    gap: 15px;
+  }
+  .post-item-category img {
+    width: 100%;
+    height: 200px;
+  }
+  .post-item-category .flex-1 {
+    min-height: auto;
+  }
 }
 
 .post-svg h2 {

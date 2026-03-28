@@ -25,7 +25,7 @@ export const populateAuthors: CollectionAfterReadHook = async ({ doc, req: { pay
           doc.populatedAuthors = authorDocs.map((authorDoc) => ({
             id: authorDoc.id,
             name: authorDoc.name,
-            slug: author.slug, // Ensure slug is included here
+            slug: authorDoc.slug || authorDoc.name?.replace(/ /g, '-').toLowerCase() || authorDoc.id, 
           }))
         }
       } catch {

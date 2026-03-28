@@ -12,7 +12,19 @@ const redirects = async () => {
     source: '/:path((?!ie-incompatible.html$).*)', // all pages except the incompatibility page
   }
 
-  const redirects = [internetExplorerRedirect]
+  const redirects = [
+    internetExplorerRedirect,
+    {
+      source: '/posts-sitemap.xml',
+      destination: '/sitemap-post?page=1',
+      permanent: false,
+    },
+    {
+      source: '/pages-sitemap.xml',
+      destination: '/sitemap-0.xml',
+      permanent: false,
+    },
+  ]
 
   return redirects
 }
