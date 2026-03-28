@@ -67,6 +67,20 @@ export default async function RootLayout({
         <Header categories={all} homepageCategories={homepage} />
         {children}
         <Footer />
+        {/* Google Analytics GA4 */}
+        <Script
+          src={`https://www.googletagmanager.com/gtag/js?id=G-YJ4CSJH2VC`}
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', 'G-YJ4CSJH2VC');
+          `}
+        </Script>
+
         {/* Social Media Embed Scripts */}
         <Script
           src="https://platform.twitter.com/widgets.js"
