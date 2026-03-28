@@ -21,9 +21,15 @@ export async function GET() {
     const totalSitemaps = Math.ceil(totalDocs / postsPerPage);
     const sitemapEntries = [];
 
+    // Add Google News Sitemap (Last 2 days)
+    sitemapEntries.push({
+      loc: `${baseUrl}/sitemap-news`,
+      lastmod: new Date().toISOString(),
+    });
+
     // Add Next-Sitemap's standard static sitemap
     sitemapEntries.push({
-      loc: `${baseUrl}/sitemap-0.xml`, // Includes static pages/tags/categories configured in next-sitemap
+      loc: `${baseUrl}/sitemap-0.xml`, 
       lastmod: new Date().toISOString(),
     });
 
