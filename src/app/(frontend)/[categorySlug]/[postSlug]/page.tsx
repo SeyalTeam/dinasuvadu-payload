@@ -416,20 +416,17 @@ async function fetchCategoryById(
 
 export default async function PostOrSubCategoryPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ categorySlug: string; postSlug: string }>;
-  searchParams: Promise<{ page?: string }>; // Updated type to Promise
 }) {
   console.log(
     "Entering PostOrSubCategoryPage component for [categorySlug]/[postSlug]"
   );
 
   const { categorySlug, postSlug } = await params;
-  const query = await searchParams; // Await the Promise to get the resolved value
-  const page = parseInt(query.page || "1", 10); // Access the resolved value
+  const page = 1;
   const limit = 10;
-  console.log(`Handling route: /${categorySlug}/${postSlug}?page=${page}`);
+  console.log(`Handling route: /${categorySlug}/${postSlug}`);
 
   // Rest of your component code remains unchanged
   const topLevelCategory = await fetchCategoryBySlug(categorySlug);
@@ -476,6 +473,10 @@ export default async function PostOrSubCategoryPage({
 
     const { posts, total } = await fetchPostsByCategory(postSlug, page, limit);
     const totalPages = Math.ceil(total / limit);
+    const pageHref = (pageNumber: number): string =>
+      pageNumber <= 1
+        ? `/${categorySlug}/${postSlug}`
+        : `/${categorySlug}/${postSlug}/p/${pageNumber}`;
 
     return (
       <div className="site ">
@@ -570,7 +571,7 @@ export default async function PostOrSubCategoryPage({
               <div className="flex justify-center space-x-2 mt-8 web-stories-pagination">
                 {page > 1 && (
                   <Link
-                    href={`/${categorySlug}/${postSlug}?page=${page - 1}`}
+                    href={pageHref(page - 1)}
                     className="pagination-link"
                   >
                     Prev
@@ -579,7 +580,7 @@ export default async function PostOrSubCategoryPage({
 
                 {/* First Page */}
                 <Link
-                  href={`/${categorySlug}/${postSlug}?page=1`}
+                  href={pageHref(1)}
                   className={`pagination-link ${page === 1 ? "active" : ""}`}
                 >
                   1
@@ -591,7 +592,7 @@ export default async function PostOrSubCategoryPage({
                 {/* Current Page (only if it's not the first or last page) */}
                 {page !== 1 && page !== totalPages && (
                   <Link
-                    href={`/${categorySlug}/${postSlug}?page=${page}`}
+                    href={pageHref(page)}
                     className="pagination-link active"
                   >
                     {page}
@@ -606,7 +607,7 @@ export default async function PostOrSubCategoryPage({
                 {/* Last Page (only if totalPages > 1) */}
                 {totalPages > 1 && (
                   <Link
-                    href={`/${categorySlug}/${postSlug}?page=${totalPages}`}
+                    href={pageHref(totalPages)}
                     className={`pagination-link ${
                       page === totalPages ? "active" : ""
                     }`}
@@ -617,7 +618,7 @@ export default async function PostOrSubCategoryPage({
 
                 {page < totalPages && (
                   <Link
-                    href={`/${categorySlug}/${postSlug}?page=${page + 1}`}
+                    href={pageHref(page + 1)}
                     className="pagination-link"
                   >
                     Next
