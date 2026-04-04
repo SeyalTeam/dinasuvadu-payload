@@ -3,8 +3,8 @@ export const revalidate = 60; // Revalidate every 60 seconds
 export const dynamicParams = true; // Enable on-demand rendering for non-pre-rendered posts
 import type { Metadata } from "next";
 
-import axios from "axios";
 import Link from "next/link";
+import { unstable_cache } from "next/cache";
 // import { Space } from "antd";
 // import { ClockCircleOutlined } from "@ant-design/icons";
 import Text from "antd/es/typography/Text";
@@ -139,81 +139,143 @@ function extractPlainTextFromRichText(content: Post["content"]): string {
     .join("\n");
 }
 
-// Fetch a category by slug
-async function fetchCategoryBySlug(slug: string): Promise<Category | null> {
+const normalizeSlug = (slug: string): string => {
   try {
-    const payload = await getPayload({ config });
-    const decoded = decodeURIComponent(slug);
-    const encoded = encodeURIComponent(decoded);
-    const res = await payload.find({
-      collection: "categories",
-      where: {
-        or: [
-          { slug: { equals: slug } },
-          { slug: { equals: decoded } },
-          { slug: { equals: encoded } },
-          { slug: { equals: encoded.toLowerCase() } },
-          { slug: { equals: encoded.toUpperCase() } },
-        ],
-      },
-      depth: 2,
-    });
-    return (res.docs[0] as unknown as Category) || null;
-  } catch (error) {
-    console.error(`Error fetching category with slug ${slug}:`, error);
-    return null;
+    return decodeURIComponent(slug);
+  } catch {
+    return slug;
   }
-}
+};
+
+// Fetch a category by slug
+const fetchCategoryBySlug = unstable_cache(
+  async (slug: string): Promise<Category | null> => {
+    try {
+      const payload = await getPayload({ config });
+      const res = await payload.find({
+        collection: "categories",
+        where: {
+          slug: {
+            equals: normalizeSlug(slug),
+          },
+        },
+        limit: 1,
+        depth: 1,
+      });
+      return (res.docs[0] as unknown as Category) || null;
+    } catch (error) {
+      console.error(`Error fetching category with slug ${slug}:`, error);
+      return null;
+    }
+  },
+  ["post-route-category-by-slug"],
+  { revalidate: 300 }
+);
 
 // Fetch parent category details by ID
-// Fetch parent category details by ID
-async function fetchParentCategory(
-  parentId: string
-): Promise<{ slug: string; title: string } | null> {
-  try {
-    const payload = await getPayload({ config });
-    const res = await payload.findByID({
-      collection: "categories",
-      id: parentId,
-      depth: 1,
-    });
-    const parentCategory = (res as unknown as Category) || null;
-    if (!parentCategory) return null;
-    return {
-      slug: parentCategory.slug || "uncategorized",
-      title: parentCategory.title || "Uncategorized",
-    };
-  } catch (err) {
-    console.error(`Error fetching parent category with ID ${parentId}:`, err);
-    return null;
-  }
-}
+const fetchParentCategory = unstable_cache(
+  async (parentId: string): Promise<{ slug: string; title: string } | null> => {
+    try {
+      const payload = await getPayload({ config });
+      const res = await payload.findByID({
+        collection: "categories",
+        id: parentId,
+        depth: 1,
+      });
+      const parentCategory = (res as unknown as Category) || null;
+      if (!parentCategory) return null;
+      return {
+        slug: parentCategory.slug || "uncategorized",
+        title: parentCategory.title || "Uncategorized",
+      };
+    } catch (err) {
+      console.error(`Error fetching parent category with ID ${parentId}:`, err);
+      return null;
+    }
+  },
+  ["post-route-parent-category"],
+  { revalidate: 300 }
+);
 
 // Fetch a single post by slug
-async function fetchPost(slug: string): Promise<Post | null> {
-  try {
-    const payload = await getPayload({ config });
-    const decoded = decodeURIComponent(slug);
-    const encoded = encodeURIComponent(decoded);
-    const response = await payload.find({
-      collection: "posts",
-      where: {
-        or: [
-          { slug: { equals: slug } },
-          { slug: { equals: decoded } },
-          { slug: { equals: encoded } },
-          { slug: { equals: encoded.toLowerCase() } },
-          { slug: { equals: encoded.toUpperCase() } },
-        ],
-      },
-      depth: 2,
-    });
-    return (response?.docs?.[0] as unknown as Post) || null;
-  } catch (error) {
-    console.error(`Error fetching post with slug ${slug}:`, error);
-    return null;
-  }
-}
+const fetchPost = unstable_cache(
+  async (slug: string): Promise<Post | null> => {
+    try {
+      const payload = await getPayload({ config });
+      const response = await payload.find({
+        collection: "posts",
+        where: {
+          and: [
+            {
+              slug: {
+                equals: normalizeSlug(slug),
+              },
+            },
+            {
+              _status: {
+                equals: "published",
+              },
+            },
+          ],
+        },
+        limit: 1,
+        depth: 1,
+      });
+      return (response?.docs?.[0] as unknown as Post) || null;
+    } catch (error) {
+      console.error(`Error fetching post with slug ${slug}:`, error);
+      return null;
+    }
+  },
+  ["post-route-post-by-slug"],
+  { revalidate: 60 }
+);
+
+const fetchPostMetadata = unstable_cache(
+  async (
+    slug: string
+  ): Promise<{
+    title: string;
+    meta?: {
+      description?: string;
+      image?: { url: string };
+    };
+  } | null> => {
+    try {
+      const payload = await getPayload({ config });
+      const response = await payload.find({
+        collection: "posts",
+        where: {
+          and: [
+            {
+              slug: {
+                equals: normalizeSlug(slug),
+              },
+            },
+            {
+              _status: {
+                equals: "published",
+              },
+            },
+          ],
+        },
+        limit: 1,
+        depth: 0,
+        select: {
+          title: true,
+          meta: true,
+        },
+      });
+
+      return (response?.docs?.[0] as any) || null;
+    } catch (error) {
+      console.error(`Error fetching post metadata with slug ${slug}:`, error);
+      return null;
+    }
+  },
+  ["post-route-post-metadata"],
+  { revalidate: 60 }
+);
 
 /**
  * Generate SEO metadata for a post page.
@@ -235,7 +297,7 @@ export async function generateMetadata({ params }: { params: Promise<{ categoryS
   }
 
   // Fallback to checking for a single post
-  const post = await fetchPost(postSlug);
+  const post = await fetchPostMetadata(postSlug);
   if (!post) {
     return { title: "Post not found – Dinasuvadu" };
   }
@@ -255,33 +317,27 @@ async function fetchPostsByCategory(
 ): Promise<{ posts: Post[]; total: number }> {
   try {
     const payload = await getPayload({ config });
-    const decoded = decodeURIComponent(categorySlug);
-    const encoded = encodeURIComponent(decoded);
-    const categoryRes = await payload.find({
-      collection: "categories",
-      where: {
-        or: [
-          { slug: { equals: categorySlug } },
-          { slug: { equals: decoded } },
-          { slug: { equals: encoded } },
-          { slug: { equals: encoded.toLowerCase() } },
-          { slug: { equals: encoded.toUpperCase() } },
-        ],
-      },
-      depth: 0,
-    });
-    const category = categoryRes.docs[0] || null;
+    const category = await fetchCategoryBySlug(categorySlug);
     if (!category) return { posts: [], total: 0 };
 
     const response = await payload.find({
       collection: "posts",
       where: {
-        categories: {
-          in: [category.id],
-        },
+        and: [
+          {
+            categories: {
+              in: [category.id],
+            },
+          },
+          {
+            _status: {
+              equals: "published",
+            },
+          },
+        ],
       },
       sort: "-publishedAt",
-      depth: 2,
+      depth: 1,
       limit,
       page,
     });
@@ -296,50 +352,60 @@ async function fetchPostsByCategory(
 }
 
 // Fetch the latest posts (excluding the current post)
-async function fetchLatestPosts(currentPostSlug: string): Promise<Post[]> {
-  try {
-    const payload = await getPayload({ config });
-    const response = await payload.find({
-      collection: "posts",
-      limit: 5,
-      sort: "-publishedAt",
-      where: {
-        slug: {
-          not_equals: currentPostSlug,
+const fetchLatestPosts = unstable_cache(
+  async (currentPostSlug: string): Promise<Post[]> => {
+    try {
+      const payload = await getPayload({ config });
+      const response = await payload.find({
+        collection: "posts",
+        limit: 5,
+        sort: "-publishedAt",
+        where: {
+          and: [
+            {
+              slug: {
+                not_equals: currentPostSlug,
+              },
+            },
+            {
+              _status: {
+                equals: "published",
+              },
+            },
+          ],
         },
-      },
-      depth: 2,
-    });
-    return (response.docs as unknown as Post[]) || [];
-  } catch (error) {
-    console.error("Error fetching latest posts:", error);
-    return [];
-  }
-}
+        depth: 1,
+      });
+      return (response.docs as unknown as Post[]) || [];
+    } catch (error) {
+      console.error("Error fetching latest posts:", error);
+      return [];
+    }
+  },
+  ["post-route-latest-posts"],
+  { revalidate: 60 }
+);
 
 // Fetch category details by ID
 async function fetchCategoryById(
   categoryId: string
 ): Promise<{ title: string } | null> {
   try {
-    console.log(`Fetching category with ID: ${categoryId}`);
-    const res = await axios.get(
-      `${apiUrl}/api/categories/${categoryId}?depth=1`
-    );
-    const category = res.data || null;
+    const payload = await getPayload({ config });
+    const res = await payload.findByID({
+      collection: "categories",
+      id: categoryId,
+      depth: 1,
+    });
+    const category = (res as unknown as Category) || null;
     if (!category) {
-      console.log(`No category found for ID: ${categoryId}`);
       return null;
     }
-    console.log(`Fetched category by ID:`, JSON.stringify(category, null, 2));
     return {
       title: category.title || "Uncategorized",
     };
   } catch (err) {
-    console.error(
-      `Error fetching category with ID ${categoryId}:`,
-      (err as any)?.response?.data || (err as any)?.message
-    );
+    console.error(`Error fetching category with ID ${categoryId}:`, err);
     return null;
   }
 }
@@ -1509,4 +1575,4 @@ export default async function PostOrSubCategoryPage({
   );
 }
 
-
+

@@ -6,6 +6,7 @@ import Footer from "@/components/Footer";
 import { getPayload } from "payload";
 import config from "@/payload.config";
 import Script from "next/script";
+import { unstable_cache } from "next/cache";
 
 type Category = {
   id: string;
@@ -14,10 +15,10 @@ type Category = {
   parent?: { id: string; slug: string; title: string } | string;
 };
 
-async function fetchCategories(): Promise<{ all: Category[]; homepage: Category[] }> {
-  try {
+const fetchCategoriesCached = unstable_cache(
+  async (): Promise<{ all: Category[]; homepage: Category[] }> => {
     const payload = await getPayload({ config });
-    
+
     // Fetch all categories for sub-menu resolution
     const allRes = await payload.find({
       collection: "categories",
@@ -27,10 +28,10 @@ async function fetchCategories(): Promise<{ all: Category[]; homepage: Category[
     const allCategories = (allRes.docs as unknown as Category[]) || [];
 
     // Fetch homepage settings for ordered top-level categories
-    const homepageSettings = await payload.findGlobal({
-      slug: 'homepage-settings',
+    const homepageSettings = (await payload.findGlobal({
+      slug: "homepage-settings",
       depth: 2,
-    }) as { categories?: (string | Category)[] };
+    })) as { categories?: (string | Category)[] };
 
     let homepageCategories: Category[] = [];
     if (homepageSettings.categories && homepageSettings.categories.length > 0) {
@@ -43,6 +44,14 @@ async function fetchCategories(): Promise<{ all: Category[]; homepage: Category[
       all: allCategories,
       homepage: homepageCategories,
     };
+  },
+  ["layout-categories-homepage"],
+  { revalidate: 300 }
+);
+
+async function fetchCategories(): Promise<{ all: Category[]; homepage: Category[] }> {
+  try {
+    return await fetchCategoriesCached();
   } catch (err) {
     console.error("Error fetching categories for layout:", err);
     return { all: [], homepage: [] };
