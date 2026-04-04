@@ -1,4 +1,5 @@
 import React from "react";
+export const revalidate = 60; // Revalidate every 60 seconds
 export const dynamicParams = true;
 import type { Metadata } from "next";
 
@@ -440,5 +441,4 @@ export default async function CategoryPage({
     </>
   );
 }
-
 
