@@ -25,7 +25,7 @@ export async function generateMetadata({ params }: { params: Promise<{ categoryS
   }
   const title = post.title;
   const description = post.meta?.description || "Read the latest article on Dinasuvadu.";
-  const imageUrl = getImageUrl(post.heroImage) || undefined;
+  const imageUrl = getImageUrl(post.heroImage, "og") || undefined;
   const canonicalPath = await resolveCanonicalPostPath(post, fetchParentCategory);
   const canonical = `https://www.dinasuvadu.com${canonicalPath}`;
   return buildMetadata({ title, description, imageUrl, type: "article", canonical });
@@ -44,7 +44,10 @@ type RichTextBlock = {
 };
 
 type Media = {
-  url: string;
+  url?: string;
+  filename?: string;
+  prefix?: string;
+  sizes?: Record<string, { url?: string }>;
   alt?: string;
   width?: number;
   height?: number;
@@ -93,9 +96,43 @@ type Post = {
 // API base URL
 const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 
+type ImageVariant = "original" | "og" | "hero" | "thumb";
+
+const imageVariantSizes: Record<ImageVariant, string[]> = {
+  original: [],
+  og: ["og", "large", "xlarge", "medium"],
+  hero: ["medium", "large", "og", "small", "xlarge"],
+  thumb: ["thumbnail", "small", "medium"],
+};
+
+function toAbsoluteImageUrl(path: string): string {
+  if (path.startsWith("http")) return path;
+  const cleanPath = path.startsWith("/") ? path : `/${path}`;
+  return `${apiUrl}${cleanPath}`;
+}
+
 // Helper function to get the image URL with proper base URL (Added from Home page)
-function getImageUrl(media: any): string | null {
+function getImageUrl(media: any, variant: ImageVariant = "original"): string | null {
   if (!media) return null;
+
+  if (typeof media !== "string" && media.sizes && variant !== "original") {
+    const sizeOrder = imageVariantSizes[variant] || [];
+
+    for (const sizeKey of sizeOrder) {
+      const sizedUrl = media.sizes?.[sizeKey]?.url;
+      if (sizedUrl) {
+        return toAbsoluteImageUrl(sizedUrl);
+      }
+    }
+
+    const sizeEntries = Object.values(
+      media.sizes as Record<string, { url?: string }>
+    );
+    const fallbackSizedUrl = sizeEntries.find((entry) => entry?.url)?.url;
+    if (fallbackSizedUrl) {
+      return toAbsoluteImageUrl(fallbackSizedUrl);
+    }
+  }
   
   // Use explicit URL if available
   let path = typeof media === 'string' ? media : media.url;
@@ -108,12 +145,7 @@ function getImageUrl(media: any): string | null {
   }
   
   if (!path) return null;
-  if (path.startsWith("http")) return path;
-  
-  // Ensure the path starts with a slash
-  const cleanPath = path.startsWith('/') ? path : `/${path}`;
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
-  return `${apiUrl}${cleanPath}`;
+  return toAbsoluteImageUrl(path);
 }
 
 const normalizeSlug = (slug: string): string => {
@@ -631,7 +663,7 @@ export default async function SubCategoryPostPage({
             <figure className="mb-10">
               <div className="relative">
                 {(() => {
-                  const imageUrl = getImageUrl(post.heroImage);
+                  const imageUrl = getImageUrl(post.heroImage, "hero");
                   const imageAlt = post.heroImage.alt || "Hero Image";
                   return imageUrl ? (
                     <Image
@@ -915,7 +947,8 @@ export default async function SubCategoryPostPage({
                   }
 
                   const imageUrl = getImageUrl(
-                    latestPost.heroImage?.url || latestPost.meta?.image?.url
+                    latestPost.heroImage || latestPost.meta?.image,
+                    "thumb"
                   );
                   const imageAlt =
                     latestPost.heroImage?.alt ||

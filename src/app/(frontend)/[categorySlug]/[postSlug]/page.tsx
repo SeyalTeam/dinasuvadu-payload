@@ -98,6 +98,17 @@ type Post = {
 const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3001";
 
+type ImageVariant = "original" | "og" | "hero" | "content" | "card" | "thumb";
+
+const imageVariantSizes: Record<ImageVariant, string[]> = {
+  original: [],
+  og: ["og", "large", "xlarge", "medium"],
+  hero: ["medium", "large", "og", "small", "xlarge"],
+  content: ["medium", "small", "large", "xlarge"],
+  card: ["small", "medium", "thumbnail", "large"],
+  thumb: ["thumbnail", "small", "medium"],
+};
+
 // Define the clamping style for text overflow
 const clampStyle = {
   display: "-webkit-box",
@@ -108,9 +119,34 @@ const clampStyle = {
   lineHeight: "1.4",
 };
 
+function toAbsoluteImageUrl(path: string): string {
+  if (path.startsWith("http")) return path;
+  const cleanPath = path.startsWith("/") ? path : `/${path}`;
+  return `${apiUrl}${cleanPath}`;
+}
+
 // Helper function to get the image URL with proper base URL
-function getImageUrl(media: any): string | null {
+function getImageUrl(media: any, variant: ImageVariant = "original"): string | null {
   if (!media) return null;
+
+  if (typeof media !== "string" && media.sizes && variant !== "original") {
+    const sizeOrder = imageVariantSizes[variant] || [];
+
+    for (const sizeKey of sizeOrder) {
+      const sizedUrl = media.sizes?.[sizeKey]?.url;
+      if (sizedUrl) {
+        return toAbsoluteImageUrl(sizedUrl);
+      }
+    }
+
+    const sizeEntries = Object.values(
+      media.sizes as Record<string, { url?: string }>
+    );
+    const fallbackSizedUrl = sizeEntries.find((entry) => entry?.url)?.url;
+    if (fallbackSizedUrl) {
+      return toAbsoluteImageUrl(fallbackSizedUrl);
+    }
+  }
   
   // Use explicit URL if available
   let path = typeof media === 'string' ? media : media.url;
@@ -123,11 +159,7 @@ function getImageUrl(media: any): string | null {
   }
   
   if (!path) return null;
-  if (path.startsWith("http")) return path;
-  
-  // Ensure the path starts with a slash
-  const cleanPath = path.startsWith('/') ? path : `/${path}`;
-  return `${apiUrl}${cleanPath}`;
+  return toAbsoluteImageUrl(path);
 }
 
 // Utility function to extract plain text from richText content
@@ -267,7 +299,9 @@ export async function generateMetadata({ params }: { params: Promise<{ categoryS
   const title = post.title;
   const description =
     post.meta?.description || "Read the latest article on Dinasuvadu.";
-  const imageUrl = post.meta?.image ? getImageUrl(post.meta.image) || undefined : undefined;
+  const imageUrl = post.meta?.image
+    ? getImageUrl(post.meta.image, "og") || undefined
+    : undefined;
   const canonical = `https://www.dinasuvadu.com${canonicalPath}`;
   return buildMetadata({ title, description, imageUrl, type: "article", canonical });
 }
@@ -473,7 +507,7 @@ export default async function PostOrSubCategoryPage({
           <>
             <div className="category-grid">
               {posts.map((post: Post) => {
-                const imageUrl = getImageUrl(post.heroImage);
+                const imageUrl = getImageUrl(post.heroImage, "card");
                 const imageAlt = post.heroImage?.alt || post.title;
 
                 return (
@@ -896,7 +930,7 @@ export default async function PostOrSubCategoryPage({
                 {post.layout?.[0]?.blockType === "mediaBlock" &&
                 post.layout[0].media ? (
                   <Image
-                    src={getImageUrl(post.layout[0].media)!}
+                    src={getImageUrl(post.layout[0].media, "hero")!}
                     alt={post.layout[0].media.alt || "Hero Image"}
                     width={1200}
                     height={640}
@@ -907,7 +941,7 @@ export default async function PostOrSubCategoryPage({
                   />
                 ) : (
                   <Image
-                    src={getImageUrl(post.heroImage)!}
+                    src={getImageUrl(post.heroImage, "hero")!}
                     alt={post.heroImage?.alt || "Hero Image"}
                     width={1200}
                     height={640}
@@ -955,9 +989,9 @@ export default async function PostOrSubCategoryPage({
               <section key={index} className="mb-12">
                 {block.blockType === "mediaBlock" && block.media && (
                   <figure className="my-8">
-                    {getImageUrl(block.media) && (
+                    {getImageUrl(block.media, "content") && (
                       <Image
-                        src={getImageUrl(block.media)!}
+                        src={getImageUrl(block.media, "content")!}
                         alt={block.media.alt || "Media"}
                         width={1200}
                         height={675}
@@ -1261,9 +1295,12 @@ export default async function PostOrSubCategoryPage({
                   }
 
                   const imageUrl = getImageUrl(
-                    latestPost.heroImage || 
-                    latestPost.meta?.image || 
-                    latestPost.layout?.find((b: any) => b.blockType === "mediaBlock" && b.media)?.media
+                    latestPost.heroImage ||
+                      latestPost.meta?.image ||
+                      latestPost.layout?.find(
+                        (b: any) => b.blockType === "mediaBlock" && b.media
+                      )?.media,
+                    "thumb"
                   );
                   const imageAlt =
                     latestPost.heroImage?.alt ||
