@@ -293,17 +293,11 @@ export default async function SubCategoryPostPage({
     subPostSlug: string;
   }>;
 }) {
-  console.log(
-    "Entering SubCategoryPostPage component for [categorySlug]/[postSlug]/[subPostSlug]"
-  );
-
   const { categorySlug, postSlug, subPostSlug } = await params;
-  console.log(`Handling route: /${categorySlug}/${postSlug}/${subPostSlug}`);
 
   // Fetch the post (subPostSlug is the actual post slug)
   const post = await fetchPost(subPostSlug);
   if (!post) {
-    console.log(`Post not found for slug: ${subPostSlug}`);
     notFound();
   }
 
@@ -318,9 +312,6 @@ export default async function SubCategoryPostPage({
   );
 
   if (!isExactPathMatch && !isTopLevelPostSlugMatch) {
-    console.log(
-      `No valid subcategory path matched ${incomingPath} for post slug ${subPostSlug}`
-    );
     notFound();
   }
 
@@ -329,8 +320,13 @@ export default async function SubCategoryPostPage({
     redirect(canonicalPath);
   }
 
+  // Fetch non-dependent sidebar/category data in parallel.
+  const [subCategory, latestPosts] = await Promise.all([
+    fetchCategoryBySlug(postSlug),
+    fetchLatestPosts(subPostSlug),
+  ]);
+
   // Fetch subcategory info for breadcrumbs/heading (soft fallback, no hard 404 here).
-  const subCategory = await fetchCategoryBySlug(postSlug);
   const resolvedParentCategory =
     subCategory?.parent
       ? typeof subCategory.parent === "string"
@@ -351,23 +347,26 @@ export default async function SubCategoryPostPage({
     }
   }
 
-  // Fetch latest posts for the sidebar
-  const latestPosts = await fetchLatestPosts(subPostSlug);
-
   // Pre-fetch parent categories for latest posts
-  const parentCategoriesMap: {
-    [key: string]: { slug: string; title: string } | null;
-  } = {};
-  for (const latestPost of latestPosts) {
-    const latestCategory = latestPost.categories?.[0];
-    if (latestCategory?.parent && typeof latestCategory.parent === "string") {
-      if (!parentCategoriesMap[latestCategory.parent]) {
-        parentCategoriesMap[latestCategory.parent] = await fetchParentCategory(
-          latestCategory.parent
-        );
-      }
-    }
-  }
+  const parentCategoryIds = Array.from(
+    new Set(
+      latestPosts
+        .map((latestPost) => latestPost.categories?.[0]?.parent)
+        .filter((parent): parent is string => typeof parent === "string")
+    )
+  );
+
+  const parentCategoryEntries = await Promise.all(
+    parentCategoryIds.map(async (parentId) => {
+      const parentCategory = await fetchParentCategory(parentId);
+      return [parentId, parentCategory] as const;
+    })
+  );
+
+  const parentCategoriesMap: Record<
+    string,
+    { slug: string; title: string } | null
+  > = Object.fromEntries(parentCategoryEntries);
 
   // Extract plain text content
   const postContent = extractPlainTextFromRichText(post.content);

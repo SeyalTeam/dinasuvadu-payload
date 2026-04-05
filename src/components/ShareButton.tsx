@@ -51,7 +51,6 @@ export default function ShareButton({
           text: description || "Check out this post!",
           url: shareUrl,
         });
-        console.log("Shared successfully");
       } catch (err) {
         console.error("Error sharing:", err);
         showToast("error", "Failed to share the post.");

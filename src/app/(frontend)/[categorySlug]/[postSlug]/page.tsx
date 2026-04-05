@@ -379,26 +379,19 @@ export default async function PostOrSubCategoryPage({
 }: {
   params: Promise<{ categorySlug: string; postSlug: string }>;
 }) {
-  console.log(
-    "Entering PostOrSubCategoryPage component for [categorySlug]/[postSlug]"
-  );
-
   const { categorySlug, postSlug } = await params;
   const page = 1;
   const limit = 10;
-  console.log(`Handling route: /${categorySlug}/${postSlug}`);
+  const [topLevelCategory, possibleSubCategory] = await Promise.all([
+    fetchCategoryBySlug(categorySlug),
+    fetchCategoryBySlug(postSlug),
+  ]);
 
-  // Rest of your component code remains unchanged
-  const topLevelCategory = await fetchCategoryBySlug(categorySlug);
   if (!topLevelCategory) {
-    console.log(`Top-level category ${categorySlug} not found`);
     notFound();
   }
 
   if (topLevelCategory.parent) {
-    console.log(
-      `Category ${categorySlug} has a parent, this route is for top-level categories only.`
-    );
     notFound();
   }
 
@@ -410,16 +403,12 @@ export default async function PostOrSubCategoryPage({
     }
   }
 
-  const possibleSubCategory = await fetchCategoryBySlug(postSlug);
   if (possibleSubCategory && possibleSubCategory.parent) {
     const parentCategory =
       typeof possibleSubCategory.parent === "string"
         ? await fetchParentCategory(possibleSubCategory.parent)
         : possibleSubCategory.parent;
     if (!parentCategory || parentCategory.slug !== categorySlug) {
-      console.log(
-        `Parent category for ${postSlug} does not match ${categorySlug}`
-      );
       notFound();
     }
 
@@ -598,7 +587,6 @@ export default async function PostOrSubCategoryPage({
 
   const post = await fetchPost(postSlug);
   if (!post) {
-    console.log(`Post not found for slug: ${postSlug}`);
     notFound();
   }
 
@@ -613,9 +601,6 @@ export default async function PostOrSubCategoryPage({
   );
 
   if (!isExactPathMatch && !isLegacyTopLevelAlias) {
-    console.log(
-      `No valid category path matched ${incomingPath} for post slug ${postSlug}`
-    );
     notFound();
   }
 
@@ -626,19 +611,25 @@ export default async function PostOrSubCategoryPage({
 
   const latestPosts = await fetchLatestPosts(postSlug);
 
-  const parentCategoriesMap: {
-    [key: string]: { slug: string; title: string } | null;
-  } = {};
-  for (const latestPost of latestPosts) {
-    const latestCategory = latestPost.categories?.[0];
-    if (latestCategory?.parent && typeof latestCategory.parent === "string") {
-      if (!parentCategoriesMap[latestCategory.parent]) {
-        parentCategoriesMap[latestCategory.parent] = await fetchParentCategory(
-          latestCategory.parent
-        );
-      }
-    }
-  }
+  const parentCategoryIds = Array.from(
+    new Set(
+      latestPosts
+        .map((latestPost) => latestPost.categories?.[0]?.parent)
+        .filter((parent): parent is string => typeof parent === "string")
+    )
+  );
+
+  const parentCategoryEntries = await Promise.all(
+    parentCategoryIds.map(async (parentId) => {
+      const parentCategory = await fetchParentCategory(parentId);
+      return [parentId, parentCategory] as const;
+    })
+  );
+
+  const parentCategoriesMap: Record<
+    string,
+    { slug: string; title: string } | null
+  > = Object.fromEntries(parentCategoryEntries);
 
   // Extract plain text content if layout is not available
   const postContent = post.content
