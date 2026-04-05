@@ -70,19 +70,42 @@ type Props = {
   enableProse?: boolean
 } & React.HTMLAttributes<HTMLDivElement>
 
+const hasValueMatch = (value: unknown, pattern: RegExp): boolean => {
+  if (typeof value === 'string') return pattern.test(value)
+  if (Array.isArray(value)) return value.some((item) => hasValueMatch(item, pattern))
+  if (value && typeof value === 'object') {
+    return Object.values(value as Record<string, unknown>).some((item) =>
+      hasValueMatch(item, pattern),
+    )
+  }
+  return false
+}
+
 export default function RichText(props: Props) {
-  const { className, enableProse = true, enableGutter = true, ...rest } = props
+  const { className, data, enableProse = true, enableGutter = true, ...rest } = props
+  const hasTwitterEmbed = hasValueMatch(
+    data,
+    /(twitter\.com|x\.com|platform\.twitter\.com)/i,
+  )
+  const hasInstagramEmbed = hasValueMatch(data, /instagram\.com/i)
+
   return (
     <div className="relative">
-      <EmbedHydrator />
-      <ConvertRichText
-      converters={jsxConverters}
-      className={cn(
-        'payload-richtext prose md:prose-md dark:prose-invert max-w-none',
-        className,
+      {(hasTwitterEmbed || hasInstagramEmbed) && (
+        <EmbedHydrator
+          enableTwitter={hasTwitterEmbed}
+          enableInstagram={hasInstagramEmbed}
+        />
       )}
-      {...rest}
-    />
+      <ConvertRichText
+        data={data}
+        converters={jsxConverters}
+        className={cn(
+          'payload-richtext prose md:prose-md dark:prose-invert max-w-none',
+          className,
+        )}
+        {...rest}
+      />
     </div>
   )
 }
