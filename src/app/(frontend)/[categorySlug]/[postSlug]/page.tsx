@@ -240,9 +240,12 @@ const fetchPost = unstable_cache(
  */
 export async function generateMetadata({ params }: { params: Promise<{ categorySlug: string; postSlug: string }> }): Promise<Metadata> {
   const { categorySlug, postSlug } = await params;
+  const looksLikeArticleSlug = /-\d+$/.test(normalizeSlug(postSlug));
   
   // First, check if this is a subcategory index page
-  const possibleSubCategory = await fetchCategoryBySlug(postSlug);
+  const possibleSubCategory = looksLikeArticleSlug
+    ? null
+    : await fetchCategoryBySlug(postSlug);
   if (possibleSubCategory && possibleSubCategory.parent) {
     const title = `${possibleSubCategory.title || "Category"} News – Dinasuvadu`;
     const description = `Read the latest ${possibleSubCategory.title || "category"} news and updates on Dinasuvadu.`;
@@ -380,11 +383,18 @@ export default async function PostOrSubCategoryPage({
   params: Promise<{ categorySlug: string; postSlug: string }>;
 }) {
   const { categorySlug, postSlug } = await params;
+  const looksLikeArticleSlug = /-\d+$/.test(normalizeSlug(postSlug));
   const page = 1;
   const limit = 10;
+
+  const topLevelCategoryPromise = fetchCategoryBySlug(categorySlug);
+  const possibleSubCategoryPromise = looksLikeArticleSlug
+    ? Promise.resolve(null)
+    : fetchCategoryBySlug(postSlug);
+
   const [topLevelCategory, possibleSubCategory] = await Promise.all([
-    fetchCategoryBySlug(categorySlug),
-    fetchCategoryBySlug(postSlug),
+    topLevelCategoryPromise,
+    possibleSubCategoryPromise,
   ]);
 
   if (!topLevelCategory) {
