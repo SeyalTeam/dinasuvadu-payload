@@ -2,8 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url("https://fonts.googleapis.com/css2?family=Mukta+Malar:wght@200;300;400;500;600;700;800&display=swap");
-
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -34,7 +32,7 @@ ol {
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: "Mukta Malar";
+  font-family: var(--font-mukta-malar), sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   font-size: 1rem;
@@ -53,7 +51,7 @@ a {
 }
 
 .category-title {
-  font-family: 'Mukta Malar', sans-serif;
+  font-family: var(--font-mukta-malar), sans-serif;
   font-size: 38px;
   font-weight: 900;
   color: #1a1a1a;
@@ -105,7 +103,7 @@ a {
 }
 
 .para-txt {
-  font-family: "Mukta Malar" !important;
+  font-family: var(--font-mukta-malar) !important;
 }
 
 img {
@@ -163,7 +161,7 @@ img {
   font-weight: 500;
   font-size: 13px;
   text-decoration: none;
-  font-family: "Mukta Malar";
+  font-family: var(--font-mukta-malar);
 }
 
 .breadcrumbs a:hover {
@@ -421,7 +419,7 @@ img {
 }
 
 .post-title-1 {
-  font-family: "Mukta Malar", sans-serif;
+  font-family: var(--font-mukta-malar), sans-serif;
   font-size: 22px;
   font-weight: 800;
   color: #1a1a1a;
@@ -435,7 +433,7 @@ img {
 }
 
 .post-description {
-  font-family: "Mukta Malar", sans-serif;
+  font-family: var(--font-mukta-malar), sans-serif;
   font-size: 16px;
   color: #666;
   line-height: 1.6;
@@ -549,7 +547,7 @@ a:hover {
   display: inline-block;
   margin: 12px 0;
   width: 100%;
-  font-family: "Mukta Malar";
+  font-family: var(--font-mukta-malar);
 }
 
 .row-03 {
@@ -569,12 +567,12 @@ a:hover {
   font-weight: 500;
   font-size: 13px;
   text-decoration: none;
-  font-family: "Mukta Malar";
+  font-family: var(--font-mukta-malar);
 }
 
 .single-post-title {
   font-size: clamp(21px, 2vw, 22px);
-  font-family: "Mukta Malar";
+  font-family: var(--font-mukta-malar);
   font-weight: 700;
 }
 
@@ -584,7 +582,7 @@ a:hover {
   background-color: #f1f5f9;
   border-left: 4px solid #1d4ed8;
   border-radius: 4px;
-  font-family: "Mukta Malar";
+  font-family: var(--font-mukta-malar);
   color: #0f172a;
   font-size: clamp(15px, 2vw, 18px);
   font-weight: 500;
@@ -703,7 +701,7 @@ a:hover {
   font-weight: 600;
   color: #171717;
   text-decoration: none;
-  font-family: "Mukta Malar";
+  font-family: var(--font-mukta-malar);
   white-space: nowrap;
   transition: color 0.3s;
   padding: 0 5px;
@@ -758,7 +756,7 @@ a:hover {
   color: #333;
   width: 100%;
   font-weight: 500;
-  font-family: "Mukta Malar";
+  font-family: var(--font-mukta-malar);
   transition: all 0.2s;
   border-bottom: none;
 }
@@ -935,7 +933,7 @@ a:hover {
 }
 
 .drawer-accordion li a {
-  font-family: "Mukta Malar", sans-serif;
+  font-family: var(--font-mukta-malar), sans-serif;
   font-weight: 700;
   font-size: 18px;
   color: #333;
@@ -1027,7 +1025,7 @@ a:hover {
   text-decoration: none;
   font-weight: 600;
   color: #000000;
-  font-family: "Mukta Malar";
+  font-family: var(--font-mukta-malar);
   font-size: 14px;
 }
 
@@ -1064,18 +1062,18 @@ a:hover {
   color: #000 !important;
   font-size: 18px;
   font-weight: 600;
-  font-family: "Mukta Malar";
+  font-family: var(--font-mukta-malar);
 }
 
 .post-description {
   color: #6d787a !important;
   font-weight: 500;
-  font-family: "Mukta Malar";
+  font-family: var(--font-mukta-malar);
   font-size: clamp(12px, 2vw, 14px);
 }
 
 .post-desc {
-  font-family: "Mukta Malar";
+  font-family: var(--font-mukta-malar);
   color: #28313a;
   font-size: clamp(16px, 2vw, 18px);
   margin-block: 1em;
@@ -1126,7 +1124,7 @@ a:hover {
   font-weight: 500;
   color: #ebebeb;
   text-decoration: none;
-  font-family: "Mukta Malar";
+  font-family: var(--font-mukta-malar);
   white-space: nowrap;
   text-transform: uppercase;
 }
@@ -1139,7 +1137,7 @@ a:hover {
   text-align: center;
   font-size: 16px;
   color: #ebebeb;
-  font-family: "Mukta Malar";
+  font-family: var(--font-mukta-malar);
   margin-top: 20px;
 }
 
@@ -1152,7 +1150,7 @@ a:hover {
 }
 
 .entry-content p {
-  font-family: "Mukta Malar";
+  font-family: var(--font-mukta-malar);
   color: #28313a;
   font-size: clamp(16px, 2vw, 18px);
   margin-bottom: 2em !important;
@@ -1271,7 +1269,7 @@ a:hover {
   }
   .latest-post-title {
     font-size: 20px;
-    font-family: "Mukta Malar";
+    font-family: var(--font-mukta-malar);
     font-weight: 600;
     line-height: 1.5;
     padding: 10px 0 0;

@@ -6,6 +6,14 @@ import { getPayload } from "payload";
 import config from "@/payload.config";
 import Script from "next/script";
 import { unstable_cache } from "next/cache";
+import { Mukta_Malar } from "next/font/google";
+
+const muktaMalar = Mukta_Malar({
+  subsets: ["tamil", "latin"],
+  weight: ["200", "300", "400", "500", "600", "700", "800"],
+  display: "swap",
+  variable: "--font-mukta-malar",
+});
 
 type Category = {
   id: string;
@@ -71,16 +79,16 @@ export default async function RootLayout({
 
   return (
     <html lang="en" suppressHydrationWarning>
-      <body suppressHydrationWarning>
+      <body className={muktaMalar.variable} suppressHydrationWarning>
         <Header categories={all} homepageCategories={homepage} />
         {children}
         <Footer />
         {/* Google Analytics GA4 */}
         <Script
           src={`https://www.googletagmanager.com/gtag/js?id=G-YJ4CSJH2VC`}
-          strategy="afterInteractive"
+          strategy="lazyOnload"
         />
-        <Script id="google-analytics" strategy="afterInteractive">
+        <Script id="google-analytics" strategy="lazyOnload">
           {`
               window.dataLayer = window.dataLayer || [];
               function gtag(){dataLayer.push(arguments);}
