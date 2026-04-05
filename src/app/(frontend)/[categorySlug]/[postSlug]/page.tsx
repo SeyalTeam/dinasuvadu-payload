@@ -8,11 +8,16 @@ import Image from "next/image";
 import { unstable_cache } from "next/cache";
 // import { Space } from "antd";
 // import { ClockCircleOutlined } from "@ant-design/icons";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import ShareButton from "@/components/ShareButton";
 import { getPayload } from "payload";
 import config from "@/payload.config";
 import { buildMetadata, buildBreadcrumbLd, buildArticleLd } from "@/lib/seo";
+import {
+  hasTopLevelAliasMatch,
+  resolveCanonicalPostPath,
+  resolvePostPathCandidates,
+} from "@/lib/post-url";
 
 // Type definitions
 type RichTextChild = {
@@ -230,52 +235,6 @@ const fetchPost = unstable_cache(
   { revalidate: 60 }
 );
 
-const fetchPostMetadata = unstable_cache(
-  async (
-    slug: string
-  ): Promise<{
-    title: string;
-    meta?: {
-      description?: string;
-      image?: { url: string };
-    };
-  } | null> => {
-    try {
-      const payload = await getPayload({ config });
-      const response = await payload.find({
-        collection: "posts",
-        where: {
-          and: [
-            {
-              slug: {
-                equals: normalizeSlug(slug),
-              },
-            },
-            {
-              _status: {
-                equals: "published",
-              },
-            },
-          ],
-        },
-        limit: 1,
-        depth: 0,
-        select: {
-          title: true,
-          meta: true,
-        },
-      });
-
-      return (response?.docs?.[0] as any) || null;
-    } catch (error) {
-      console.error(`Error fetching post metadata with slug ${slug}:`, error);
-      return null;
-    }
-  },
-  ["post-route-post-metadata"],
-  { revalidate: 60 }
-);
-
 /**
  * Generate SEO metadata for a post page.
  */
@@ -296,14 +255,17 @@ export async function generateMetadata({ params }: { params: Promise<{ categoryS
   }
 
   // Fallback to checking for a single post
-  const post = await fetchPostMetadata(postSlug);
+  const post = await fetchPost(postSlug);
   if (!post) {
     return { title: "Post not found – Dinasuvadu" };
   }
+
+  const canonicalPath = await resolveCanonicalPostPath(post, fetchParentCategory);
   const title = post.title;
-  const description = post.meta?.description || "Read the latest article on Dinasuvadu.";
-  const imageUrl = post.meta?.image?.url ? `${apiUrl}${post.meta.image.url}` : undefined;
-  const canonical = `https://www.dinasuvadu.com/${categorySlug}/${postSlug}`;
+  const description =
+    post.meta?.description || "Read the latest article on Dinasuvadu.";
+  const imageUrl = post.meta?.image ? getImageUrl(post.meta.image) || undefined : undefined;
+  const canonical = `https://www.dinasuvadu.com${canonicalPath}`;
   return buildMetadata({ title, description, imageUrl, type: "article", canonical });
 }
 
@@ -640,33 +602,26 @@ export default async function PostOrSubCategoryPage({
     notFound();
   }
 
-  let postCategory: Category | null = post.categories?.[0] || null;
-  if (!postCategory) {
-    console.log(`Post ${postSlug} has no associated category, using default`);
-    postCategory = {
-      id: "default",
-      slug: "uncategorized",
-      title: "Uncategorized",
-    };
-  }
+  const incomingPath = `/${categorySlug}/${postSlug}`;
+  const validPaths = await resolvePostPathCandidates(post, fetchParentCategory);
+  const canonicalPath = await resolveCanonicalPostPath(post, fetchParentCategory);
+  const isExactPathMatch = validPaths.includes(incomingPath);
+  const isLegacyTopLevelAlias = hasTopLevelAliasMatch(
+    validPaths,
+    categorySlug,
+    postSlug
+  );
 
-  let isMatch = postCategory.slug === categorySlug;
-  
-  // If not a direct match, check if the URL categorySlug is the parent of the post's category
-  if (!isMatch && postCategory.parent) {
-    const parent = typeof postCategory.parent === 'string' 
-      ? await fetchParentCategory(postCategory.parent)
-      : postCategory.parent;
-    if (parent && parent.slug === categorySlug) {
-      isMatch = true;
-    }
-  }
-
-  if (!isMatch) {
+  if (!isExactPathMatch && !isLegacyTopLevelAlias) {
     console.log(
-      `Post category ${postCategory.slug} (or its parent) does not match URL category ${categorySlug}`
+      `No valid category path matched ${incomingPath} for post slug ${postSlug}`
     );
     notFound();
+  }
+
+  // Legacy two-segment links like /news/{post} should canonicalize to /news/{sub}/{post} when needed.
+  if (isLegacyTopLevelAlias && canonicalPath !== incomingPath) {
+    redirect(canonicalPath);
   }
 
   const latestPosts = await fetchLatestPosts(postSlug);

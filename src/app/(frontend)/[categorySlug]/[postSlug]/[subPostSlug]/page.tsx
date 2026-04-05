@@ -5,15 +5,20 @@ import Image from "next/image";
 import { unstable_cache } from "next/cache";
 // import { Space } from "antd";
 // import { ClockCircleOutlined } from "@ant-design/icons";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { getPayload } from "payload";
 import config from "@/payload.config";
 import type { Metadata } from "next";
 import { buildMetadata, buildBreadcrumbLd, buildArticleLd } from "@/lib/seo";
+import {
+  hasTopLevelAndPostSlugMatch,
+  resolveCanonicalPostPath,
+  resolvePostPathCandidates,
+} from "@/lib/post-url";
 
 // Generate dynamic metadata for subcategory post pages
 export async function generateMetadata({ params }: { params: Promise<{ categorySlug: string; postSlug: string; subPostSlug: string }> }): Promise<Metadata> {
-  const { categorySlug, postSlug, subPostSlug } = await params;
+  const { subPostSlug } = await params;
   const post = await fetchPost(subPostSlug);
   if (!post) {
     return { title: "Post not found – Dinasuvadu" };
@@ -21,7 +26,8 @@ export async function generateMetadata({ params }: { params: Promise<{ categoryS
   const title = post.title;
   const description = post.meta?.description || "Read the latest article on Dinasuvadu.";
   const imageUrl = getImageUrl(post.heroImage) || undefined;
-  const canonical = `https://www.dinasuvadu.com/${categorySlug}/${postSlug}/${subPostSlug}`;
+  const canonicalPath = await resolveCanonicalPostPath(post, fetchParentCategory);
+  const canonical = `https://www.dinasuvadu.com${canonicalPath}`;
   return buildMetadata({ title, description, imageUrl, type: "article", canonical });
 }
 import RichText from "@/components/RichText";
@@ -294,48 +300,6 @@ export default async function SubCategoryPostPage({
   const { categorySlug, postSlug, subPostSlug } = await params;
   console.log(`Handling route: /${categorySlug}/${postSlug}/${subPostSlug}`);
 
-  // Fetch the subcategory (postSlug should be a subcategory like "india")
-  const subCategory = await fetchCategoryBySlug(postSlug);
-  if (!subCategory) {
-    console.log(`Subcategory ${postSlug} not found`);
-    notFound();
-  }
-
-  // Ensure the subcategory has a parent
-  if (!subCategory.parent) {
-    console.log(
-      `Category ${postSlug} has no parent, this route is for subcategories only.`
-    );
-    notFound();
-  }
-
-  // Fetch the parent category
-  const parentCategory =
-    typeof subCategory.parent === "string"
-      ? await fetchParentCategory(subCategory.parent)
-      : subCategory.parent;
-  if (!parentCategory) {
-    console.log(`Parent category not found for subcategory ${postSlug}`);
-    notFound();
-  }
-
-  // Verify the parent category matches categorySlug
-  if (parentCategory.slug !== categorySlug) {
-    console.log(
-      `Parent category slug ${parentCategory.slug} does not match categorySlug ${categorySlug}`
-    );
-    notFound();
-  }
-
-  // Fetch subcategory title
-  let subCategoryTitle = subCategory.title || "Uncategorized";
-  if (!subCategory.title) {
-    const fetchedCategory = await fetchCategoryById(subCategory.id);
-    if (fetchedCategory) {
-      subCategoryTitle = fetchedCategory.title;
-    }
-  }
-
   // Fetch the post (subPostSlug is the actual post slug)
   const post = await fetchPost(subPostSlug);
   if (!post) {
@@ -343,25 +307,48 @@ export default async function SubCategoryPostPage({
     notFound();
   }
 
-  // Get the post's category with a fallback
-  let postCategory: Category | null = post.categories?.[0] || null;
-  if (!postCategory) {
-    console.log(
-      `Post ${subPostSlug} has no associated category, using default`
-    );
-    postCategory = {
-      id: "default",
-      slug: "uncategorized",
-      title: "Uncategorized",
-    };
-  }
+  const incomingPath = `/${categorySlug}/${postSlug}/${subPostSlug}`;
+  const validPaths = await resolvePostPathCandidates(post, fetchParentCategory);
+  const canonicalPath = await resolveCanonicalPostPath(post, fetchParentCategory);
+  const isExactPathMatch = validPaths.includes(incomingPath);
+  const isTopLevelPostSlugMatch = hasTopLevelAndPostSlugMatch(
+    validPaths,
+    categorySlug,
+    subPostSlug
+  );
 
-  // Verify the post's category matches the subcategory
-  if (postCategory.slug !== postSlug) {
+  if (!isExactPathMatch && !isTopLevelPostSlugMatch) {
     console.log(
-      `Post category ${postCategory.slug} does not match subcategory ${postSlug}`
+      `No valid subcategory path matched ${incomingPath} for post slug ${subPostSlug}`
     );
     notFound();
+  }
+
+  // Canonicalize non-exact but valid paths for migrated / legacy links.
+  if (!isExactPathMatch && canonicalPath !== incomingPath) {
+    redirect(canonicalPath);
+  }
+
+  // Fetch subcategory info for breadcrumbs/heading (soft fallback, no hard 404 here).
+  const subCategory = await fetchCategoryBySlug(postSlug);
+  const resolvedParentCategory =
+    subCategory?.parent
+      ? typeof subCategory.parent === "string"
+        ? await fetchParentCategory(subCategory.parent)
+        : subCategory.parent
+      : null;
+
+  const parentCategory = {
+    slug: resolvedParentCategory?.slug || categorySlug,
+    title: resolvedParentCategory?.title || categorySlug,
+  };
+
+  let subCategoryTitle = subCategory?.title || postSlug;
+  if (subCategory && !subCategory.title) {
+    const fetchedCategory = await fetchCategoryById(subCategory.id);
+    if (fetchedCategory) {
+      subCategoryTitle = fetchedCategory.title;
+    }
   }
 
   // Fetch latest posts for the sidebar

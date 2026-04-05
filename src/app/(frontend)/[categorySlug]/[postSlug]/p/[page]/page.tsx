@@ -6,7 +6,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { unstable_cache } from "next/cache";
-import "antd/dist/reset.css";
 import { notFound, redirect } from "next/navigation";
 import ShareButton from "@/components/ShareButton";
 import { getPayload } from "payload";

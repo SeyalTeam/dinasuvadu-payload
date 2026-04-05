@@ -1,5 +1,4 @@
 export const revalidate = 10; // Revalidate every 60 seconds
-import axios from "axios";
 import Link from "next/link";
 import { Row, Col, Card, Space } from "antd";
 // import { ClockCircleOutlined } from '@ant-design/icons';
@@ -8,6 +7,7 @@ import { getPayload } from "payload";
 import config from "@/payload.config";
 import type { Metadata } from "next";
 import { buildMetadata } from "@/lib/seo";
+import { resolveCanonicalPostPath, resolvePostPathForContext } from "@/lib/post-url";
 
 // Type definitions
 type Category = {
@@ -156,33 +156,16 @@ const clampStyle = {
   lineHeight: "1.4",
 };
 
-// Helper function to get the URL path for a post
-async function getPostUrl(post: Post): Promise<string> {
-  if (!post.categories || post.categories.length === 0) {
-    return `/uncategorized/${post.slug || "fallback-slug"}`;
+// Shared post URL resolver used across listings.
+async function getPostUrl(
+  post: Post,
+  context?: { topLevelSlug?: string; subCategorySlug?: string }
+): Promise<string> {
+  if (context?.topLevelSlug || context?.subCategorySlug) {
+    return resolvePostPathForContext(post, context, fetchParentCategory);
   }
 
-  const primaryCategory = post.categories[0];
-  if (primaryCategory && primaryCategory.parent) {
-    let parentCategorySlug = "uncategorized";
-    const parent =
-      typeof primaryCategory.parent === "string"
-        ? await fetchParentCategory(primaryCategory.parent)
-        : primaryCategory.parent;
-
-    if (parent) {
-      parentCategorySlug = parent.slug || "uncategorized";
-      return `/${parentCategorySlug}/${primaryCategory.slug}/${
-        post.slug || "fallback-slug"
-      }`;
-    }
-  }
-
-  if (!primaryCategory) {
-    return `/uncategorized/${post.slug || "fallback-slug"}`;
-  }
-
-  return `/${primaryCategory.slug}/${post.slug || "fallback-slug"}`;
+  return resolveCanonicalPostPath(post, fetchParentCategory);
 }
 
 // Helper function to get the image URL with proper base URL
@@ -618,7 +601,8 @@ export default async function Home() {
               return null;
 
             let categoryLink = `/${category.slug}`;
-            let postBaseUrl = `/${category.slug}`;
+            let contextTopLevelSlug = category.slug;
+            let contextSubCategorySlug: string | undefined;
             if (category.parent) {
               const parent =
                 typeof category.parent === "string"
@@ -627,7 +611,8 @@ export default async function Home() {
               if (parent) {
                 const parentCategorySlug = parent.slug || "uncategorized";
                 categoryLink = `/${parentCategorySlug}/${category.slug}`;
-                postBaseUrl = `/${parentCategorySlug}/${category.slug}`;
+                contextTopLevelSlug = parentCategorySlug;
+                contextSubCategorySlug = category.slug;
               }
             }
 
@@ -640,7 +625,10 @@ export default async function Home() {
                   {categoryFeaturedPost && (
                     <Col className="col-md-3">
                       <Link
-                        href={`${postBaseUrl}/${categoryFeaturedPost.slug}`}
+                        href={await getPostUrl(categoryFeaturedPost, {
+                          topLevelSlug: contextTopLevelSlug,
+                          subCategorySlug: contextSubCategorySlug,
+                        })}
                       >
                         <div>
                           {(() => {
@@ -695,13 +683,17 @@ export default async function Home() {
 
                   <Col className="col-md-3">
                     <Row style={{ margin: "0" }}>
-                      {categorySmallerPosts1.map((post) => {
+                      {await Promise.all(categorySmallerPosts1.map(async (post) => {
                         const imageUrl = getImageUrl(post.heroImage?.url);
                         const imageAlt = post.heroImage?.alt || post.title;
+                        const postUrl = await getPostUrl(post, {
+                          topLevelSlug: contextTopLevelSlug,
+                          subCategorySlug: contextSubCategorySlug,
+                        });
 
                         return (
                           <Col xs={24} key={post.id}>
-                            <Link href={`${postBaseUrl}/${post.slug}`}>
+                            <Link href={postUrl}>
                               <div className="news-post">
                                 {imageUrl ? (
                                   <img alt={imageAlt} src={imageUrl} />
@@ -748,19 +740,23 @@ export default async function Home() {
                             </Link>
                           </Col>
                         );
-                      })}
+                      }))}
                     </Row>
                   </Col>
 
                   <Col className="col-md-3">
                     <Row style={{ margin: "0" }}>
-                      {categorySmallerPosts2.map((post) => {
+                      {await Promise.all(categorySmallerPosts2.map(async (post) => {
                         const imageUrl = getImageUrl(post.heroImage?.url);
                         const imageAlt = post.heroImage?.alt || post.title;
+                        const postUrl = await getPostUrl(post, {
+                          topLevelSlug: contextTopLevelSlug,
+                          subCategorySlug: contextSubCategorySlug,
+                        });
 
                         return (
                           <Col xs={24} key={post.id}>
-                            <Link href={`${postBaseUrl}/${post.slug}`}>
+                            <Link href={postUrl}>
                               <div className="news-post">
                                 {imageUrl ? (
                                   <img alt={imageAlt} src={imageUrl} />
@@ -807,7 +803,7 @@ export default async function Home() {
                             </Link>
                           </Col>
                         );
-                      })}
+                      }))}
                     </Row>
                   </Col>
                 </Row>

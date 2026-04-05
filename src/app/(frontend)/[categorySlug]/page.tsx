@@ -13,6 +13,7 @@ import { notFound } from "next/navigation";
 import ShareButton from "@/components/ShareButton";
 import { getPayload } from "payload";
 import config from "@/payload.config";
+import { resolvePostPathForContext } from "@/lib/post-url";
 
 // Type definitions
 type Category = {
@@ -169,6 +170,28 @@ async function fetchCategoryById(
   }
 }
 
+async function fetchParentCategory(
+  parentId: string
+): Promise<{ slug: string; title: string } | null> {
+  try {
+    const payload = await getPayload({ config });
+    const res = await payload.findByID({
+      collection: "categories",
+      id: parentId,
+      depth: 1,
+    });
+    const parentCategory = (res as unknown as Category) || null;
+    if (!parentCategory) return null;
+    return {
+      slug: parentCategory.slug || "uncategorized",
+      title: parentCategory.title || "Uncategorized",
+    };
+  } catch (err) {
+    console.error(`Error fetching parent category with ID ${parentId}:`, err);
+    return null;
+  }
+}
+
 // Helper function to get the image URL with proper base URL
 function getImageUrl(url: string | undefined): string | null {
   if (!url) return null;
@@ -304,26 +327,14 @@ export default async function CategoryPage({
       {posts.length > 0 ? (
         <>
           <div className="category-grid">
-            {posts.map((post) => {
+            {await Promise.all(posts.map(async (post) => {
               const imageUrl = getImageUrl(post.heroImage?.url);
               const imageAlt = post.heroImage?.alt || post.title;
-
-              // Correct URL generation logic
-              let postLink = `/${categorySlug}/${post.slug}`;
-              const primaryCategory = post.categories?.[0];
-              if (primaryCategory) {
-                if (primaryCategory.parent) {
-                  // It's a subcategory, so we need /parent/sub/slug
-                  // categorySlug is already the parent in this view's context usually,
-                  // but let's be safe and use the actual parent slug if available.
-                  const parent = primaryCategory.parent as any;
-                  const parentSlug = parent?.slug || categorySlug;
-                  postLink = `/${parentSlug}/${primaryCategory.slug}/${post.slug}`;
-                } else {
-                  // Top level category, but check if it matches current view
-                  postLink = `/${primaryCategory.slug}/${post.slug}`;
-                }
-              }
+              const postLink = await resolvePostPathForContext(
+                post,
+                { topLevelSlug: categorySlug },
+                fetchParentCategory
+              );
 
               return (
                 <article key={post.id} className="post-item-category">
@@ -367,7 +378,7 @@ export default async function CategoryPage({
                   )}
                 </article>
               );
-            })}
+            }))}
           </div>
 
           {/* Pagination Controls */}

@@ -4,6 +4,39 @@ export function middleware(request: NextRequest) {
   const url = request.nextUrl;
   const pathname = url.pathname;
 
+  // Redirect legacy subcategory pagination query URLs to path-based pagination.
+  // Example: /news/tamilnadu?page=2 -> /news/tamilnadu/p/2
+  const pageParam = url.searchParams.get('page');
+  if (pageParam) {
+    const pathMatch = pathname.match(/^\/([^/]+)\/([^/]+)\/?$/);
+    if (pathMatch) {
+      const categorySlug = pathMatch[1];
+      const postSlug = pathMatch[2];
+      const pageNumber = Number.parseInt(pageParam, 10);
+      const isValidPage = Number.isFinite(pageNumber) && pageNumber >= 1;
+
+      // Heuristic: article slugs end with "-<digits>"; avoid redirecting article URLs.
+      const looksLikeArticleSlug = /-\d+$/.test(postSlug);
+
+      if (isValidPage && !looksLikeArticleSlug) {
+        const targetPath =
+          pageNumber === 1
+            ? `/${categorySlug}/${postSlug}`
+            : `/${categorySlug}/${postSlug}/p/${pageNumber}`;
+        const redirectUrl = new URL(targetPath, url);
+
+        // Preserve non-page query params if they exist.
+        for (const [key, value] of url.searchParams.entries()) {
+          if (key !== 'page') {
+            redirectUrl.searchParams.append(key, value);
+          }
+        }
+
+        return NextResponse.redirect(redirectUrl, 308);
+      }
+    }
+  }
+
   // Redirect /rss and /rss.xml to /feed (for root)
   if (pathname === '/rss' || pathname === '/rss.xml') {
     console.log(`Redirecting ${pathname} to /feed`);
@@ -47,6 +80,7 @@ export const config = {
     '/post-sitemap:page.xml',
     '/rss',
     '/rss.xml',
+    '/:categorySlug/:postSlug',
     '/:categorySlug/(rss|rss.xml)', // Added for top-level category RSS
     '/:categorySlug/:postSlug/(rss|rss.xml)',
   ],
