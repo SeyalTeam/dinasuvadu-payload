@@ -8,8 +8,6 @@ import Image from "next/image";
 import { unstable_cache } from "next/cache";
 // import { Space } from "antd";
 // import { ClockCircleOutlined } from "@ant-design/icons";
-import Text from "antd/es/typography/Text";
-import "antd/dist/reset.css"; // Import Ant Design CSS
 import { notFound } from "next/navigation";
 import ShareButton from "@/components/ShareButton";
 import { getPayload } from "payload";
@@ -1373,9 +1371,12 @@ export default async function PostOrSubCategoryPage({
                           />
                         ) : (
                           <div>
-                            <Text type="secondary" style={{ fontSize: "12px" }}>
+                            <span
+                              className="text-gray-500"
+                              style={{ fontSize: "12px" }}
+                            >
                               No Image
-                            </Text>
+                            </span>
                           </div>
                         )}
                       </div>

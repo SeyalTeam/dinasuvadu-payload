@@ -9,7 +9,6 @@ import Link from "next/link";
 // import { Space } from "antd";
 // import { ClockCircleOutlined } from "@ant-design/icons";
 // import Text from "antd/es/typography/Text";
-import "antd/dist/reset.css";
 import { notFound } from "next/navigation";
 import ShareButton from "@/components/ShareButton";
 import { getPayload } from "payload";
@@ -441,4 +440,3 @@ export default async function CategoryPage({
     </>
   );
 }
-

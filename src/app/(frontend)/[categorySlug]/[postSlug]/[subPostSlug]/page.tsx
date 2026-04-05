@@ -5,7 +5,6 @@ import Image from "next/image";
 import { unstable_cache } from "next/cache";
 // import { Space } from "antd";
 // import { ClockCircleOutlined } from "@ant-design/icons";
-import Text from "antd/es/typography/Text";
 import { notFound } from "next/navigation";
 import { getPayload } from "payload";
 import config from "@/payload.config";
@@ -661,7 +660,7 @@ export default async function SubCategoryPostPage({
                     />
                   ) : (
                     <div className="w-full h-64 sm:h-96 bg-gray-100 rounded-lg flex items-center justify-center">
-                      <Text type="secondary">No Image</Text>
+                      <span className="text-gray-500">No Image</span>
                     </div>
                   );
                 })()}
@@ -990,9 +989,12 @@ export default async function SubCategoryPostPage({
                           />
                         ) : (
                           <div>
-                            <Text type="secondary" style={{ fontSize: "12px" }}>
+                            <span
+                              className="text-gray-500"
+                              style={{ fontSize: "12px" }}
+                            >
                               No Image
-                            </Text>
+                            </span>
                           </div>
                         )}
                       </div>
