@@ -1,6 +1,7 @@
 export const revalidate = 10; // Revalidate every 60 seconds
 import Link from "next/link";
 import { Row, Col, Card, Space } from "antd";
+import "antd/dist/reset.css";
 // import { ClockCircleOutlined } from '@ant-design/icons';
 import Text from "antd/es/typography/Text";
 import { getPayload } from "payload";

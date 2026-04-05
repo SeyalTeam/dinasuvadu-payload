@@ -12,6 +12,9 @@ export function middleware(request: NextRequest) {
     if (pathMatch) {
       const categorySlug = pathMatch[1];
       const postSlug = pathMatch[2];
+      if (!categorySlug || !postSlug) {
+        return NextResponse.next();
+      }
       const pageNumber = Number.parseInt(pageParam, 10);
       const isValidPage = Number.isFinite(pageNumber) && pageNumber >= 1;
 

@@ -1,9 +1,7 @@
 export const revalidate = 60;
 export const dynamicParams = true;
-import axios from "axios";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import "antd/dist/reset.css"; // Import Ant Design CSS
 import ShareButton from "@/components/ShareButton";
 import { getPayload } from "payload";
 import config from "@/payload.config";

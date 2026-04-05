@@ -1,9 +1,5 @@
 import axios from "axios";
 import Link from "next/link";
-import { Space } from "antd";
-import { ClockCircleOutlined } from "@ant-design/icons";
-import Text from "antd/es/typography/Text";
-import "antd/dist/reset.css";
 import ShareButton from "@/components/ShareButton";
 import { getPayload } from "payload";
 import config from "@/payload.config";
@@ -234,17 +230,40 @@ export default async function SearchPage({
                             </Link>
                           )}
                           <span style={{ marginTop: "4px" }}>
-                            <Space size={4}>
-                              <ClockCircleOutlined
-                                style={{ fontSize: "12px", color: "#8c8c8c" }}
-                              />
-                              <Text
-                                type="secondary"
-                                style={{ fontSize: "12px" }}
+                            <span
+                              style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: "4px",
+                                fontSize: "12px",
+                                color: "#8c8c8c",
+                              }}
+                            >
+                              <svg
+                                width="12"
+                                height="12"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                xmlns="http://www.w3.org/2000/svg"
+                                aria-hidden="true"
                               >
-                                {readTime}
-                              </Text>
-                            </Space>
+                                <circle
+                                  cx="12"
+                                  cy="12"
+                                  r="9"
+                                  stroke="currentColor"
+                                  strokeWidth="1.8"
+                                />
+                                <path
+                                  d="M12 7.5V12.2L15 14"
+                                  stroke="currentColor"
+                                  strokeWidth="1.8"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                />
+                              </svg>
+                              <span>{readTime}</span>
+                            </span>
                           </span>
                           <ShareButton
                             url={`${baseUrl}${postUrl}`} // Updated to use dynamic baseUrl

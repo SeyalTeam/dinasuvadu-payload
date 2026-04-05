@@ -4,7 +4,6 @@ import React from "react";
 import type { Metadata } from "next";
 import { buildMetadata, buildBreadcrumbLd } from "@/lib/seo";
 import Link from "next/link";
-import "antd/dist/reset.css";
 import ShareButton from "@/components/ShareButton";
 import { getPayload } from "payload";
 import config from "@/payload.config";
