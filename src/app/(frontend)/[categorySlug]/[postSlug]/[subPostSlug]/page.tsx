@@ -81,6 +81,7 @@ type Post = {
   title: string;
   slug: string;
   publishedAt: string;
+  updatedAt?: string;
   heroImage?: Media;
   content?: {
     root: {
@@ -104,6 +105,37 @@ function trimTrailingEmptyHtmlBlocks(html: string): string {
       ""
     )
     .trim();
+}
+
+function stripHtml(value: string): string {
+  return value.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+}
+
+function estimateReadTimeMinutes(text: string): number {
+  const words = text.trim().split(/\s+/).filter(Boolean).length;
+  if (!words) return 1;
+  return Math.max(1, Math.ceil(words / 220));
+}
+
+function formatNewsTimestamp(value?: string): string | null {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+
+  const datePart = date.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    timeZone: "Asia/Kolkata",
+  });
+  const timePart = date.toLocaleTimeString("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZone: "Asia/Kolkata",
+  });
+
+  return `${datePart}, ${timePart} IST`;
 }
 
 // API base URL
@@ -320,9 +352,9 @@ async function LatestPostsSidebar({ currentPostSlug }: { currentPostSlug: string
   > = Object.fromEntries(parentCategoryEntries);
 
   return (
-    <aside className="lg:col-span-1 mt-12 lg:mt-0 latest-posts">
-      <div className="sticky top-20 bg-gray-50 border border-gray-200 rounded-lg p-6 shadow-sm">
-        <h2 className="category-title">Latest Posts</h2>
+    <aside className="single-post-sidebar latest-posts">
+      <div className="single-post-sidebar-card sticky top-20">
+        <h2 className="single-post-sidebar-title">Latest Posts</h2>
         {latestPosts.length > 0 ? (
           <div
             className="space-y-4"
@@ -420,9 +452,9 @@ async function LatestPostsSidebar({ currentPostSlug }: { currentPostSlug: string
 
 function LatestPostsSidebarFallback() {
   return (
-    <aside className="lg:col-span-1 mt-12 lg:mt-0 latest-posts">
-      <div className="sticky top-20 bg-gray-50 border border-gray-200 rounded-lg p-6 shadow-sm">
-        <h2 className="category-title">Latest Posts</h2>
+    <aside className="single-post-sidebar latest-posts">
+      <div className="single-post-sidebar-card sticky top-20">
+        <h2 className="single-post-sidebar-title">Latest Posts</h2>
         <p className="text-gray-600">Loading latest posts...</p>
       </div>
     </aside>
@@ -549,6 +581,19 @@ export default async function SubCategoryPostPage({
   const postContentPlainText = postContentHtml
     ? ""
     : extractPlainTextFromRichText(post.content);
+  const readTimeMinutes = estimateReadTimeMinutes(
+    `${stripHtml(postContentHtml)} ${postContentPlainText} ${
+      post.meta?.description || ""
+    }`
+  );
+  const publishedLabel = formatNewsTimestamp(post.publishedAt);
+  const updatedLabel = formatNewsTimestamp(post.updatedAt);
+  const showUpdated = Boolean(updatedLabel && updatedLabel !== publishedLabel);
+  const authorLine =
+    (post.populatedAuthors ?? [])
+      .map((author) => author?.name)
+      .filter(Boolean)
+      .join(", ") || "Dinasuvadu Team";
   const hasTwitterEmbed = /(twitter\.com|x\.com|platform\.twitter\.com)/i.test(
     postContentHtml
   );
@@ -577,100 +622,70 @@ export default async function SubCategoryPostPage({
         }}
       />
     <div className="site site-main">
-      <div className="post-grid lg:grid lg:grid-cols-3 lg:gap-8">
+      <div className="single-post-layout">
         {/* Main Article Content */}
-        <article className="lg:col-span-2">
-          {/* Breadcrumbs */}
-          <nav
-            aria-label="Breadcrumb"
-            className="mb-6 text-sm font-medium text-gray-600"
-          >
-            <div className="flex items-center space-x-2 breadcrumbs">
-              <Link
-                href="/"
-                className="text-indigo-600 hover:underline transition-colors"
-              >
-                Home
-              </Link>
+        <article className="single-post-main">
+          <header className="single-post-header-card">
+            <nav aria-label="Breadcrumb" className="single-post-breadcrumbs">
+              <div className="flex items-center space-x-2 breadcrumbs">
+                <Link
+                  href="/"
+                  className="text-indigo-600 hover:underline transition-colors"
+                >
+                  Home
+                </Link>
 
-              <span className="text-gray-400">{">"}</span>
+                <span className="text-gray-400">{">"}</span>
 
-              <Link
-                href={`/${categorySlug}`}
-                className="text-indigo-600 hover:underline transition-colors"
-              >
-                {parentCategory.title}
-              </Link>
+                <Link
+                  href={`/${categorySlug}`}
+                  className="text-indigo-600 hover:underline transition-colors"
+                >
+                  {parentCategory.title}
+                </Link>
 
-              <span className="text-gray-400">{">"}</span>
+                <span className="text-gray-400">{">"}</span>
 
-              <Link
-                href={`/${categorySlug}/${postSlug}`}
-                className="text-indigo-600 hover:underline transition-colors"
-              >
-                {subCategoryTitle}
-              </Link>
-            </div>
-          </nav>
+                <Link
+                  href={`/${categorySlug}/${postSlug}`}
+                  className="text-indigo-600 hover:underline transition-colors"
+                >
+                  {subCategoryTitle}
+                </Link>
+              </div>
+            </nav>
 
-          {/* Post Title */}
-          <h1 className="single-post-title">{post.title}</h1>
+            <h1 className="single-post-title single-post-title--hero">{post.title}</h1>
 
-          {/* Meta Description Summary Box (Restored and moved after title) */}
-          {post.meta?.description && (
-            <p className="post-summary-box">{post.meta.description}</p>
-          )}
+            {post.meta?.description && (
+              <p className="single-post-subtitle">{post.meta.description}</p>
+            )}
 
-          {/* Meta Information */}
-          <div className="entry-meta">
-            <div
-              className="flex flex-wrap items-center text-sm text-gray-600 mb-8 gap-2"
-              style={{ marginBottom: "10px" }}
-            >
-              {post.populatedAuthors && post.populatedAuthors.length > 0 && (
-                <>
-                  <span>By </span>
-                  {post.populatedAuthors.map((author, i) => (
-                    <span key={author.id}>
-                      <Link
-                        href={`/author/${author.slug}`}
-                        className="text-indigo-600 hover:underline transition-colors"
-                      >
-                        {author.name}
-                      </Link>
-                      {post.populatedAuthors &&
-                        i < post.populatedAuthors.length - 1 &&
-                        ", "}
-                    </span>
-                  ))}
-                </>
-              )}
-              {post.populatedAuthors &&
-                post.populatedAuthors.length > 0 &&
-                post.publishedAt && (
-                  <span
-                    className="text-gray-400 mx-2"
-                    style={{ marginLeft: "5px" }}
-                  >
-                    Posted on{" "}
+            <div className="single-post-meta">
+              <div className="single-post-meta-top">
+                <p className="single-post-author">
+                  By <span>{authorLine}</span>
+                </p>
+                <div className="single-post-readtime">
+                  <span className="single-post-clock" aria-hidden="true">
+                    ◷
                   </span>
+                  <span>{readTimeMinutes} Min Read</span>
+                </div>
+              </div>
+              <div className="single-post-meta-bottom">
+                {publishedLabel && <span>Published - {publishedLabel}</span>}
+                {showUpdated && updatedLabel && (
+                  <span className="single-post-updated">Updated - {updatedLabel}</span>
                 )}
-              {post.publishedAt && (
-                <span className="inline-flex items-center">
-                  {new Date(post.publishedAt).toLocaleDateString("en-US", {
-                    day: "numeric",
-                    month: "short",
-                    year: "numeric",
-                  })}
-                  <ShareButton
-                    url={"https://www.dinasuvadu.com" + canonicalPath}
-                    title={post.title}
-                    description={post.meta?.description}
-                  />
-                </span>
-              )}
+                <ShareButton
+                  url={"https://www.dinasuvadu.com" + canonicalPath}
+                  title={post.title}
+                  description={post.meta?.description}
+                />
+              </div>
             </div>
-          </div>
+          </header>
 
           {/* Hero Image */}
           {post.heroImage && (

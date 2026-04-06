@@ -174,6 +174,36 @@ img {
   gap: 40px;
 }
 
+.single-post-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.single-post-main {
+  min-width: 0;
+}
+
+.single-post-sidebar {
+  width: 100%;
+}
+
+.single-post-sidebar-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 2px 12px rgba(15, 23, 42, 0.06);
+}
+
+.single-post-sidebar-title {
+  font-family: var(--font-mukta-malar), sans-serif;
+  font-size: 24px;
+  font-weight: 800;
+  color: #111827;
+  margin-bottom: 12px;
+}
+
 .post-meta-social {
   display: flex;
   justify-content: space-between;
@@ -638,6 +668,170 @@ a:hover {
   font-size: clamp(21px, 2vw, 22px);
   font-family: var(--font-mukta-malar);
   font-weight: 700;
+}
+
+.single-post-header-card {
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 28px;
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.single-post-breadcrumbs {
+  margin-bottom: 14px;
+}
+
+.single-post-title--hero {
+  font-size: clamp(34px, 5vw, 66px);
+  line-height: 1.08;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin-bottom: 14px;
+}
+
+.single-post-subtitle {
+  color: #1f2937;
+  font-size: clamp(21px, 2.6vw, 48px);
+  line-height: 1.38;
+  font-weight: 600;
+  margin-bottom: 18px;
+}
+
+.single-post-meta {
+  border-top: 1px solid #d1d5db;
+  padding-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.single-post-meta-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.single-post-author {
+  color: #111827;
+  font-size: 19px;
+  font-weight: 500;
+  font-family: var(--font-mukta-malar);
+}
+
+.single-post-author span {
+  font-weight: 700;
+}
+
+.single-post-readtime {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #1f2937;
+  font-size: 20px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.single-post-clock {
+  color: #6b7280;
+  font-size: 22px;
+  line-height: 1;
+}
+
+.single-post-meta-bottom {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  color: #1f2937;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.single-post-updated::before {
+  content: "|";
+  color: #9ca3af;
+  margin-right: 10px;
+}
+
+@media (min-width: 992px) and (max-width: 1400px) {
+  .single-post-layout {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .single-post-main {
+    flex: 1 1 auto;
+  }
+
+  .single-post-sidebar {
+    flex: 0 0 326px;
+    max-width: 326px;
+  }
+}
+
+@media (min-width: 1401px) {
+  .single-post-layout {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 28px;
+  }
+
+  .single-post-main {
+    flex: 1 1 auto;
+  }
+
+  .single-post-sidebar {
+    flex: 0 0 340px;
+    max-width: 340px;
+  }
+}
+
+@media (max-width: 991px) {
+  .single-post-header-card {
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 18px;
+  }
+
+  .single-post-title--hero {
+    font-size: clamp(28px, 9vw, 44px);
+    margin-bottom: 12px;
+  }
+
+  .single-post-subtitle {
+    font-size: clamp(17px, 5.6vw, 30px);
+    margin-bottom: 14px;
+  }
+
+  .single-post-author {
+    font-size: 17px;
+  }
+
+  .single-post-readtime {
+    font-size: 18px;
+  }
+
+  .single-post-meta-bottom {
+    font-size: 15px;
+  }
+
+  .single-post-updated::before {
+    margin-right: 8px;
+  }
+
+  .single-post-sidebar {
+    margin-top: 12px;
+  }
+
+  .single-post-sidebar .sticky {
+    position: static;
+  }
 }
 
 .post-summary-box {
@@ -1430,6 +1624,28 @@ a:hover {
   .post-tags .tag-chip {
     background-color: #3a3a3a !important;
     color: #ededed !important;
+  }
+  .single-post-header-card {
+    background-color: #171717 !important;
+    border-color: #2f2f2f !important;
+  }
+  .single-post-title--hero,
+  .single-post-subtitle,
+  .single-post-author,
+  .single-post-readtime,
+  .single-post-meta-bottom,
+  .single-post-sidebar-title {
+    color: #ededed !important;
+  }
+  .single-post-meta {
+    border-top-color: #3a3a3a !important;
+  }
+  .single-post-clock {
+    color: #9ca3af !important;
+  }
+  .single-post-sidebar-card {
+    background-color: #1d1d1d !important;
+    border-color: #333 !important;
   }
   .menu-btn, .search-btn, .search-bar button {
     color: #60a5fa !important; 
