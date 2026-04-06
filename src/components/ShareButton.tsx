@@ -51,7 +51,15 @@ export default function ShareButton({
           text: description || "Check out this post!",
           url: shareUrl,
         });
-      } catch (err) {
+      } catch (err: unknown) {
+        if (
+          err &&
+          typeof err === "object" &&
+          "name" in err &&
+          (err as { name?: string }).name === "AbortError"
+        ) {
+          return;
+        }
         console.error("Error sharing:", err);
         showToast("error", "Failed to share the post.");
       }
@@ -68,10 +76,19 @@ export default function ShareButton({
 
   return (
     <>
-      <span
+      <button
+        type="button"
         className="shareButton"
         onClick={handleShare}
-        style={{ cursor: "pointer", marginLeft: "8px" }}
+        aria-label="Share this article"
+        style={{
+          cursor: "pointer",
+          marginLeft: "8px",
+          background: "transparent",
+          border: 0,
+          padding: 0,
+          lineHeight: 0,
+        }}
       >
         <svg
           width="22"
@@ -92,7 +109,7 @@ export default function ShareButton({
             </clipPath>
           </defs>
         </svg>
-      </span>
+      </button>
 
       {toast ? (
         <div
