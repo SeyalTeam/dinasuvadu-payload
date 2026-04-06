@@ -17,6 +17,7 @@ import {
   resolvePostPathCandidates,
 } from "@/lib/post-url";
 import { convertLexicalToHTML } from "@payloadcms/richtext-lexical/html";
+import { EmbedHydrator } from "@/components/RichText/EmbedHydrator";
 
 // Generate dynamic metadata for subcategory post pages
 export async function generateMetadata({ params }: { params: Promise<{ categorySlug: string; postSlug: string; subPostSlug: string }> }): Promise<Metadata> {
@@ -535,6 +536,10 @@ export default async function SubCategoryPostPage({
   const postContentPlainText = postContentHtml
     ? ""
     : extractPlainTextFromRichText(post.content);
+  const hasTwitterEmbed = /(twitter\.com|x\.com|platform\.twitter\.com)/i.test(
+    postContentHtml
+  );
+  const hasInstagramEmbed = /instagram\.com/i.test(postContentHtml);
 
   // Render the page
   return (
@@ -828,10 +833,18 @@ export default async function SubCategoryPostPage({
           {(postContentHtml || postContentPlainText) && (
             <section className="mb-12">
               {postContentHtml ? (
-                <div
-                  className="payload-richtext prose md:prose-md max-w-none"
-                  dangerouslySetInnerHTML={{ __html: postContentHtml }}
-                />
+                <>
+                  {(hasTwitterEmbed || hasInstagramEmbed) && (
+                    <EmbedHydrator
+                      enableTwitter={hasTwitterEmbed}
+                      enableInstagram={hasInstagramEmbed}
+                    />
+                  )}
+                  <div
+                    className="payload-richtext prose md:prose-md max-w-none"
+                    dangerouslySetInnerHTML={{ __html: postContentHtml }}
+                  />
+                </>
               ) : (
                 <div className="prose prose-lg prose-blue max-w-none text-gray-800 leading-relaxed">
                   {postContentPlainText
