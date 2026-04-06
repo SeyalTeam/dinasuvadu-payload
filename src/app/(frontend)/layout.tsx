@@ -10,7 +10,8 @@ import { Mukta_Malar } from "next/font/google";
 
 const muktaMalar = Mukta_Malar({
   subsets: ["tamil", "latin"],
-  weight: ["200", "300", "400", "500", "600", "700", "800"],
+  // Keep only commonly used weights to reduce initial font preload pressure.
+  weight: ["400", "500", "700", "800"],
   display: "swap",
   variable: "--font-mukta-malar",
 });
