@@ -644,21 +644,19 @@ export default async function SubCategoryPostPage({
                   </span>
                 )}
               {post.publishedAt && (
-                <span>
+                <span className="inline-flex items-center">
                   {new Date(post.publishedAt).toLocaleDateString("en-US", {
                     day: "numeric",
                     month: "short",
                     year: "numeric",
                   })}
+                  <ShareButton
+                    url={"https://www.dinasuvadu.com" + canonicalPath}
+                    title={post.title}
+                    description={post.meta?.description}
+                  />
                 </span>
               )}
-            </div>
-            <div className="post-meta-social">
-              <ShareButton
-                url={"https://www.dinasuvadu.com" + canonicalPath}
-                title={post.title}
-                description={post.meta?.description}
-              />
             </div>
           </div>
 
