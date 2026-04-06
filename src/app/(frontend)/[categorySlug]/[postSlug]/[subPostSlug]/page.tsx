@@ -96,6 +96,16 @@ type Post = {
   tags?: Tag[];
 };
 
+function trimTrailingEmptyHtmlBlocks(html: string): string {
+  if (!html) return html;
+  return html
+    .replace(
+      /(?:<p(?:\s[^>]*)?>(?:\s|&nbsp;|<br\s*\/?>)*<\/p>\s*)+$/gi,
+      ""
+    )
+    .trim();
+}
+
 // API base URL
 const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 
@@ -533,7 +543,9 @@ export default async function SubCategoryPostPage({
     }
   }
 
-  const postContentHtml = convertRichTextToHTML(post.content);
+  const postContentHtml = trimTrailingEmptyHtmlBlocks(
+    convertRichTextToHTML(post.content)
+  );
   const postContentPlainText = postContentHtml
     ? ""
     : extractPlainTextFromRichText(post.content);
@@ -728,7 +740,7 @@ export default async function SubCategoryPostPage({
 
           {/* Tags */}
           {(post.tags ?? []).length > 0 && (
-            <div className="post-tags mt-8">
+            <div className="post-tags mt-4">
               <div className="tags-bar">
                 <span className="tags-icon" aria-hidden="true">
                   <svg

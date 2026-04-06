@@ -175,6 +175,16 @@ function extractPlainTextFromRichText(content: Post["content"]): string {
     .join("\n");
 }
 
+function trimTrailingEmptyHtmlBlocks(html: string): string {
+  if (!html) return html;
+  return html
+    .replace(
+      /(?:<p(?:\s[^>]*)?>(?:\s|&nbsp;|<br\s*\/?>)*<\/p>\s*)+$/gi,
+      ""
+    )
+    .trim();
+}
+
 const normalizeSlug = (slug: string): string => {
   try {
     return decodeURIComponent(slug);
@@ -994,7 +1004,9 @@ export default async function PostOrSubCategoryPage({
                 {block.blockType === "content" && block.content && (
                   <div
                     className="prose prose-lg prose-blue max-w-none text-gray-800 leading-relaxed"
-                    dangerouslySetInnerHTML={{ __html: block.content }}
+                    dangerouslySetInnerHTML={{
+                      __html: trimTrailingEmptyHtmlBlocks(block.content),
+                    }}
                   />
                 )}
               </section>
@@ -1030,7 +1042,7 @@ export default async function PostOrSubCategoryPage({
 
           {/* Tags */}
           {(post.tags ?? []).length > 0 && (
-            <div className="post-tags mt-8">
+            <div className="post-tags mt-4">
               <div className="tags-bar">
                 <span className="tags-icon" aria-hidden="true">
                   <svg

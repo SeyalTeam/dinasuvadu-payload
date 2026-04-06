@@ -415,20 +415,46 @@ img {
   color: #000000;
 }
 
+/* Avoid extra blank gap after article body before tags */
+.post-desc:last-child {
+  margin-bottom: 0 !important;
+}
+
+.payload-richtext > *:last-child {
+  margin-bottom: 0 !important;
+}
+
 @media (max-width: 768px) {
+  .post-tags {
+    margin-top: 12px !important;
+  }
+
   .post-tags .tags-bar {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    gap: 8px;
     padding: 10px 12px;
     border-radius: 24px;
+  }
+
+  .post-tags .tags-bar::-webkit-scrollbar {
+    display: none;
   }
 
   .post-tags .tags-icon {
     width: 28px;
     height: 28px;
+    flex-shrink: 0;
   }
 
   .post-tags .tag-chip {
     padding: 7px 14px;
     font-size: 0.95rem;
+    white-space: nowrap;
+    flex-shrink: 0;
   }
 }
 
