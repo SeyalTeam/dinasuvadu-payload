@@ -1055,6 +1055,7 @@ export default async function PostOrSubCategoryPage({
                     className="w-full h-80 object-cover"
                     sizes="(max-width: 1024px) 100vw, 66vw"
                     priority
+                    fetchPriority="high"
                     unoptimized
                   />
                 ) : (
@@ -1066,6 +1067,7 @@ export default async function PostOrSubCategoryPage({
                     className="w-full h-80 object-cover"
                     sizes="(max-width: 1024px) 100vw, 66vw"
                     priority
+                    fetchPriority="high"
                     unoptimized
                   />
                 )}

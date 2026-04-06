@@ -812,6 +812,7 @@ export default async function SubCategoryPostPage({
                       className="w-full h-64 sm:h-96 object-cover rounded-lg shadow-lg"
                       sizes="(max-width: 1024px) 100vw, 66vw"
                       priority
+                      fetchPriority="high"
                       unoptimized
                     />
                   ) : (
