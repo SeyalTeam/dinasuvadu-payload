@@ -377,21 +377,59 @@ img {
   color: #bc2a8d !important;
 }
 
-.tags {
+.post-tags .tags-bar {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 10px;
+  padding: 14px 18px;
+  border: 1px solid #e6e6e6;
+  border-radius: 9999px;
+  background-color: #f7f7f7;
 }
 
-.post-tags a {
-  margin-top: 10px;
+.post-tags .tags-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  color: #666666;
+  flex-shrink: 0;
+}
+
+.post-tags .tag-chip {
   text-decoration: none;
-  border-radius: 5px;
-  padding: 5px 10px;
-  color: #000;
-  background-color: #e1e1e1;
-  font-size: 12px;
-  font-weight: 500;
+  border-radius: 9999px;
+  padding: 9px 18px;
+  color: #161616;
+  background-color: #e9e9e9;
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.post-tags .tag-chip:hover {
+  background-color: #dddddd;
+  color: #000000;
+}
+
+@media (max-width: 768px) {
+  .post-tags .tags-bar {
+    padding: 10px 12px;
+    border-radius: 24px;
+  }
+
+  .post-tags .tags-icon {
+    width: 28px;
+    height: 28px;
+  }
+
+  .post-tags .tag-chip {
+    padding: 7px 14px;
+    font-size: 0.95rem;
+  }
 }
 
 .category-grid {
@@ -1356,8 +1394,15 @@ a:hover {
   .post-svg p {
     background-color: #2a2a2a !important;
   }
-  .post-tags a {
-    background-color: #333 !important;
+  .post-tags .tags-bar {
+    background-color: #262626 !important;
+    border-color: #3a3a3a !important;
+  }
+  .post-tags .tags-icon {
+    color: #b3b3b3 !important;
+  }
+  .post-tags .tag-chip {
+    background-color: #3a3a3a !important;
     color: #ededed !important;
   }
   .menu-btn, .search-btn, .search-bar button {
