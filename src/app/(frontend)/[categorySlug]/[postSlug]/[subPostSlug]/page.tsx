@@ -9,12 +9,14 @@ import { notFound, redirect } from "next/navigation";
 import { getPayload } from "payload";
 import config from "@/payload.config";
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { buildMetadata, buildBreadcrumbLd, buildArticleLd } from "@/lib/seo";
 import {
   hasTopLevelAndPostSlugMatch,
   resolveCanonicalPostPath,
   resolvePostPathCandidates,
 } from "@/lib/post-url";
+import { convertLexicalToHTML } from "@payloadcms/richtext-lexical/html";
 
 // Generate dynamic metadata for subcategory post pages
 export async function generateMetadata({ params }: { params: Promise<{ categorySlug: string; postSlug: string; subPostSlug: string }> }): Promise<Metadata> {
@@ -30,7 +32,6 @@ export async function generateMetadata({ params }: { params: Promise<{ categoryS
   const canonical = `https://www.dinasuvadu.com${canonicalPath}`;
   return buildMetadata({ title, description, imageUrl, type: "article", canonical });
 }
-import RichText from "@/components/RichText";
 
 // Type definitions
 type RichTextChild = {
@@ -264,6 +265,14 @@ const fetchLatestPosts = unstable_cache(
           ],
         },
         depth: 1,
+        select: {
+          id: true,
+          slug: true,
+          title: true,
+          categories: true,
+          heroImage: true,
+          meta: true,
+        },
       });
       return (response.docs as unknown as Post[]) || [];
     } catch (error) {
@@ -274,6 +283,139 @@ const fetchLatestPosts = unstable_cache(
   ["subpost-route-latest-posts"],
   { revalidate: 60 }
 );
+
+async function LatestPostsSidebar({ currentPostSlug }: { currentPostSlug: string }) {
+  const latestPosts = await fetchLatestPosts(currentPostSlug);
+
+  const parentCategoryIds = Array.from(
+    new Set(
+      latestPosts
+        .map((latestPost) => latestPost.categories?.[0]?.parent)
+        .filter((parent): parent is string => typeof parent === "string")
+    )
+  );
+
+  const parentCategoryEntries = await Promise.all(
+    parentCategoryIds.map(async (parentId) => {
+      const parentCategory = await fetchParentCategory(parentId);
+      return [parentId, parentCategory] as const;
+    })
+  );
+
+  const parentCategoriesMap: Record<
+    string,
+    { slug: string; title: string } | null
+  > = Object.fromEntries(parentCategoryEntries);
+
+  return (
+    <aside className="lg:col-span-1 mt-12 lg:mt-0 latest-posts">
+      <div className="sticky top-20 bg-gray-50 border border-gray-200 rounded-lg p-6 shadow-sm">
+        <h2 className="category-title">Latest Posts</h2>
+        {latestPosts.length > 0 ? (
+          <div
+            className="space-y-4"
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "15px",
+            }}
+          >
+            {latestPosts.map((latestPost) => {
+              const latestCategory = latestPost.categories?.[0];
+              let latestCategorySlug = latestCategory?.slug || "uncategorized";
+              let latestSubCategorySlug: string | null = null;
+
+              if (latestCategory?.parent) {
+                const parent =
+                  typeof latestCategory.parent === "string"
+                    ? parentCategoriesMap[latestCategory.parent]
+                    : latestCategory.parent;
+                if (parent) {
+                  latestSubCategorySlug = latestCategorySlug;
+                  latestCategorySlug = parent.slug || "uncategorized";
+                }
+              }
+
+              const imageUrl = getImageUrl(
+                latestPost.heroImage || latestPost.meta?.image,
+                "thumb"
+              );
+              const imageAlt =
+                latestPost.heroImage?.alt ||
+                latestPost.meta?.image?.alt ||
+                "Post Image";
+
+              return (
+                <Link
+                  key={latestPost.id}
+                  href={
+                    latestSubCategorySlug
+                      ? `/${latestCategorySlug}/${latestSubCategorySlug}/${latestPost.slug}`
+                      : `/${latestCategorySlug}/${latestPost.slug}`
+                  }
+                  className="block p-4 bg-white border border-gray-200 rounded-md hover:shadow-md hover:bg-gray-100 transition-all"
+                >
+                  <div className="latest-post-rt">
+                    <div style={{ flex: 1 }}>
+                      <div
+                        className="para-txt"
+                        style={{
+                          ...clampStyle,
+                          fontSize: "13px",
+                          fontWeight: "500",
+                          WebkitBoxOrient: "vertical" as const,
+                        }}
+                      >
+                        {latestPost.title}
+                      </div>
+                    </div>
+                    {imageUrl ? (
+                      <Image
+                        alt={imageAlt}
+                        src={imageUrl}
+                        width={120}
+                        height={80}
+                        sizes="120px"
+                        style={{
+                          objectFit: "cover",
+                          borderRadius: "4px",
+                          marginLeft: "12px",
+                        }}
+                        unoptimized
+                      />
+                    ) : (
+                      <div>
+                        <span
+                          className="text-gray-500"
+                          style={{ fontSize: "12px" }}
+                        >
+                          No Image
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="text-gray-600">No recent posts available.</p>
+        )}
+      </div>
+    </aside>
+  );
+}
+
+function LatestPostsSidebarFallback() {
+  return (
+    <aside className="lg:col-span-1 mt-12 lg:mt-0 latest-posts">
+      <div className="sticky top-20 bg-gray-50 border border-gray-200 rounded-lg p-6 shadow-sm">
+        <h2 className="category-title">Latest Posts</h2>
+        <p className="text-gray-600">Loading latest posts...</p>
+      </div>
+    </aside>
+  );
+}
 
 // Fetch category details by ID
 async function fetchCategoryById(
@@ -316,6 +458,20 @@ function extractPlainTextFromRichText(content: any): string {
     .join("\n");
 }
 
+function convertRichTextToHTML(content: Post["content"]): string {
+  if (!content) return "";
+
+  try {
+    return convertLexicalToHTML({
+      data: content as any,
+      disableContainer: true,
+    });
+  } catch (error) {
+    console.error("Error converting rich text content to HTML:", error);
+    return "";
+  }
+}
+
 export default async function SubCategoryPostPage({
   params,
 }: {
@@ -352,11 +508,7 @@ export default async function SubCategoryPostPage({
     redirect(canonicalPath);
   }
 
-  // Fetch non-dependent sidebar/category data in parallel.
-  const [subCategory, latestPosts] = await Promise.all([
-    fetchCategoryBySlug(postSlug),
-    fetchLatestPosts(subPostSlug),
-  ]);
+  const subCategory = await fetchCategoryBySlug(postSlug);
 
   // Fetch subcategory info for breadcrumbs/heading (soft fallback, no hard 404 here).
   const resolvedParentCategory =
@@ -379,29 +531,10 @@ export default async function SubCategoryPostPage({
     }
   }
 
-  // Pre-fetch parent categories for latest posts
-  const parentCategoryIds = Array.from(
-    new Set(
-      latestPosts
-        .map((latestPost) => latestPost.categories?.[0]?.parent)
-        .filter((parent): parent is string => typeof parent === "string")
-    )
-  );
-
-  const parentCategoryEntries = await Promise.all(
-    parentCategoryIds.map(async (parentId) => {
-      const parentCategory = await fetchParentCategory(parentId);
-      return [parentId, parentCategory] as const;
-    })
-  );
-
-  const parentCategoriesMap: Record<
-    string,
-    { slug: string; title: string } | null
-  > = Object.fromEntries(parentCategoryEntries);
-
-  // Extract plain text content
-  const postContent = extractPlainTextFromRichText(post.content);
+  const postContentHtml = convertRichTextToHTML(post.content);
+  const postContentPlainText = postContentHtml
+    ? ""
+    : extractPlainTextFromRichText(post.content);
 
   // Render the page
   return (
@@ -691,10 +824,27 @@ export default async function SubCategoryPostPage({
             </figure>
           )}
 
-          {/* Post Content (Rich Text) */}
-          {post.content && (
+          {/* Post Content */}
+          {(postContentHtml || postContentPlainText) && (
             <section className="mb-12">
-              <RichText data={post.content as any} />
+              {postContentHtml ? (
+                <div
+                  className="payload-richtext prose md:prose-md max-w-none"
+                  dangerouslySetInnerHTML={{ __html: postContentHtml }}
+                />
+              ) : (
+                <div className="prose prose-lg prose-blue max-w-none text-gray-800 leading-relaxed">
+                  {postContentPlainText
+                    .split("\n")
+                    .map((paragraph, index) =>
+                      paragraph.trim() ? (
+                        <p key={index} className="post-desc">
+                          {paragraph}
+                        </p>
+                      ) : null
+                    )}
+                </div>
+              )}
             </section>
           )}
 
@@ -916,116 +1066,9 @@ export default async function SubCategoryPostPage({
           )}
         </article>
 
-        {/* Sidebar: Latest Posts */}
-        <aside className="lg:col-span-1 mt-12 lg:mt-0 latest-posts">
-          <div className="sticky top-20 bg-gray-50 border border-gray-200 rounded-lg p-6 shadow-sm">
-            <h2 className="category-title">Latest Posts</h2>
-            {latestPosts.length > 0 ? (
-              <div
-                className="space-y-4"
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "15px",
-                }}
-              >
-                {latestPosts.map((latestPost) => {
-                  const latestCategory = latestPost.categories?.[0];
-                  let latestCategorySlug =
-                    latestCategory?.slug || "uncategorized";
-                  let latestSubCategorySlug: string | null = null;
-
-                  if (latestCategory?.parent) {
-                    const parent =
-                      typeof latestCategory.parent === "string"
-                        ? parentCategoriesMap[latestCategory.parent]
-                        : latestCategory.parent;
-                    if (parent) {
-                      latestSubCategorySlug = latestCategorySlug;
-                      latestCategorySlug = parent.slug || "uncategorized";
-                    }
-                  }
-
-                  const imageUrl = getImageUrl(
-                    latestPost.heroImage || latestPost.meta?.image,
-                    "thumb"
-                  );
-                  const imageAlt =
-                    latestPost.heroImage?.alt ||
-                    latestPost.meta?.image?.alt ||
-                    "Post Image";
-
-                  return (
-                    <Link
-                      key={latestPost.id}
-                      href={
-                        latestSubCategorySlug
-                          ? `/${latestCategorySlug}/${latestSubCategorySlug}/${latestPost.slug}`
-                          : `/${latestCategorySlug}/${latestPost.slug}`
-                      }
-                      className="block p-4 bg-white border border-gray-200 rounded-md hover:shadow-md hover:bg-gray-100 transition-all"
-                    >
-                      <div className="latest-post-rt">
-                        <div style={{ flex: 1 }}>
-                          <div
-                            className="para-txt"
-                            style={{
-                              ...clampStyle,
-                              fontSize: "13px",
-                              fontWeight: "500",
-                              WebkitBoxOrient: "vertical" as const,
-                            }}
-                          >
-                            {latestPost.title}
-                          </div>
-                          {/* <div style={{ marginTop: "4px" }}>
-                            <Space size={4}>
-                              <ClockCircleOutlined
-                                style={{ fontSize: "12px", color: "#8c8c8c" }}
-                              />
-                              <Text
-                                type="secondary"
-                                style={{ fontSize: "12px" }}
-                              >
-                                5 Min Read
-                              </Text>
-                            </Space>
-                          </div> */}
-                        </div>
-                        {imageUrl ? (
-                          <Image
-                            alt={imageAlt}
-                            src={imageUrl}
-                            width={120}
-                            height={80}
-                            sizes="120px"
-                            style={{
-                              objectFit: "cover",
-                              borderRadius: "4px",
-                              marginLeft: "12px",
-                            }}
-                            unoptimized
-                          />
-                        ) : (
-                          <div>
-                            <span
-                              className="text-gray-500"
-                              style={{ fontSize: "12px" }}
-                            >
-                              No Image
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    </Link>
-                  );
-                })}
-              </div>
-            ) : (
-              <p className="text-gray-600">No recent posts available.</p>
-            )}
-          </div>
-        </aside>
+        <Suspense fallback={<LatestPostsSidebarFallback />}>
+          <LatestPostsSidebar currentPostSlug={subPostSlug} />
+        </Suspense>
       </div>
     </div>
     </>

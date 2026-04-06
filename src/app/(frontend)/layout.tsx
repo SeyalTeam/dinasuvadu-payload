@@ -26,24 +26,40 @@ const fetchCategoriesCached = unstable_cache(
   async (): Promise<{ all: Category[]; homepage: Category[] }> => {
     const payload = await getPayload({ config });
 
-    // Fetch all categories for sub-menu resolution
+    // Fetch only the fields needed by frontend nav to keep payload small.
     const allRes = await payload.find({
       collection: "categories",
-      depth: 2,
-      limit: 100,
+      depth: 0,
+      limit: 200,
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        parent: true,
+      },
     });
     const allCategories = (allRes.docs as unknown as Category[]) || [];
+    const categoriesById = new Map(
+      allCategories.map((category) => [String(category.id), category])
+    );
 
-    // Fetch homepage settings for ordered top-level categories
+    // Read only homepage category IDs, then hydrate from allCategories map.
     const homepageSettings = (await payload.findGlobal({
       slug: "homepage-settings",
-      depth: 2,
+      depth: 0,
+      select: {
+        categories: true,
+      },
     })) as { categories?: (string | Category)[] };
 
     let homepageCategories: Category[] = [];
     if (homepageSettings.categories && homepageSettings.categories.length > 0) {
       homepageCategories = homepageSettings.categories
-        .map((c) => (typeof c === "string" ? null : c))
+        .map((categoryRef) =>
+          typeof categoryRef === "string"
+            ? categoriesById.get(categoryRef)
+            : categoriesById.get(String(categoryRef.id)) || categoryRef
+        )
         .filter(Boolean) as Category[];
     }
 

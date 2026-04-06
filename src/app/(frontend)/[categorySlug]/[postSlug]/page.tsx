@@ -1,4 +1,4 @@
-import React from "react";
+import React, { Suspense } from "react";
 export const revalidate = 60; // Revalidate every 60 seconds
 export const dynamicParams = true; // Enable on-demand rendering for non-pre-rendered posts
 import type { Metadata } from "next";
@@ -373,6 +373,14 @@ const fetchLatestPosts = unstable_cache(
           ],
         },
         depth: 1,
+        select: {
+          id: true,
+          slug: true,
+          title: true,
+          categories: true,
+          heroImage: true,
+          meta: true,
+        },
       });
       return (response.docs as unknown as Post[]) || [];
     } catch (error) {
@@ -383,6 +391,139 @@ const fetchLatestPosts = unstable_cache(
   ["post-route-latest-posts"],
   { revalidate: 60 }
 );
+
+async function LatestPostsSidebar({ currentPostSlug }: { currentPostSlug: string }) {
+  const latestPosts = await fetchLatestPosts(currentPostSlug);
+
+  const parentCategoryIds = Array.from(
+    new Set(
+      latestPosts
+        .map((latestPost) => latestPost.categories?.[0]?.parent)
+        .filter((parent): parent is string => typeof parent === "string")
+    )
+  );
+
+  const parentCategoryEntries = await Promise.all(
+    parentCategoryIds.map(async (parentId) => {
+      const parentCategory = await fetchParentCategory(parentId);
+      return [parentId, parentCategory] as const;
+    })
+  );
+
+  const parentCategoriesMap: Record<
+    string,
+    { slug: string; title: string } | null
+  > = Object.fromEntries(parentCategoryEntries);
+
+  return (
+    <aside className="lg:col-span-1 mt-12 lg:mt-0 latest-posts">
+      <div className="sticky top-20 bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+        <h2 className="category-title">Latest Posts</h2>
+        {latestPosts.length > 0 ? (
+          <div
+            className="space-y-4"
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "15px",
+            }}
+          >
+            {latestPosts.map((latestPost) => {
+              const latestCategory = latestPost.categories?.[0];
+              let latestCategorySlug = latestCategory?.slug || "uncategorized";
+              let latestSubCategorySlug: string | null = null;
+
+              if (latestCategory?.parent) {
+                const parent =
+                  typeof latestCategory.parent === "string"
+                    ? parentCategoriesMap[latestCategory.parent]
+                    : latestCategory.parent;
+                if (parent) {
+                  latestSubCategorySlug = latestCategorySlug;
+                  latestCategorySlug = parent.slug || "uncategorized";
+                }
+              }
+
+              const imageUrl = getImageUrl(
+                latestPost.heroImage || latestPost.meta?.image,
+                "thumb"
+              );
+              const imageAlt =
+                latestPost.heroImage?.alt ||
+                latestPost.meta?.image?.alt ||
+                "Post Image";
+
+              return (
+                <Link
+                  key={latestPost.id}
+                  href={
+                    latestSubCategorySlug
+                      ? `/${latestCategorySlug}/${latestSubCategorySlug}/${latestPost.slug}`
+                      : `/${latestCategorySlug}/${latestPost.slug}`
+                  }
+                  className="group block border-b border-gray-200 pb-4 last:border-b-0"
+                >
+                  <div className="latest-post-rt">
+                    <div style={{ flex: 1 }}>
+                      <div
+                        className="para-txt"
+                        style={{
+                          ...clampStyle,
+                          fontSize: "13px",
+                          fontWeight: "500",
+                          WebkitBoxOrient: "vertical" as const,
+                        }}
+                      >
+                        {latestPost.title}
+                      </div>
+                    </div>
+                    {imageUrl ? (
+                      <Image
+                        alt={imageAlt}
+                        src={imageUrl}
+                        width={120}
+                        height={80}
+                        sizes="120px"
+                        style={{
+                          objectFit: "cover",
+                          borderRadius: "4px",
+                          marginLeft: "12px",
+                        }}
+                        unoptimized
+                      />
+                    ) : (
+                      <div>
+                        <span
+                          className="text-gray-500"
+                          style={{ fontSize: "12px" }}
+                        >
+                          No Image
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="text-gray-600">No recent posts available.</p>
+        )}
+      </div>
+    </aside>
+  );
+}
+
+function LatestPostsSidebarFallback() {
+  return (
+    <aside className="lg:col-span-1 mt-12 lg:mt-0 latest-posts">
+      <div className="sticky top-20 bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+        <h2 className="category-title">Latest Posts</h2>
+        <p className="text-gray-600">Loading latest posts...</p>
+      </div>
+    </aside>
+  );
+}
 
 // Fetch category details by ID
 async function fetchCategoryById(
@@ -653,29 +794,6 @@ export default async function PostOrSubCategoryPage({
     redirect(canonicalPath);
   }
 
-  const latestPosts = await fetchLatestPosts(postSlug);
-
-  const parentCategoryIds = Array.from(
-    new Set(
-      latestPosts
-        .map((latestPost) => latestPost.categories?.[0]?.parent)
-        .filter((parent): parent is string => typeof parent === "string")
-    )
-  );
-
-  const parentCategoryEntries = await Promise.all(
-    parentCategoryIds.map(async (parentId) => {
-      const parentCategory = await fetchParentCategory(parentId);
-      return [parentId, parentCategory] as const;
-    })
-  );
-
-  const parentCategoriesMap: Record<
-    string,
-    { slug: string; title: string } | null
-  > = Object.fromEntries(parentCategoryEntries);
-
-  // Extract plain text content if layout is not available
   const postContent = post.content
     ? extractPlainTextFromRichText(post.content)
     : "";
@@ -1264,124 +1382,9 @@ export default async function PostOrSubCategoryPage({
           )}
         </article>
 
-        {/* Sidebar: Latest Posts */}
-        <aside className="lg:col-span-1 mt-12 lg:mt-0 latest-posts">
-          <div className="sticky top-20 bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
-            <h2 className="category-title">Latest Posts</h2>
-            {latestPosts.length > 0 ? (
-              <div
-                className="space-y-4"
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "15px",
-                }}
-              >
-                {latestPosts.map((latestPost) => {
-                  const latestCategory = latestPost.categories?.[0];
-                  let latestCategorySlug =
-                    latestCategory?.slug || "uncategorized";
-                  let latestSubCategorySlug: string | null = null;
-
-                  if (latestCategory?.parent) {
-                    const parent =
-                      typeof latestCategory.parent === "string"
-                        ? parentCategoriesMap[latestCategory.parent]
-                        : latestCategory.parent;
-                    if (parent) {
-                      latestSubCategorySlug = latestCategorySlug;
-                      latestCategorySlug = parent.slug || "uncategorized";
-                    }
-                  }
-
-                  const imageUrl = getImageUrl(
-                    latestPost.heroImage ||
-                      latestPost.meta?.image ||
-                      latestPost.layout?.find(
-                        (b: any) => b.blockType === "mediaBlock" && b.media
-                      )?.media,
-                    "thumb"
-                  );
-                  const imageAlt =
-                    latestPost.heroImage?.alt ||
-                    latestPost.meta?.image?.alt ||
-                    latestPost.layout?.find(
-                      (block) =>
-                        block.blockType === "mediaBlock" && block.media?.alt
-                    )?.media?.alt ||
-                    "Post Image";
-
-                  return (
-                    <Link
-                      key={latestPost.id}
-                      href={
-                        latestSubCategorySlug
-                          ? `/${latestCategorySlug}/${latestSubCategorySlug}/${latestPost.slug}`
-                          : `/${latestCategorySlug}/${latestPost.slug}`
-                      }
-                      className="group block border-b border-gray-200 pb-4 last:border-b-0"
-                    >
-                      <div className="latest-post-rt">
-                        <div style={{ flex: 1 }}>
-                          <div
-                            className="para-txt"
-                            style={{
-                              ...clampStyle,
-                              fontSize: "13px",
-                              fontWeight: "500",
-                              WebkitBoxOrient: "vertical" as const,
-                            }}
-                          >
-                            {latestPost.title}
-                          </div>
-                          {/* <div style={{ marginTop: "4px" }}>
-                            <Space size={4}>
-                              <ClockCircleOutlined
-                                style={{ fontSize: "12px", color: "#8c8c8c" }}
-                              />
-                              <Text
-                                type="secondary"
-                                style={{ fontSize: "12px" }}
-                              >
-                                5 Min Read
-                              </Text>
-                            </Space>
-                          </div> */}
-                        </div>
-                        {imageUrl ? (
-                          <Image
-                            alt={imageAlt}
-                            src={imageUrl}
-                            width={120}
-                            height={80}
-                            sizes="120px"
-                            style={{
-                              objectFit: "cover",
-                              borderRadius: "4px",
-                              marginLeft: "12px",
-                            }}
-                            unoptimized
-                          />
-                        ) : (
-                          <div>
-                            <span
-                              className="text-gray-500"
-                              style={{ fontSize: "12px" }}
-                            >
-                              No Image
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    </Link>
-                  );
-                })}
-              </div>
-            ) : (
-              <p className="text-gray-600">No recent posts available.</p>
-            )}
-          </div>
-        </aside>
+        <Suspense fallback={<LatestPostsSidebarFallback />}>
+          <LatestPostsSidebar currentPostSlug={postSlug} />
+        </Suspense>
       </div>
     </div>
     </>

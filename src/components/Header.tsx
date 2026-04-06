@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useLayoutEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { 
@@ -100,7 +100,7 @@ export default function Header({ categories, homepageCategories }: HeaderProps) 
     });
   };
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     setIsMounted(true);
     const updateVisibleItems = () => {
       if (!navContainerRef.current) return;
@@ -194,7 +194,8 @@ export default function Header({ categories, homepageCategories }: HeaderProps) 
   useEffect(() => {
     const handleScroll = () => {
       const scrollPosition = window.scrollY;
-      setIsScrolled(scrollPosition > 64);
+      const nextIsScrolled = scrollPosition > 64;
+      setIsScrolled((prev) => (prev === nextIsScrolled ? prev : nextIsScrolled));
 
       const maxScroll =
         document.documentElement.scrollHeight - window.innerHeight;
@@ -205,11 +206,13 @@ export default function Header({ categories, homepageCategories }: HeaderProps) 
       if (activeItem) {
         const activeItemWidth = activeItem.getBoundingClientRect().width;
         const newWidth = scrollFraction * activeItemWidth;
-        setUnderlineWidth(newWidth);
+        setUnderlineWidth((prev) =>
+          Math.abs(prev - newWidth) < 0.5 ? prev : newWidth
+        );
       }
     };
 
-    window.addEventListener("scroll", handleScroll);
+    window.addEventListener("scroll", handleScroll, { passive: true });
     handleScroll();
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
