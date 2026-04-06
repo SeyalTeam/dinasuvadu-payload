@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, type CSSProperties } from "react";
+import { useState, useEffect, useMemo, useRef, type CSSProperties } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -15,39 +15,6 @@ type HeaderProps = {
   categories: Category[];
   homepageCategories?: Category[];
 };
-
-const categoryGlyphMatchers: Array<{ matcher: RegExp; glyph: string }> = [
-  { matcher: /செய்திகள்/, glyph: "📰" },
-  { matcher: /இதழ்கள்/, glyph: "📘" },
-  { matcher: /அரசியல்/, glyph: "🗳" },
-  { matcher: /தமிழ்நாடு/, glyph: "📍" },
-  { matcher: /இந்தியா/, glyph: "🇮🇳" },
-  { matcher: /உலகம்/, glyph: "🌍" },
-  { matcher: /சினிமா/, glyph: "🎬" },
-  { matcher: /விளையாட்டு/, glyph: "🏆" },
-  { matcher: /பணம்|வணிகம்/, glyph: "💰" },
-  { matcher: /ஆன்மீகம்/, glyph: "🪔" },
-  { matcher: /தேர்தல்/, glyph: "✅" },
-  { matcher: /தொழில்நுட்பம்/, glyph: "💻" },
-  { matcher: /கல்வி/, glyph: "🎓" },
-  { matcher: /ஆரோக்கியம்/, glyph: "❤️" },
-  { matcher: /வேலைவாய்ப்பு/, glyph: "💼" },
-  { matcher: /கார்|பைக்|வாகனங்கள்|automobile|ஆட்டோமொபைல்/i, glyph: "🚗" },
-  { matcher: /வானிலை/, glyph: "⛅" },
-  { matcher: /வாழ்க்கை|லைஃப்ஸ்டைல்/, glyph: "☕" },
-  { matcher: /வைரல்/, glyph: "⚡" },
-  { matcher: /குற்றம்/, glyph: "🛡" },
-  { matcher: /வரலாறு/, glyph: "⏳" },
-  { matcher: /முக்கிய|டாப்-நியூஸ்/, glyph: "🔥" },
-];
-
-function getGlyphForCategory(title: string): string {
-  const normalizedTitle = title.trim();
-  const matchedEntry = categoryGlyphMatchers.find(({ matcher }) =>
-    matcher.test(normalizedTitle)
-  );
-  return matchedEntry?.glyph ?? "◦";
-}
 
 function ChevronIcon({
   size = 14,
@@ -113,6 +80,21 @@ export default function Header({ categories, homepageCategories }: HeaderProps) 
   // Organize categories into parents and children
   const parentCategories = categories.filter(c => !c.parent);
   const subCategories = categories.filter(c => c.parent);
+  const categoriesById = useMemo(
+    () => new Map(categories.map((category) => [String(category.id), category])),
+    [categories]
+  );
+
+  const resolveParentSlug = (category: Category): string | null => {
+    if (!category.parent) return null;
+
+    if (typeof category.parent !== "string") {
+      return category.parent.slug || null;
+    }
+
+    const parentCategory = categoriesById.get(category.parent);
+    return parentCategory?.slug || null;
+  };
 
   // Use homepageCategories for top-level nav if provided, otherwise fallback to sorted defaults
   const sortedParents = (homepageCategories && homepageCategories.length > 0) 
@@ -201,10 +183,7 @@ export default function Header({ categories, homepageCategories }: HeaderProps) 
     if (pathname === "/") return "home";
     const segments = pathname.split("/").filter(Boolean);
     for (const category of categories) {
-      const parentSlug =
-        category.parent && typeof category.parent !== "string"
-          ? category.parent.slug || "uncategorized"
-          : null;
+      const parentSlug = resolveParentSlug(category);
       const categoryPath = parentSlug
         ? `/${parentSlug}/${category.slug}`
         : `/${category.slug}`;
@@ -273,28 +252,8 @@ export default function Header({ categories, homepageCategories }: HeaderProps) 
 
   const selectedKey = getSelectedKey();
 
-  const getCategoryIcon = (title: string) => {
-    const glyph = getGlyphForCategory(title);
-    return (
-      <span
-        aria-hidden
-        style={{
-          display: "inline-flex",
-          width: "18px",
-          height: "18px",
-          alignItems: "center",
-          justifyContent: "center",
-          fontSize: "14px",
-          lineHeight: 1,
-        }}
-      >
-        {glyph}
-      </span>
-    );
-  };
-
   const getCategoryHref = (c: Category) => {
-    const parentSlug = c.parent && typeof c.parent !== 'string' ? c.parent.slug : null;
+    const parentSlug = resolveParentSlug(c);
     return parentSlug ? `/${parentSlug}/${c.slug}` : `/${c.slug}`;
   };
 
@@ -371,7 +330,7 @@ export default function Header({ categories, homepageCategories }: HeaderProps) 
                         style={{ 
                           display: "flex", 
                           alignItems: "center", 
-                          gap: "5px",
+                          gap: "0",
                           fontWeight: "800",
                           fontFamily: "'Mukta Malar', sans-serif",
                           fontSize: "13.5px",
@@ -380,7 +339,6 @@ export default function Header({ categories, homepageCategories }: HeaderProps) 
                           color: "inherit"
                         }}
                       >
-                        {getCategoryIcon(parent.title)}
                         {parent.title}
                         {hasChildren && (
                           <ChevronIcon
@@ -424,14 +382,13 @@ export default function Header({ categories, homepageCategories }: HeaderProps) 
                             style={{ 
                                 display: "flex", 
                                 alignItems: "center", 
-                                gap: "8px",
+                                gap: "0",
                                 fontWeight: "800",
                                 fontFamily: "'Mukta Malar', sans-serif",
                                 fontSize: "14px",
                                 letterSpacing: "-0.2px"
                             }}
                           >
-                            {getCategoryIcon(parent.title)}
                             {parent.title}
                             {getSubcategories(parent.id).length > 0 && (
                               <ChevronIcon
@@ -533,8 +490,7 @@ export default function Header({ categories, homepageCategories }: HeaderProps) 
                     onClick={() => children.length > 0 && setExpandedId(isExpanded ? null : parent.id)}
                     style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 0", borderBottom: "1px dashed #eee", cursor: "pointer" }}
                   >
-                    <div style={{ display: "flex", alignItems: "center", gap: "10px", flex: 1 }}>
-                      {getCategoryIcon(parent.title)}
+                    <div style={{ display: "flex", alignItems: "center", gap: "0", flex: 1 }}>
                       <Link 
                         href={children.length > 0 ? "#" : getCategoryHref(parent)}
                         onClick={(e) => {
