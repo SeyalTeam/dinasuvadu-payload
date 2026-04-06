@@ -1,34 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, type CSSProperties } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
-import { 
-  Newspaper, 
-  BookOpen, 
-  Globe, 
-  Clapperboard, 
-  Trophy, 
-  Cpu, 
-  CircleDollarSign, 
-  Target,
-  Flower2,
-  Speech,
-  GraduationCap,
-  CarFront,
-  Activity,
-  BriefcaseBusiness,
-  Flag,
-  Map,
-  CloudSun,
-  Zap,
-  ShieldAlert,
-  Hourglass,
-  Flame,
-  Coffee,
-  ChevronDown,
-  LayoutGrid
-} from "lucide-react";
 
 type Category = {
   id: string;
@@ -41,6 +15,67 @@ type HeaderProps = {
   categories: Category[];
   homepageCategories?: Category[];
 };
+
+const categoryGlyphMatchers: Array<{ matcher: RegExp; glyph: string }> = [
+  { matcher: /செய்திகள்/, glyph: "📰" },
+  { matcher: /இதழ்கள்/, glyph: "📘" },
+  { matcher: /அரசியல்/, glyph: "🗳" },
+  { matcher: /தமிழ்நாடு/, glyph: "📍" },
+  { matcher: /இந்தியா/, glyph: "🇮🇳" },
+  { matcher: /உலகம்/, glyph: "🌍" },
+  { matcher: /சினிமா/, glyph: "🎬" },
+  { matcher: /விளையாட்டு/, glyph: "🏆" },
+  { matcher: /பணம்|வணிகம்/, glyph: "💰" },
+  { matcher: /ஆன்மீகம்/, glyph: "🪔" },
+  { matcher: /தேர்தல்/, glyph: "✅" },
+  { matcher: /தொழில்நுட்பம்/, glyph: "💻" },
+  { matcher: /கல்வி/, glyph: "🎓" },
+  { matcher: /ஆரோக்கியம்/, glyph: "❤️" },
+  { matcher: /வேலைவாய்ப்பு/, glyph: "💼" },
+  { matcher: /கார்|பைக்|வாகனங்கள்|automobile|ஆட்டோமொபைல்/i, glyph: "🚗" },
+  { matcher: /வானிலை/, glyph: "⛅" },
+  { matcher: /வாழ்க்கை|லைஃப்ஸ்டைல்/, glyph: "☕" },
+  { matcher: /வைரல்/, glyph: "⚡" },
+  { matcher: /குற்றம்/, glyph: "🛡" },
+  { matcher: /வரலாறு/, glyph: "⏳" },
+  { matcher: /முக்கிய|டாப்-நியூஸ்/, glyph: "🔥" },
+];
+
+function getGlyphForCategory(title: string): string {
+  const normalizedTitle = title.trim();
+  const matchedEntry = categoryGlyphMatchers.find(({ matcher }) =>
+    matcher.test(normalizedTitle)
+  );
+  return matchedEntry?.glyph ?? "◦";
+}
+
+function ChevronIcon({
+  size = 14,
+  className,
+  style,
+}: {
+  size?: number;
+  className?: string;
+  style?: CSSProperties;
+}) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      style={style}
+      aria-hidden
+    >
+      <path d="m6 9 6 6 6-6" />
+    </svg>
+  );
+}
 
 export default function Header({ categories, homepageCategories }: HeaderProps) {
   const pathname = usePathname();
@@ -239,34 +274,23 @@ export default function Header({ categories, homepageCategories }: HeaderProps) 
   const selectedKey = getSelectedKey();
 
   const getCategoryIcon = (title: string) => {
-    const t = title.trim();
-    let Icon = LayoutGrid;
-    const color = "#444"; // Consistent dark gray like Vikatan icons
-
-    if (t.includes("செய்திகள்")) { Icon = Newspaper; }
-    else if (t.includes("இதழ்கள்")) { Icon = BookOpen; }
-    else if (t.includes("அரசியல்")) { Icon = Speech; }
-    else if (t.includes("தமிழ்நாடு")) { Icon = Map; }
-    else if (t.includes("இந்தியா")) { Icon = Flag; }
-    else if (t.includes("உலகம்")) { Icon = Globe; }
-    else if (t.includes("சினிமா")) { Icon = Clapperboard; }
-    else if (t.includes("விளையாட்டு")) { Icon = Trophy; }
-    else if (t.includes("பணம்") || t.includes("வணிகம்")) { Icon = CircleDollarSign; }
-    else if (t.includes("ஆன்மீகம்")) { Icon = Flower2; }
-    else if (t.includes("தேர்தல்")) { Icon = Target; }
-    else if (t.includes("தொழில்நுட்பம்")) { Icon = Cpu; }
-    else if (t.includes("கல்வி")) { Icon = GraduationCap; }
-    else if (t.includes("ஆரோக்கியம்")) { Icon = Activity; }
-    else if (t.includes("வேலைவாய்ப்பு")) { Icon = BriefcaseBusiness; }
-    else if (t.includes("கார்") || t.includes("பைக்") || t.includes("வாகனங்கள்") || t.toLowerCase().includes("automobile") || t.includes("ஆட்டோமொபைல்")) { Icon = CarFront; }
-    else if (t.includes("வானிலை")) { Icon = CloudSun; }
-    else if (t.includes("வாழ்க்கை") || t.includes("லைஃப்ஸ்டைல்")) { Icon = Coffee; }
-    else if (t.includes("வைரல்")) { Icon = Zap; }
-    else if (t.includes("குற்றம்")) { Icon = ShieldAlert; }
-    else if (t.includes("வரலாறு")) { Icon = Hourglass; }
-    else if (t.includes("முக்கிய") || t.includes("டாப்-நியூஸ்")) { Icon = Flame; }
-
-    return <Icon size={18} style={{ color }} strokeWidth={2.5} />;
+    const glyph = getGlyphForCategory(title);
+    return (
+      <span
+        aria-hidden
+        style={{
+          display: "inline-flex",
+          width: "18px",
+          height: "18px",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: "14px",
+          lineHeight: 1,
+        }}
+      >
+        {glyph}
+      </span>
+    );
   };
 
   const getCategoryHref = (c: Category) => {
@@ -358,7 +382,13 @@ export default function Header({ categories, homepageCategories }: HeaderProps) 
                       >
                         {getCategoryIcon(parent.title)}
                         {parent.title}
-                        {hasChildren && <ChevronDown size={14} className="dropdown-chevron" style={{ marginLeft: "-2px", opacity: 0.7 }} />}
+                        {hasChildren && (
+                          <ChevronIcon
+                            size={14}
+                            className="dropdown-chevron"
+                            style={{ marginLeft: "-2px", opacity: 0.7 }}
+                          />
+                        )}
                       </Link>
                       {hasChildren && (
                         <ul className="dropdown-menu">
@@ -403,7 +433,12 @@ export default function Header({ categories, homepageCategories }: HeaderProps) 
                           >
                             {getCategoryIcon(parent.title)}
                             {parent.title}
-                            {getSubcategories(parent.id).length > 0 && <ChevronDown size={14} style={{ marginLeft: "auto", opacity: 0.6 }} />}
+                            {getSubcategories(parent.id).length > 0 && (
+                              <ChevronIcon
+                                size={14}
+                                style={{ marginLeft: "auto", opacity: 0.6 }}
+                              />
+                            )}
                           </Link>
                           {getSubcategories(parent.id).length > 0 && (
                             <ul className="dropdown-submenu-dynamic">
@@ -521,9 +556,13 @@ export default function Header({ categories, homepageCategories }: HeaderProps) 
                       </Link>
                     </div>
                     {children.length > 0 && (
-                      <ChevronDown 
+                      <ChevronIcon
                         size={18}
-                        style={{ transform: isExpanded ? "rotate(180deg)" : "none", transition: "transform 0.3s", color: "#666" }}
+                        style={{
+                          transform: isExpanded ? "rotate(180deg)" : "none",
+                          transition: "transform 0.3s",
+                          color: "#666",
+                        }}
                       />
                     )}
                   </div>
