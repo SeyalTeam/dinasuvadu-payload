@@ -175,6 +175,27 @@ function getImageUrl(url: string | undefined): string | null {
   return url.startsWith("http") ? url : `${apiUrl}${url}`;
 }
 
+// Helper function for time ago formatting
+function timeAgo(dateString: string): string {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+  
+  if (diffInSeconds < 60) return `${diffInSeconds}s`;
+  const diffInMinutes = Math.floor(diffInSeconds / 60);
+  if (diffInMinutes < 60) return `${diffInMinutes}m`;
+  const diffInHours = Math.floor(diffInMinutes / 60);
+  if (diffInHours < 24) return `${diffInHours}h`;
+  const diffInDays = Math.floor(diffInHours / 24);
+  if (diffInDays < 7) return `${diffInDays}d`;
+  const diffInWeeks = Math.floor(diffInDays / 7);
+  if (diffInWeeks < 4) return `${diffInWeeks}w`;
+  const diffInMonths = Math.floor(diffInDays / 30);
+  if (diffInMonths < 12) return `${diffInMonths}mo`;
+  const diffInYears = Math.floor(diffInDays / 365);
+  return `${diffInYears}y`;
+}
+
 export async function generateMetadata(): Promise<Metadata> {
   return buildMetadata({
     title: "Dinasuvadu - Latest Tamil News, Cinema, Politics & Sports",
@@ -228,8 +249,8 @@ export default async function Home() {
 
   const featuredPost = latestPosts.length > 0 ? latestPosts[0] : null;
   const smallerPosts = latestPosts.length > 1 ? latestPosts.slice(1, 4) : [];
-  const additionalPosts =
-    latestPosts.length > 4 ? latestPosts.slice(4, 34) : [];
+  const nextFivePosts = latestPosts.length > 4 ? latestPosts.slice(4, 9) : [];
+  const additionalPosts = latestPosts.length > 9 ? latestPosts.slice(9, 34) : [];
 
   console.log(
     "Sorted categories:",
@@ -274,172 +295,125 @@ export default async function Home() {
     <div className="site">
       {/* Latest News Section */}
       {(featuredPost || smallerPosts.length > 0) && (
-        <section className="content-area">
-          <Row style={{ margin: "0" }} className="late-grid">
+        <section className="mb-8 mt-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            {/* Card 1: Featured Post */}
             {featuredPost && (
-              <Col className="feature-img" style={{ padding: "0" }}>
-                <Link href={await getPostUrl(featuredPost)}>
-                  <Card
-                    hoverable
-                    style={{
-                      borderRadius: "8px",
-                      boxShadow: "0 2px 8px rgba(0, 0, 0, 0.15)",
-                      border: "none",
-                      position: "relative",
-                      overflow: "hidden",
-                    }}
-                    styles={{ body: { padding: 0 } }} // Replace bodyStyle with styles.body
-                  >
-                    <div style={{ position: "relative" }}>
-                      {(() => {
-                        const imageUrl = getImageUrl(
-                          featuredPost.heroImage?.url
-                        );
-                        const imageAlt =
-                          featuredPost.heroImage?.alt || featuredPost.title;
-                        return imageUrl ? (
-                          <img
-                            alt={imageAlt}
-                            src={imageUrl}
-                            style={{
-                              width: "100%",
-                              height: "302px",
-                              objectFit: "cover",
-                              borderRadius: "8px",
-                              position: "relative",
-                              zIndex: 1,
-                            }}
-                          />
-                        ) : (
-                          <div
-                            style={{
-                              width: "100%",
-                              height: "300px",
-                              backgroundColor: "#f0f0f0",
-                              borderRadius: "8px 8px 0 0",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                            }}
-                          >
-                            <Text type="secondary">No Image</Text>
-                          </div>
-                        );
-                      })()}
-                      <div
-                        style={{
-                          position: "absolute",
-                          bottom: 0,
-                          left: 0,
-                          right: 0,
-                          height: "100%",
-                          background:
-                            "linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent)",
-                          zIndex: 2,
-                        }}
-                      />
-                      <div
-                        style={{
-                          position: "absolute",
-                          bottom: "16px",
-                          left: "16px",
-                          right: "16px",
-                          color: "#fff",
-                          zIndex: 3,
-                        }}
-                      >
-                        <div
-                          className="para-txt main-title"
-                          style={{
-                            ...clampStyle,
-                            fontSize: "22px",
-                            fontWeight: "600",
-                          }}
-                        >
-                          {featuredPost.title}
-                        </div>
-                        <div style={{ marginTop: "8px" }}>
-                          <Text
-                            className="para-txt"
-                            style={{ fontSize: "12px", color: "#e6e6e6" }}
-                          >
-                            {new Date(
-                              featuredPost.publishedAt
-                            ).toLocaleDateString("en-US", {
-                              day: "numeric",
-                              month: "short",
-                              year: "numeric",
-                            })}
-                          </Text>
-                        </div>
-                      </div>
+              <Link href={await getPostUrl(featuredPost)} className="block group w-full h-[260px] md:h-[280px] md:col-span-2 lg:col-span-2">
+                <div className="relative w-full h-full rounded-xl overflow-hidden shadow-sm border border-gray-200 dark:border-gray-800">
+                  <img
+                    alt={featuredPost.heroImage?.alt || featuredPost.title}
+                    src={getImageUrl(featuredPost.heroImage?.url) || ""}
+                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent z-10" />
+                  <div className="absolute bottom-0 left-0 right-0 p-4 z-20 text-white md:p-6">
+                    <div className="flex items-center gap-2 mb-3">
+                       <span className="text-sm font-medium text-gray-200 drop-shadow-md">{featuredPost.categories?.[0]?.title || "News"}</span>
+                       <span className="text-sm text-gray-400">•</span>
+                       <span className="text-sm text-gray-300 shadow-sm">{timeAgo(featuredPost.publishedAt)}</span>
                     </div>
-                  </Card>
-                </Link>
-              </Col>
+                    <div
+                      className="text-[19px] md:text-[22px] lg:text-[24px] font-bold leading-tight mb-4"
+                      style={{
+                        display: "-webkit-box",
+                        WebkitLineClamp: 3,
+                        WebkitBoxOrient: "vertical",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        textShadow: "0 2px 4px rgba(0,0,0,0.5)"
+                      }}
+                    >
+                      {featuredPost.title}
+                    </div>
+
+                  </div>
+                </div>
+              </Link>
             )}
 
-            <Col className="col-01 col-md-3">
-              <Row gutter={[16, 8]} style={{ margin: "0", rowGap: "0" }}>
-                {await Promise.all(
-                  smallerPosts.map(async (post) => {
-                    const imageUrl = getImageUrl(post.heroImage?.url);
-                    const imageAlt = post.heroImage?.alt || post.title;
+            {/* Cards 2, 3, 4: Smaller Posts */}
+            {await Promise.all(
+              smallerPosts.map(async (post) => (
+                <Link href={await getPostUrl(post)} className="block group w-full h-[260px] md:h-[280px] lg:col-span-1" key={post.id}>
+                  <div className="flex flex-col w-full h-full bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-sm border border-gray-200 dark:border-gray-700 transition-colors">
+                    <div className="relative w-full h-[45%] md:h-[48%] overflow-hidden bg-gray-100 dark:bg-gray-900 shrink-0">
+                      <img
+                        alt={post.heroImage?.alt || post.title}
+                        src={getImageUrl(post.heroImage?.url) || ""}
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      />
+                    </div>
+                    <div className="flex flex-col flex-1 p-3 md:p-4 bg-white dark:bg-gray-800 transition-colors">
+                      <div className="flex items-center gap-1.5 mb-2">
+                         <span className="text-[11px] md:text-xs font-medium text-gray-700 dark:text-gray-300">{post.categories?.[0]?.title || "News"}</span>
+                         <span className="text-[11px] md:text-xs text-gray-400 dark:text-gray-600">•</span>
+                         <span className="text-[11px] md:text-xs text-gray-500 dark:text-gray-400">{timeAgo(post.publishedAt)}</span>
+                      </div>
+                      <div
+                        className="text-[14px] md:text-[15px] font-bold leading-snug mb-auto text-gray-900 dark:text-gray-100"
+                        style={{
+                          display: "-webkit-box",
+                          WebkitLineClamp: 3,
+                          WebkitBoxOrient: "vertical",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                        }}
+                      >
+                        {post.title}
+                      </div>
 
-                    return (
-                      <Col style={{ padding: "0" }} key={post.id}>
-                        <Link href={await getPostUrl(post)}>
-                          <div className="grid-item-1 post-mob">
-                            <div style={{ flex: 1 }}>
-                              <div
-                                className="para-txt"
-                                style={{
-                                  ...clampStyle,
-                                  fontSize: "13px",
-                                  fontWeight: "600",
-                                }}
-                              >
-                                {post.title}
-                              </div>
-                              <div style={{ marginTop: "4px" }}>
-                                <Space size={8}>
-                                  <Text
-                                    className="para-txt"
-                                    type="secondary"
-                                    style={{ fontSize: "12px" }}
-                                  >
-                                    {new Date(
-                                      post.publishedAt
-                                    ).toLocaleDateString("en-US", {
-                                      day: "numeric",
-                                      month: "short",
-                                      year: "numeric",
-                                    })}
-                                  </Text>
-                                </Space>
-                              </div>
-                            </div>
-                            {imageUrl ? (
-                              <img alt={imageAlt} src={imageUrl} />
-                            ) : (
-                              <div>
-                                <Text
-                                  type="secondary"
-                                  style={{ fontSize: "12px" }}
-                                >
-                                  No Image
-                                </Text>
-                              </div>
-                            )}
-                          </div>
-                        </Link>
-                      </Col>
-                    );
-                  })
-                )}
-              </Row>
-            </Col>
-          </Row>
+
+                    </div>
+                  </div>
+                </Link>
+              ))
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* 5 Additional Grid Posts Section */}
+      {nextFivePosts.length > 0 && (
+        <section className="mb-10 mt-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            {await Promise.all(
+              nextFivePosts.map(async (post) => (
+                <Link href={await getPostUrl(post)} className="block group w-full h-[260px] md:h-[280px]" key={post.id}>
+                  <div className="flex flex-col w-full h-full bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-sm border border-gray-200 dark:border-gray-700 transition-colors">
+                    <div className="relative w-full h-[45%] md:h-[48%] overflow-hidden bg-gray-100 dark:bg-gray-900 shrink-0">
+                      <img
+                        alt={post.heroImage?.alt || post.title}
+                        src={getImageUrl(post.heroImage?.url) || ""}
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      />
+                    </div>
+                    <div className="flex flex-col flex-1 p-3 md:p-4 bg-white dark:bg-gray-800 transition-colors">
+                      <div className="flex items-center gap-1.5 mb-2">
+                         <span className="text-[11px] md:text-xs font-medium text-gray-700 dark:text-gray-300">{post.categories?.[0]?.title || "News"}</span>
+                         <span className="text-[11px] md:text-xs text-gray-400 dark:text-gray-600">•</span>
+                         <span className="text-[11px] md:text-xs text-gray-500 dark:text-gray-400">{timeAgo(post.publishedAt)}</span>
+                      </div>
+                      <div
+                        className="text-[14px] md:text-[15px] font-bold leading-snug mb-auto text-gray-900 dark:text-gray-100"
+                        style={{
+                          display: "-webkit-box",
+                          WebkitLineClamp: 3,
+                          WebkitBoxOrient: "vertical",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                        }}
+                      >
+                        {post.title}
+                      </div>
+
+
+                    </div>
+                  </div>
+                </Link>
+              ))
+            )}
+          </div>
         </section>
       )}
 
@@ -651,31 +625,33 @@ export default async function Home() {
                               </div>
                             );
                           })()}
-                          <div
-                            className="para-txt"
-                            style={{
-                              ...clampStyle,
-                              fontSize: "13px",
-                              fontWeight: "600",
-                              padding: "10px",
-                            }}
-                          >
-                            {categoryFeaturedPost.title}
-                          </div>
-                          <div style={{ paddingLeft: "10px" }}>
-                            <Text
+                          <div className="flex flex-col flex-1">
+                            <div
                               className="para-txt"
-                              type="secondary"
-                              style={{ fontSize: "12px" }}
+                              style={{
+                                ...clampStyle,
+                                fontSize: "13px",
+                                fontWeight: "600",
+                                padding: "10px",
+                              }}
                             >
-                              {new Date(
-                                categoryFeaturedPost.publishedAt
-                              ).toLocaleDateString("en-US", {
-                                day: "numeric",
-                                month: "short",
-                                year: "numeric",
-                              })}
-                            </Text>
+                              {categoryFeaturedPost.title}
+                            </div>
+                            <div style={{ padding: "0 10px 10px" }} className="mt-auto">
+                              <Text
+                                className="para-txt"
+                                type="secondary"
+                                style={{ fontSize: "12px" }}
+                              >
+                                {new Date(
+                                  categoryFeaturedPost.publishedAt
+                                ).toLocaleDateString("en-US", {
+                                  day: "numeric",
+                                  month: "short",
+                                  year: "numeric",
+                                })}
+                              </Text>
+                            </div>
                           </div>
                         </div>
                       </Link>
@@ -708,7 +684,7 @@ export default async function Home() {
                                     </Text>
                                   </div>
                                 )}
-                                <div style={{ flex: 1 }}>
+                                <div style={{ flex: 1 }} className="flex flex-col h-full min-h-[80px]">
                                   <div
                                     className="para-txt"
                                     style={{
@@ -719,7 +695,7 @@ export default async function Home() {
                                   >
                                     {post.title}
                                   </div>
-                                  <div style={{ marginTop: "4px" }}>
+                                  <div style={{ marginTop: "auto", paddingTop: "8px" }}>
                                     <Space size={4}>
                                       <Text
                                         className="para-txt"
@@ -771,7 +747,7 @@ export default async function Home() {
                                     </Text>
                                   </div>
                                 )}
-                                <div style={{ flex: 1 }}>
+                                <div style={{ flex: 1 }} className="flex flex-col h-full min-h-[80px]">
                                   <div
                                     className="para-txt"
                                     style={{
@@ -782,7 +758,7 @@ export default async function Home() {
                                   >
                                     {post.title}
                                   </div>
-                                  <div style={{ marginTop: "4px" }}>
+                                  <div style={{ marginTop: "auto", paddingTop: "8px" }}>
                                     <Space size={4}>
                                       <Text
                                         className="para-txt"

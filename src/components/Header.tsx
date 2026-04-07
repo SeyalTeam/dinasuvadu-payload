@@ -56,6 +56,14 @@ export default function Header({ categories, homepageCategories }: HeaderProps) 
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const navContainerRef = useRef<HTMLUListElement>(null);
   const [isMounted, setIsMounted] = useState(false);
+  const [theme, setTheme] = useState<"light" | "dark">("light");
+
+  const toggleTheme = () => {
+    const newTheme = theme === "light" ? "dark" : "light";
+    setTheme(newTheme);
+    document.documentElement.setAttribute("data-theme", newTheme);
+    localStorage.setItem("theme", newTheme);
+  };
 
   const toggleSearch = () => {
     setSearchVisible(!searchVisible);
@@ -107,8 +115,7 @@ export default function Header({ categories, homepageCategories }: HeaderProps) 
           if (orderA !== 999) return -1;
           if (orderB !== 999) return 1;
           return 0;
-        })
-        .slice(0, 10);
+        });
 
   const getSubcategories = (parentId: string) => {
     return subCategories.filter(sub => {
@@ -116,6 +123,15 @@ export default function Header({ categories, homepageCategories }: HeaderProps) 
       return pId === parentId;
     });
   };
+
+  useEffect(() => {
+    setIsMounted(true);
+    const savedTheme = localStorage.getItem("theme") as "light" | "dark" | null;
+    if (savedTheme) {
+      setTheme(savedTheme);
+      document.documentElement.setAttribute("data-theme", savedTheme);
+    }
+  }, []);
 
   useEffect(() => {
     setIsMounted(true);
@@ -131,8 +147,8 @@ export default function Header({ categories, homepageCategories }: HeaderProps) 
       const container = navContainerRef.current;
       const containerWidth = container.parentElement?.clientWidth || container.clientWidth;
       
-      // Fixed Home icon + Search icon + margin buffer (approx 90px)
-      const availableWidth = containerWidth - 90; 
+      // Buffer for "முகப்பு" + Navigation icon + Actions + Padding (approx 195px)
+      const availableWidth = containerWidth - 195; 
 
       let currentWidth = 0;
       let newVisibleCount = 0;
@@ -150,15 +166,14 @@ export default function Header({ categories, homepageCategories }: HeaderProps) 
         testDiv.innerText = parentRef.title;
         document.body.appendChild(testDiv);
         
-        // icon (22px) + gap (5px) + padding (10px) + margin = 45px base
-        // plus chevron (14px) if applicable
+        // margin-right (25px) + gap/chevron if applicable (15px)
         const hasSub = getSubcategories(parentRef.id).length > 0;
-        const itemWidth = testDiv.offsetWidth + 45 + (hasSub ? 15 : 0); 
+        const itemWidth = testDiv.offsetWidth + 25 + (hasSub ? 15 : 0); 
         document.body.removeChild(testDiv);
         
         const isLast = i === sortedParents.length - 1;
         // Buffer for the "More" icon + container padding
-        const moreBuffer = isLast ? 0 : 85;
+        const moreBuffer = isLast ? 0 : 45;
         
         if (currentWidth + itemWidth + moreBuffer > availableWidth) {
            break;
@@ -216,20 +231,14 @@ export default function Header({ categories, homepageCategories }: HeaderProps) 
       const scrollFraction =
         maxScroll > 0 ? Math.min(scrollPosition / maxScroll, 1) : 0;
 
-      const activeItem = document.querySelector(".drawer-menu li.active");
-      if (activeItem) {
-        const activeItemWidth = activeItem.getBoundingClientRect().width;
-        const newWidth = scrollFraction * activeItemWidth;
-        setUnderlineWidth((prev) =>
-          Math.abs(prev - newWidth) < 0.5 ? prev : newWidth
-        );
-      }
+      // Width logic moved to separate effect
     };
 
     window.addEventListener("scroll", handleScroll, { passive: true });
     handleScroll();
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
 
   const handleSubmenuEnter = (e: React.MouseEvent<HTMLLIElement>) => {
     const li = e.currentTarget;
@@ -252,6 +261,26 @@ export default function Header({ categories, homepageCategories }: HeaderProps) 
 
   const selectedKey = getSelectedKey();
 
+  // Update underline width based on active word size
+  useEffect(() => {
+    const updateUnderline = () => {
+      const activeLink = document.querySelector(".nav-wrapper li.active a");
+      if (activeLink) {
+        setUnderlineWidth(activeLink.getBoundingClientRect().width);
+      } else {
+        // Fallback for "home" if selector fails
+        if (selectedKey === "home") {
+          const homeLink = document.querySelector('.home-icon-container li.active a');
+          if (homeLink) setUnderlineWidth(homeLink.getBoundingClientRect().width);
+        }
+      }
+    };
+
+    // Small timeout to ensure DOM is ready after category list transition
+    const timer = setTimeout(updateUnderline, 100);
+    return () => clearTimeout(timer);
+  }, [pathname, visibleCount, isMounted, selectedKey]);
+
   const getCategoryHref = (c: Category) => {
     const parentSlug = resolveParentSlug(c);
     return parentSlug ? `/${parentSlug}/${c.slug}` : `/${c.slug}`;
@@ -259,12 +288,10 @@ export default function Header({ categories, homepageCategories }: HeaderProps) 
 
   return (
     <>
-      <header className="site site-main">
+      <header className="site-main">
         <div className="main-header">
-          <div className={`header-one ${isScrolled ? "hidden" : ""}`}>
-            <button className="menu-btn" onClick={() => setDrawerVisible(true)}>
-              ☰
-            </button>
+          <div className="site">
+            <div className="header-one" style={{ display: "flex", justifyContent: "flex-start", alignItems: "center" }}>
             <Link href="/" className="logo-link">
               <img
                 src="/dinasuvadu.svg"
@@ -272,38 +299,28 @@ export default function Header({ categories, homepageCategories }: HeaderProps) 
                 className="logo"
               />
             </Link>
-            <button
-              className="search-btn-top"
-              onClick={toggleSearch}
-              title="Search"
-              style={{ padding: 0, margin: 0, background: "none", border: "none", cursor: "pointer", color: "inherit" }}
-            >
-              <svg
-                width="24"
-                height="24"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                ></path>
-              </svg>
-            </button>
+            </div>
           </div>
 
-          <nav className={`header-two ${isScrolled ? "sticky" : ""}`}>
-            <div className="nav-wrapper" style={{ display: "flex", alignItems: "center", justifyContent: "flex-start", width: "100%", padding: 0, overflow: "visible" }}>
-                <div className="home-icon-container" style={{ display: "flex", alignItems: "center", flexShrink: 0, zIndex: 20, background: "white", padding: "0 15px 0 0" }}>
+          <nav className="header-two">
+            <div className="site">
+              <div className="nav-wrapper" style={{ display: "flex", alignItems: "center", justifyContent: "flex-start", width: "100%", padding: 0, overflow: "visible" }}>
+                <div className="home-icon-container" style={{ display: "flex", alignItems: "center", flexShrink: 0, zIndex: 20, padding: "0 15px 0 12px" }}>
                   <li className={selectedKey === "home" ? "active" : ""} style={{ display: "flex", alignItems: "center", listStyle: "none" }}>
-                    <Link href="/" aria-label="Home" style={{ display: "flex", alignItems: "center", padding: "0 5px" }}>
-                      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
-                      </svg>
+                    <Link 
+                      href="/" 
+                      style={{ 
+                        display: "flex", 
+                        alignItems: "center", 
+                        fontWeight: "800",
+                        fontFamily: "'Mukta Malar', sans-serif",
+                        fontSize: "13.5px",
+                        letterSpacing: "-0.2px",
+                        textDecoration: "none",
+                        color: "inherit"
+                      }}
+                    >
+                      முகப்பு
                     </Link>
                     {selectedKey === "home" && (
                       <span
@@ -351,7 +368,7 @@ export default function Header({ categories, homepageCategories }: HeaderProps) 
                       {hasChildren && (
                         <ul className="dropdown-menu">
                           {children.map(child => (
-                            <li key={child.id}>
+                            <li key={child.id} className={selectedKey === child.id ? "active" : ""}>
                               <Link href={getCategoryHref(child)}>{child.title}</Link>
                             </li>
                           ))}
@@ -400,7 +417,7 @@ export default function Header({ categories, homepageCategories }: HeaderProps) 
                           {getSubcategories(parent.id).length > 0 && (
                             <ul className="dropdown-submenu-dynamic">
                               {getSubcategories(parent.id).map(child => (
-                                <li key={child.id}>
+                                <li key={child.id} className={selectedKey === child.id ? "active" : ""}>
                                   <Link href={getCategoryHref(child)}>{child.title}</Link>
                                 </li>
                               ))}
@@ -412,8 +429,98 @@ export default function Header({ categories, homepageCategories }: HeaderProps) 
                   </li>
                 )}
               </ul>
+              
+              <div className="header-right-actions" style={{ display: "flex", alignItems: "center", gap: "10px", marginLeft: "auto", paddingLeft: "15px" }}>
+                <button
+                  className="theme-toggle-btn"
+                  onClick={toggleTheme}
+                  title={theme === "light" ? "Dark Mode" : "Light Mode"}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    padding: "8px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "inherit",
+                  }}
+                >
+                  {theme === "light" ? (
+                    <svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                  ) : (
+                    <svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <circle cx="12" cy="12" r="5"></circle>
+                      <line x1="12" y1="1" x2="12" y2="3"></line>
+                      <line x1="12" y1="21" x2="12" y2="23"></line>
+                      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                      <line x1="1" y1="12" x2="3" y2="12"></line>
+                      <line x1="21" y1="12" x2="23" y2="12"></line>
+                      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                  )}
+                </button>
+
+                <button
+                  className="search-btn-top"
+                  onClick={toggleSearch}
+                  title="Search"
+                  style={{ padding: 0, margin: 0, background: "none", border: "none", cursor: "pointer", color: "inherit" }}
+                >
+                  <svg
+                    width="22"
+                    height="22"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                    ></path>
+                  </svg>
+                </button>
+
+                <button 
+                  className="menu-btn" 
+                  onClick={() => setDrawerVisible(true)}
+                  style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", color: "inherit", padding: "8px" }}
+                >
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="3" y1="12" x2="21" y2="12"></line>
+                    <line x1="3" y1="6" x2="21" y2="6"></line>
+                    <line x1="3" y1="18" x2="21" y2="18"></line>
+                  </svg>
+                </button>
+              </div>
             </div>
-          </nav>
+          </div>
+        </nav>
 
           <div className={`search-bar ${searchVisible ? "visible" : "hidden"}`}>
             <input
@@ -452,9 +559,9 @@ export default function Header({ categories, homepageCategories }: HeaderProps) 
 
         {/* Drawer */}
         <div className={`mobile-drawer ${drawerVisible ? "open" : ""}`}>
-          <div className="drawer-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+          <div className="drawer-header">
             <img src="/dinasuvadu.svg" alt="Logo" style={{ height: "30px" }} />
-            <button className="close-btn-fixed" onClick={() => setDrawerVisible(false)} style={{ background: "black", color: "white", borderRadius: "50%", width: "30px", height: "30px", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+            <button className="close-btn-fixed" onClick={() => setDrawerVisible(false)}>
               ✕
             </button>
           </div>
@@ -467,10 +574,9 @@ export default function Header({ categories, homepageCategories }: HeaderProps) 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                style={{ width: "100%", padding: "10px 40px 10px 10px", border: "1px solid #ddd", borderRadius: "4px" }}
               />
               <svg 
-                style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", width: "18px", height: "18px", color: "#666" }}
+                style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", width: "18px", height: "18px" }}
                 fill="none" stroke="currentColor" viewBox="0 0 24 24"
               >
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -488,18 +594,17 @@ export default function Header({ categories, homepageCategories }: HeaderProps) 
                   <div 
                     className="accordion-trigger" 
                     onClick={() => children.length > 0 && setExpandedId(isExpanded ? null : parent.id)}
-                    style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 0", borderBottom: "1px dashed #eee", cursor: "pointer" }}
                   >
                     <div style={{ display: "flex", alignItems: "center", gap: "0", flex: 1 }}>
-                      <Link 
+                       <Link 
                         href={children.length > 0 ? "#" : getCategoryHref(parent)}
+                        className={`drawer-parent-link ${selectedKey === parent.id ? "active" : ""}`}
                         onClick={(e) => {
                           if (children.length > 0) e.preventDefault();
                           else setDrawerVisible(false);
                         }}
                         style={{ 
                           fontWeight: "800", 
-                          color: "#333", 
                           textDecoration: "none", 
                           fontSize: "14px", 
                           fontFamily: "'Mukta Malar', sans-serif",
@@ -527,11 +632,12 @@ export default function Header({ categories, homepageCategories }: HeaderProps) 
                       <ul style={{ listStyle: "none", padding: "5px 0 15px 0", textAlign: "left" }}>
                         {children.map(child => (
                           <li key={child.id} style={{ padding: "8px 0", textAlign: "left" }}>
-                            <Link 
-                              href={getCategoryHref(child)} 
-                              onClick={() => setDrawerVisible(false)}
-                              style={{ color: "#333", textDecoration: "none", fontSize: "13.5px", fontWeight: "600", display: "block", textAlign: "left" }}
-                            >
+                             <Link 
+                               href={getCategoryHref(child)} 
+                               onClick={() => setDrawerVisible(false)}
+                               className={`drawer-child-link ${selectedKey === child.id ? "active" : ""}`}
+                               style={{ textDecoration: "none", fontSize: "13.5px", fontWeight: "600", display: "block", textAlign: "left" }}
+                             >
                               {child.title}
                             </Link>
                           </li>

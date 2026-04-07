@@ -10,6 +10,7 @@ import { unstable_cache } from "next/cache";
 // import { ClockCircleOutlined } from "@ant-design/icons";
 import { notFound, redirect } from "next/navigation";
 import ShareButton from "@/components/ShareButton";
+import PostImageActions from "@/components/PostImageActions";
 import { getPayload } from "payload";
 import config from "@/payload.config";
 import { buildMetadata, buildBreadcrumbLd, buildArticleLd } from "@/lib/seo";
@@ -191,9 +192,12 @@ function stripHtml(value: string): string {
 }
 
 function estimateReadTimeMinutes(text: string): number {
+  // Use a more accurate word count for non-English text
   const words = text.trim().split(/\s+/).filter(Boolean).length;
-  if (!words) return 1;
-  return Math.max(1, Math.ceil(words / 220));
+  if (words < 1) return 1;
+  // Adjust speed to ~160 words per minute for Tamil/Complex scripts
+  const speed = 160;
+  return Math.max(1, Math.ceil(words / speed));
 }
 
 function formatNewsTimestamp(value?: string): string | null {
@@ -214,7 +218,7 @@ function formatNewsTimestamp(value?: string): string | null {
     timeZone: "Asia/Kolkata",
   });
 
-  return `${datePart}, ${timePart} IST`;
+  return `${datePart} at ${timePart} IST`;
 }
 
 const normalizeSlug = (slug: string): string => {
@@ -847,12 +851,13 @@ export default async function PostOrSubCategoryPage({
       return "";
     })
     .join(" ");
-  const readTimeMinutes = estimateReadTimeMinutes(
-    `${postContent} ${layoutContentText} ${post.meta?.description || ""}`
-  );
+  const fullContentText = `${postContent} ${layoutContentText} ${post.meta?.description || ""}`;
+  const wordsCount = fullContentText.trim().split(/\s+/).filter(Boolean).length;
+  const readTimeMinutes = estimateReadTimeMinutes(fullContentText);
   const publishedLabel = formatNewsTimestamp(post.publishedAt);
-  const updatedLabel = formatNewsTimestamp(post.updatedAt);
-  const showUpdated = Boolean(updatedLabel && updatedLabel !== publishedLabel);
+  const updatedLabel = formatNewsTimestamp(post.updatedAt || post.publishedAt);
+  const showUpdated = Boolean(updatedLabel);
+  const canonicalUrl = `https://www.dinasuvadu.com${canonicalPath}`;
   const authorLine =
     (post.populatedAuthors ?? [])
       .map((author) => author?.name)
@@ -910,13 +915,37 @@ export default async function PostOrSubCategoryPage({
             <div className="single-post-meta">
               <div className="single-post-meta-top">
                 <p className="single-post-author">
-                  By <span>{authorLine}</span>
+                  <span className="single-post-author-prefix">By</span>
+                  <span className="single-post-author-name">{authorLine}</span>
+                  <span
+                    className="single-post-verified"
+                    aria-label="Verified"
+                    title="Verified"
+                  >
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 16 16"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                      aria-hidden="true"
+                    >
+                      <circle cx="8" cy="8" r="8" fill="#2AA9FF" />
+                      <path
+                        d="M4.3 8.1L6.5 10.1L11.8 5.4"
+                        stroke="#FFFFFF"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </span>
                 </p>
                 <div className="single-post-readtime">
                   <span className="single-post-clock" aria-hidden="true">
                     ◷
                   </span>
-                  <span>{readTimeMinutes} Min Read</span>
+                  <span>{wordsCount} Words | {readTimeMinutes} Min Read</span>
                 </div>
               </div>
               <div className="single-post-meta-bottom">
@@ -924,11 +953,6 @@ export default async function PostOrSubCategoryPage({
                 {showUpdated && updatedLabel && (
                   <span className="single-post-updated">Updated - {updatedLabel}</span>
                 )}
-                <ShareButton
-                  url={"https://www.dinasuvadu.com" + canonicalPath}
-                  title={post.title}
-                  description={post.meta?.description}
-                />
               </div>
             </div>
           </header>
@@ -937,43 +961,50 @@ export default async function PostOrSubCategoryPage({
           {(post.layout?.[0]?.blockType === "mediaBlock" &&
             post.layout[0].media?.url) ||
           (post.heroImage && post.heroImage.url) ? (
-            <figure className="mb-12">
-              <div className="relative rounded-lg overflow-hidden shadow-lg">
-                {post.layout?.[0]?.blockType === "mediaBlock" &&
-                post.layout[0].media ? (
-                  <Image
-                    src={getImageUrl(post.layout[0].media, "hero")!}
-                    alt={post.layout[0].media.alt || "Hero Image"}
-                    width={1200}
-                    height={640}
-                    className="w-full h-80 object-cover"
-                    sizes="(max-width: 1024px) 100vw, 66vw"
-                    priority
-                    fetchPriority="high"
-                    unoptimized
-                  />
-                ) : (
-                  <Image
-                    src={getImageUrl(post.heroImage, "hero")!}
-                    alt={post.heroImage?.alt || "Hero Image"}
-                    width={1200}
-                    height={640}
-                    className="w-full h-80 object-cover"
-                    sizes="(max-width: 1024px) 100vw, 66vw"
-                    priority
-                    fetchPriority="high"
-                    unoptimized
-                  />
-                )}
-                {(post.layout?.[0]?.media?.caption ||
-                  post.heroImage?.caption) && (
-                  <figcaption className="absolute bottom-0 left-0 right-0 bg-black/70 text-white text-sm p-4">
-                    {post.layout?.[0]?.media?.caption ||
-                      post.heroImage?.caption}
-                  </figcaption>
-                )}
-              </div>
-            </figure>
+            <>
+              <figure className="mb-0">
+                <div className="relative rounded-lg overflow-hidden shadow-lg">
+                  {post.layout?.[0]?.blockType === "mediaBlock" &&
+                  post.layout[0].media ? (
+                    <Image
+                      src={getImageUrl(post.layout[0].media, "hero")!}
+                      alt={post.layout[0].media.alt || "Hero Image"}
+                      width={1200}
+                      height={640}
+                      className="w-full h-80 object-cover"
+                      sizes="(max-width: 1024px) 100vw, 66vw"
+                      priority
+                      fetchPriority="high"
+                      unoptimized
+                    />
+                  ) : (
+                    <Image
+                      src={getImageUrl(post.heroImage, "hero")!}
+                      alt={post.heroImage?.alt || "Hero Image"}
+                      width={1200}
+                      height={640}
+                      className="w-full h-80 object-cover"
+                      sizes="(max-width: 1024px) 100vw, 66vw"
+                      priority
+                      fetchPriority="high"
+                      unoptimized
+                    />
+                  )}
+                  {(post.layout?.[0]?.media?.caption ||
+                    post.heroImage?.caption) && (
+                    <figcaption className="absolute bottom-0 left-0 right-0 bg-black/70 text-white text-sm p-4">
+                      {post.layout?.[0]?.media?.caption ||
+                        post.heroImage?.caption}
+                    </figcaption>
+                  )}
+                </div>
+              </figure>
+              <PostImageActions
+                url={canonicalUrl}
+                title={post.title}
+                description={post.meta?.description}
+              />
+            </>
           ) : null}
 
           {/* Hero Rich Text */}
@@ -1065,21 +1096,6 @@ export default async function PostOrSubCategoryPage({
           {(post.tags ?? []).length > 0 && (
             <div className="post-tags mt-4">
               <div className="tags-bar">
-                <span className="tags-icon" aria-hidden="true">
-                  <svg
-                    width="30"
-                    height="30"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      d="M2.5 9.75V3.5H8.75L21.5 16.25L15.25 22.5L2.5 9.75Z"
-                      fill="currentColor"
-                    />
-                    <circle cx="7.1" cy="7.1" r="1.35" fill="#FFFFFF" />
-                  </svg>
-                </span>
                 {(post.tags ?? []).map((tag) => (
                   <Link key={tag.id} href={`/tag/${tag.slug}`} className="tag-chip">
                     {tag.name}

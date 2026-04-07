@@ -18,7 +18,7 @@ import {
 } from "@/lib/post-url";
 import { convertLexicalToHTML } from "@payloadcms/richtext-lexical/html";
 import { EmbedHydrator } from "@/components/RichText/EmbedHydrator";
-import ShareButton from "@/components/ShareButton";
+import PostImageActions from "@/components/PostImageActions";
 
 // Generate dynamic metadata for subcategory post pages
 export async function generateMetadata({ params }: { params: Promise<{ categorySlug: string; postSlug: string; subPostSlug: string }> }): Promise<Metadata> {
@@ -135,7 +135,7 @@ function formatNewsTimestamp(value?: string): string | null {
     timeZone: "Asia/Kolkata",
   });
 
-  return `${datePart}, ${timePart} IST`;
+  return `${datePart} at ${timePart} IST`;
 }
 
 // API base URL
@@ -589,6 +589,7 @@ export default async function SubCategoryPostPage({
   const publishedLabel = formatNewsTimestamp(post.publishedAt);
   const updatedLabel = formatNewsTimestamp(post.updatedAt);
   const showUpdated = Boolean(updatedLabel && updatedLabel !== publishedLabel);
+  const canonicalUrl = `https://www.dinasuvadu.com${canonicalPath}`;
   const authorLine =
     (post.populatedAuthors ?? [])
       .map((author) => author?.name)
@@ -664,7 +665,31 @@ export default async function SubCategoryPostPage({
             <div className="single-post-meta">
               <div className="single-post-meta-top">
                 <p className="single-post-author">
-                  By <span>{authorLine}</span>
+                  <span className="single-post-author-prefix">By</span>
+                  <span className="single-post-author-name">{authorLine}</span>
+                  <span
+                    className="single-post-verified"
+                    aria-label="Verified"
+                    title="Verified"
+                  >
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 16 16"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                      aria-hidden="true"
+                    >
+                      <circle cx="8" cy="8" r="8" fill="#2AA9FF" />
+                      <path
+                        d="M4.3 8.1L6.5 10.1L11.8 5.4"
+                        stroke="#FFFFFF"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </span>
                 </p>
                 <div className="single-post-readtime">
                   <span className="single-post-clock" aria-hidden="true">
@@ -678,47 +703,49 @@ export default async function SubCategoryPostPage({
                 {showUpdated && updatedLabel && (
                   <span className="single-post-updated">Updated - {updatedLabel}</span>
                 )}
-                <ShareButton
-                  url={"https://www.dinasuvadu.com" + canonicalPath}
-                  title={post.title}
-                  description={post.meta?.description}
-                />
               </div>
             </div>
           </header>
 
           {/* Hero Image */}
           {post.heroImage && (
-            <figure className="mb-10">
-              <div className="relative">
-                {(() => {
-                  const imageUrl = getImageUrl(post.heroImage, "hero");
-                  const imageAlt = post.heroImage.alt || "Hero Image";
-                  return imageUrl ? (
-                    <Image
-                      src={imageUrl}
-                      alt={imageAlt}
-                      width={1200}
-                      height={640}
-                      className="w-full h-64 sm:h-96 object-cover rounded-lg shadow-lg"
-                      sizes="(max-width: 1024px) 100vw, 66vw"
-                      priority
-                      fetchPriority="high"
-                      unoptimized
-                    />
-                  ) : (
-                    <div className="w-full h-64 sm:h-96 bg-gray-100 rounded-lg flex items-center justify-center">
-                      <span className="text-gray-500">No Image</span>
-                    </div>
-                  );
-                })()}
-                {post.heroImage.caption && (
-                  <figcaption className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent text-white text-sm p-4 rounded-b-lg">
-                    {post.heroImage.caption}
-                  </figcaption>
-                )}
-              </div>
-            </figure>
+            <>
+              <figure className="mb-0">
+                <div className="relative">
+                  {(() => {
+                    const imageUrl = getImageUrl(post.heroImage, "hero");
+                    const imageAlt = post.heroImage.alt || "Hero Image";
+                    return imageUrl ? (
+                      <Image
+                        src={imageUrl}
+                        alt={imageAlt}
+                        width={1200}
+                        height={640}
+                        className="w-full h-64 sm:h-96 object-cover rounded-lg shadow-lg"
+                        sizes="(max-width: 1024px) 100vw, 66vw"
+                        priority
+                        fetchPriority="high"
+                        unoptimized
+                      />
+                    ) : (
+                      <div className="w-full h-64 sm:h-96 bg-gray-100 rounded-lg flex items-center justify-center">
+                        <span className="text-gray-500">No Image</span>
+                      </div>
+                    );
+                  })()}
+                  {post.heroImage.caption && (
+                    <figcaption className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent text-white text-sm p-4 rounded-b-lg">
+                      {post.heroImage.caption}
+                    </figcaption>
+                  )}
+                </div>
+              </figure>
+              <PostImageActions
+                url={canonicalUrl}
+                title={post.title}
+                description={post.meta?.description}
+              />
+            </>
           )}
 
           {/* Post Content */}
@@ -757,21 +784,6 @@ export default async function SubCategoryPostPage({
           {(post.tags ?? []).length > 0 && (
             <div className="post-tags mt-4">
               <div className="tags-bar">
-                <span className="tags-icon" aria-hidden="true">
-                  <svg
-                    width="30"
-                    height="30"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      d="M2.5 9.75V3.5H8.75L21.5 16.25L15.25 22.5L2.5 9.75Z"
-                      fill="currentColor"
-                    />
-                    <circle cx="7.1" cy="7.1" r="1.35" fill="#FFFFFF" />
-                  </svg>
-                </span>
                 {(post.tags ?? []).map((tag) => (
                   <Link key={tag.id} href={`/tag/${tag.slug}`} className="tag-chip">
                     {tag.name}
