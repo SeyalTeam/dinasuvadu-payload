@@ -19,6 +19,7 @@ import {
 import { convertLexicalToHTML } from "@payloadcms/richtext-lexical/html";
 import { EmbedHydrator } from "@/components/RichText/EmbedHydrator";
 import PostImageActions from "@/components/PostImageActions";
+import PostBottomInteraction from "@/components/PostBottomInteraction";
 
 // Generate dynamic metadata for subcategory post pages
 export async function generateMetadata({ params }: { params: Promise<{ categorySlug: string; postSlug: string; subPostSlug: string }> }): Promise<Metadata> {
@@ -792,6 +793,12 @@ export default async function SubCategoryPostPage({
               </div>
             </div>
           )}
+
+          <PostBottomInteraction
+            url={canonicalUrl}
+            title={post.title}
+            description={post.meta?.description}
+          />
         </article>
 
         <Suspense fallback={<LatestPostsSidebarFallback />}>

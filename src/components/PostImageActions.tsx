@@ -1,6 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
+import { useInteractionSync } from "@/hooks/useInteractionSync";
+import { useLoginModal } from "@/providers/LoginModal";
+import { useCommentDrawer } from "@/providers/CommentDrawer";
 
 interface PostImageActionsProps {
   url: string;
@@ -21,11 +24,14 @@ function clampScale(value: number): number {
 export default function PostImageActions({
   url,
   title,
+  postSlug,
   description,
 }: PostImageActionsProps) {
   const [fontScale, setFontScale] = useState(1);
   const [isSaved, setIsSaved] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+
+  const { isLiked, likes, updateLike, comments } = useInteractionSync(url);
 
   useEffect(() => {
     const storedScale = Number(
@@ -53,6 +59,23 @@ export default function PostImageActions({
     const timer = window.setTimeout(() => setToast(null), 1800);
     return () => window.clearTimeout(timer);
   }, [toast]);
+
+  const handleLike = () => {
+    const newLiked = !isLiked;
+    const newCount = newLiked ? likes + 1 : Math.max(0, likes - 1);
+    updateLike(newLiked, newCount);
+  };
+
+  const { user, openLoginModal } = useLoginModal();
+  const { openDrawer } = useCommentDrawer();
+
+  const handleComment = () => {
+    if (user) {
+      openDrawer(postSlug);
+    } else {
+      openLoginModal();
+    }
+  };
 
   const handleShare = async () => {
     if (navigator.share) {
@@ -106,6 +129,58 @@ export default function PostImageActions({
     <>
       <div className="post-image-actions" role="group" aria-label="Post actions">
         <div className="post-image-actions-inner">
+          <div className="post-action-group">
+            <button
+              type="button"
+              className="post-image-action-button"
+              aria-label={isLiked ? "Unlike article" : "Like article"}
+              aria-pressed={isLiked}
+              onClick={handleLike}
+            >
+              <svg
+                viewBox="0 0 24 24"
+                width="20"
+                height="20"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true"
+                stroke="currentColor"
+                strokeWidth="1.9"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M7 10v12" />
+                <path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2h0a3.13 3.13 0 0 1 3 3.88Z" />
+              </svg>
+            </button>
+            <span className="post-action-count">{likes}</span>
+          </div>
+
+          <div className="post-action-group">
+            <button
+              type="button"
+              className="post-image-action-button"
+              aria-label="View comments"
+              onClick={handleComment}
+            >
+              <svg
+                viewBox="0 0 24 24"
+                width="20"
+                height="20"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true"
+                stroke="currentColor"
+                strokeWidth="1.9"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M21 15v-10c0-1.1-.9-2-2-2h-14c-1.1 0-2 .9-2 2v14l4-4h10c1.1 0 2-.9 2-2z" />
+              </svg>
+            </button>
+            <span className="post-action-count">{comments}</span>
+          </div>
+
           <button
             type="button"
             className="post-image-action-button"
@@ -114,8 +189,8 @@ export default function PostImageActions({
           >
             <svg
               viewBox="0 0 24 24"
-              width="24"
-              height="24"
+              width="20"
+              height="20"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
               aria-hidden="true"
@@ -145,8 +220,8 @@ export default function PostImageActions({
           >
             <svg
               viewBox="0 0 24 24"
-              width="24"
-              height="24"
+              width="20"
+              height="20"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
               aria-hidden="true"

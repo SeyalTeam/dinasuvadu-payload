@@ -73,6 +73,7 @@ export interface Config {
     categories: Category;
     users: User;
     tags: Tag;
+    comments: Comment;
     redirects: Redirect;
     forms: Form;
     'form-submissions': FormSubmission;
@@ -90,6 +91,7 @@ export interface Config {
     categories: CategoriesSelect<false> | CategoriesSelect<true>;
     users: UsersSelect<false> | UsersSelect<true>;
     tags: TagsSelect<false> | TagsSelect<true>;
+    comments: CommentsSelect<false> | CommentsSelect<true>;
     redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     forms: FormsSelect<false> | FormsSelect<true>;
     'form-submissions': FormSubmissionsSelect<false> | FormSubmissionsSelect<true>;
@@ -397,8 +399,7 @@ export interface Tag {
 export interface User {
   id: string;
   name?: string | null;
-  slug?: string | null;
-  slugLock?: boolean | null;
+  mobile?: string | null;
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -754,6 +755,19 @@ export interface Form {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "comments".
+ */
+export interface Comment {
+  id: string;
+  user: string | User;
+  post: string | Post;
+  content: string;
+  status?: ('pending' | 'approved' | 'rejected') | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "redirects".
  */
 export interface Redirect {
@@ -948,6 +962,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'tags';
         value: string | Tag;
+      } | null)
+    | ({
+        relationTo: 'comments';
+        value: string | Comment;
       } | null)
     | ({
         relationTo: 'redirects';
@@ -1300,8 +1318,7 @@ export interface CategoriesSelect<T extends boolean = true> {
  */
 export interface UsersSelect<T extends boolean = true> {
   name?: T;
-  slug?: T;
-  slugLock?: T;
+  mobile?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;
@@ -1320,6 +1337,18 @@ export interface TagsSelect<T extends boolean = true> {
   name?: T;
   slug?: T;
   slugLock?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "comments_select".
+ */
+export interface CommentsSelect<T extends boolean = true> {
+  user?: T;
+  post?: T;
+  content?: T;
+  status?: T;
   updatedAt?: T;
   createdAt?: T;
 }

@@ -10,6 +10,7 @@ import { Pages } from './collections/Pages'
 import { Posts } from './collections/Posts'
 import { Users } from './collections/Users'
 import { Tags } from './collections/Tags'
+import { Comments } from './collections/Comments'
 import { Footer } from './Footer/config'
 import { Header } from './Header/config'
 import { HomepageSettings } from './globals/HomepageSettings'
@@ -52,7 +53,7 @@ const allowedOrigins =
         ]
       : ['http://localhost:3000', 'http://localhost:3001']
 
-const collections = [Pages, Posts, Media, Categories, Users, Tags]
+const collections = [Pages, Posts, Media, Categories, Users, Tags, Comments]
 collections.forEach((collection, index) => {
   if (!collection || !collection.slug) {
     throw new Error(`Collection at index ${index} is missing a slug`)

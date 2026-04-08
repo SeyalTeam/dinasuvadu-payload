@@ -11,6 +11,7 @@ import { unstable_cache } from "next/cache";
 import { notFound, redirect } from "next/navigation";
 import ShareButton from "@/components/ShareButton";
 import PostImageActions from "@/components/PostImageActions";
+import PostBottomInteraction from "@/components/PostBottomInteraction";
 import { getPayload } from "payload";
 import config from "@/payload.config";
 import { buildMetadata, buildBreadcrumbLd, buildArticleLd } from "@/lib/seo";
@@ -1002,6 +1003,7 @@ export default async function PostOrSubCategoryPage({
               <PostImageActions
                 url={canonicalUrl}
                 title={post.title}
+                postSlug={postSlug}
                 description={post.meta?.description}
               />
             </>
@@ -1104,6 +1106,13 @@ export default async function PostOrSubCategoryPage({
               </div>
             </div>
           )}
+
+          <PostBottomInteraction
+            url={canonicalUrl}
+            title={post.title}
+            postSlug={postSlug}
+            description={post.meta?.description}
+          />
         </article>
 
         <Suspense fallback={<LatestPostsSidebarFallback />}>

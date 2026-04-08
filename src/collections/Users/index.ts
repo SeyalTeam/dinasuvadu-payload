@@ -7,13 +7,13 @@ export const Users: CollectionConfig = {
   slug: 'users',
   access: {
     admin: authenticated,
-    create: authenticated,
+    create: () => true,
     delete: authenticated,
     read: () => true, // Allow public read access
     update: authenticated,
   },
   admin: {
-    defaultColumns: ['name', 'slug', 'email'],
+    defaultColumns: ['name', 'email'],
     useAsTitle: 'name',
   },
   auth: true,
@@ -22,7 +22,10 @@ export const Users: CollectionConfig = {
       name: 'name',
       type: 'text',
     },
-    ...slugField('name'),
+    {
+      name: 'mobile',
+      type: 'text',
+    },
   ],
   timestamps: true,
 }

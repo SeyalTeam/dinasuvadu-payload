@@ -7,6 +7,9 @@ import config from "@/payload.config";
 import Script from "next/script";
 import { unstable_cache } from "next/cache";
 import { Mukta_Malar } from "next/font/google";
+import { CommentDrawer } from "@/components/CommentDrawer";
+import { LoginModal } from "@/components/LoginModal";
+import { Providers } from "@/providers";
 
 const muktaMalar = Mukta_Malar({
   subsets: ["tamil", "latin"],
@@ -97,9 +100,13 @@ export default async function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={muktaMalar.variable} suppressHydrationWarning>
-        <Header categories={all} homepageCategories={homepage} />
-        {children}
-        <Footer />
+        <Providers>
+          <Header categories={all} homepageCategories={homepage} />
+          {children}
+          <CommentDrawer />
+          <LoginModal />
+          <Footer />
+        </Providers>
         {/* Google Analytics GA4 */}
         <Script
           src={`https://www.googletagmanager.com/gtag/js?id=G-YJ4CSJH2VC`}
