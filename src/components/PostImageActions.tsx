@@ -8,6 +8,7 @@ import { useCommentDrawer } from "@/providers/CommentDrawer";
 interface PostImageActionsProps {
   url: string;
   title: string;
+  postSlug: string; 
   description?: string;
 }
 

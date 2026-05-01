@@ -6,14 +6,14 @@ import type { Metadata } from "next";
 import { buildMetadata, buildBreadcrumbLd } from "@/lib/seo";
 // Removed duplicate import of buildMetadata
 import Link from "next/link";
-// import { Space } from "antd";
-// import { ClockCircleOutlined } from "@ant-design/icons";
-// import Text from "antd/es/typography/Text";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import ShareButton from "@/components/ShareButton";
 import { getPayload } from "payload";
 import config from "@/payload.config";
 import { resolvePostPathForContext } from "@/lib/post-url";
+import { timeAgo } from "@/utilities/timeAgo";
+import { CategoryFeed } from "@/components/CategoryFeed";
 
 // Type definitions
 type Category = {
@@ -82,6 +82,37 @@ async function fetchCategoryBySlug(slug: string): Promise<Category | null> {
   }
 }
 
+// Fetch posts by category ID with pagination
+async function fetchPostsByCategoryId(
+  categoryId: string,
+  page: number = 1,
+  limit: number = 10
+): Promise<{ posts: Post[]; total: number }> {
+  try {
+    const payload = await getPayload({ config });
+    const response = await payload.find({
+      collection: "posts",
+      limit,
+      page,
+      depth: 2,
+      sort: "-publishedAt",
+      where: {
+        categories: {
+          in: [categoryId],
+        },
+      },
+    });
+
+    return {
+      posts: (response.docs as unknown as Post[]) || [],
+      total: response.totalDocs,
+    };
+  } catch (error) {
+    console.error(`Error fetching posts for category ID ${categoryId}:`, error);
+    return { posts: [], total: 0 };
+  }
+}
+
 // Fetch posts by category slug (using category ID) with pagination
 async function fetchPostsByCategory(
   categorySlug: string,
@@ -146,6 +177,29 @@ async function fetchPostsByCategory(
   } catch (error) {
     console.error(`Error fetching posts for category slug ${categorySlug}:`, error);
     return { posts: [], total: 0 };
+  }
+}
+
+// Fetch children categories for a parent category
+async function fetchChildrenCategories(
+  parentId: string
+): Promise<Category[]> {
+  try {
+    const payload = await getPayload({ config });
+    const res = await payload.find({
+      collection: "categories",
+      where: {
+        parent: {
+          equals: parentId,
+        },
+      },
+      limit: 100,
+      depth: 1,
+    });
+    return (res.docs as unknown as Category[]) || [];
+  } catch (err) {
+    console.error(`Error fetching children for category ID ${parentId}:`, err);
+    return [];
   }
 }
 
@@ -233,9 +287,19 @@ export default async function CategoryPage({
 
   const { categorySlug } = await params;
   const query = await searchParams; // Await searchParams
-  const page = parseInt((query.page as string) || "1", 10); // Access the resolved value
-  const limit = 10;
-  console.log(`Handling route: /${categorySlug}?page=${page}`);
+  const isNews = categorySlug.toLowerCase() === 'news';
+  const isCinema = categorySlug.toLowerCase() === "cinema";
+  const isSports = categorySlug.toLowerCase() === "sports";
+  const isTech = categorySlug.toLowerCase() === "technology";
+  const isAuto = categorySlug.toLowerCase() === "automobile";
+  const isDevotional = categorySlug.toLowerCase() === "devotional";
+  const isLifestyle = categorySlug.toLowerCase() === "lifestyle";
+  const isBusiness = categorySlug.toLowerCase() === "business";
+  const page = parseInt((query.page as string) || "1", 10);
+  const initialListLimit = 12;
+  const spotlightLimit = 4;
+  const limit = spotlightLimit + initialListLimit;
+  console.log(`Handling route: /${categorySlug}?page=${page}, initialListLimit: ${initialListLimit}`);
 
 
   const category = await fetchCategoryBySlug(categorySlug);
@@ -252,22 +316,196 @@ export default async function CategoryPage({
   }
 
   let categoryTitle = category.title || "Uncategorized";
-  if (!category.title) {
-    const fetchedCategory = await fetchCategoryById(category.id);
-    if (fetchedCategory) {
-      categoryTitle = fetchedCategory.title;
-    }
+  let parentCategoryData = null;
+
+  if (category.parent) {
+    const parentId = typeof category.parent === "string" ? category.parent : category.parent.id;
+    parentCategoryData = await fetchParentCategory(parentId);
   }
 
-  const { posts, total } = await fetchPostsByCategory(
+  const { posts: rawPosts, total } = await fetchPostsByCategory(
     categorySlug,
     page,
     limit
   );
-  // Compute totalPages first
-  const totalPages = Math.ceil(total / limit);
+
+  // Resolve initial posts with URLs on the server
+  const resolvedPosts = await Promise.all(
+    rawPosts.map(async (post) => {
+      const postLink = await resolvePostPathForContext(
+        post,
+        { topLevelSlug: categorySlug },
+        fetchParentCategory
+      );
+      return { ...post, postLink };
+    })
+  );
+
+  // Split spotlight and feed posts
+  const isParentCategory = !category.parent;
+  const spotlightPosts = isParentCategory ? resolvedPosts.slice(0, spotlightLimit) : [];
+  const initialPosts = isParentCategory ? resolvedPosts.slice(spotlightLimit) : resolvedPosts.slice(0, initialListLimit);
+
+  // Sidebar Data: Fetch children categories for the current parent
+  let sidebarCategories = await fetchChildrenCategories(category.id);
+
+  // Custom sort for Cinema category
+  if (isCinema) {
+    const priority = ['cinemanews', 'movies', 'movie-reviews', 'movie reviews', 'celebrities', 'ott', 'gossips', 'tamil-serial-news', 'gallery'];
+    sidebarCategories = [...sidebarCategories].sort((a, b) => {
+      const slugA = a.slug.toLowerCase();
+      const titleA = a.title?.toLowerCase() || '';
+      const slugB = b.slug.toLowerCase();
+      const titleB = b.title?.toLowerCase() || '';
+      
+      const indexA = priority.findIndex(p => slugA === p || titleA === p);
+      const indexB = priority.findIndex(p => slugB === p || titleB === p);
+      
+      if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+      if (indexA !== -1) return -1;
+      if (indexB !== -1) return 1;
+      return 0;
+    });
+  } else if (isSports) {
+    const priority = ['cricket', 'football', 'hockey', 'tennis', 'chess'];
+    sidebarCategories = [...sidebarCategories].sort((a, b) => {
+      const slugA = a.slug.toLowerCase();
+      const titleA = a.title?.toLowerCase() || '';
+      const slugB = b.slug.toLowerCase();
+      const titleB = b.title?.toLowerCase() || '';
+      
+      const indexA = priority.findIndex(p => slugA === p || titleA === p);
+      const indexB = priority.findIndex(p => slugB === p || titleB === p);
+      
+      if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+      if (indexA !== -1) return -1;
+      if (indexB !== -1) return 1;
+      return 0;
+    });
+  } else if (isTech) {
+    const priority = ['mobiles', 'laptops', 'gadgets', 'apps', 'ai'];
+    sidebarCategories = [...sidebarCategories].sort((a, b) => {
+      const slugA = a.slug.toLowerCase();
+      const titleA = a.title?.toLowerCase() || '';
+      const slugB = b.slug.toLowerCase();
+      const titleB = b.title?.toLowerCase() || '';
+      
+      const indexA = priority.findIndex(p => slugA === p || titleA === p);
+      const indexB = priority.findIndex(p => slugB === p || titleB === p);
+      
+      if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+      if (indexA !== -1) return -1;
+      if (indexB !== -1) return 1;
+      return 0;
+    });
+  } else if (isAuto) {
+    const priority = ['cars', 'bikes', 'ev-news', 'ev news', 'launches'];
+    sidebarCategories = [...sidebarCategories].sort((a, b) => {
+      const slugA = a.slug.toLowerCase();
+      const titleA = a.title?.toLowerCase() || '';
+      const slugB = b.slug.toLowerCase();
+      const titleB = b.title?.toLowerCase() || '';
+      
+      const indexA = priority.findIndex(p => slugA === p || titleA === p);
+      const indexB = priority.findIndex(p => slugB === p || titleB === p);
+      
+      if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+      if (indexA !== -1) return -1;
+      if (indexB !== -1) return 1;
+      return 0;
+    });
+  } else if (isDevotional) {
+    const priority = ['aanmeegam', 'parigaram', 'rasipalan', 'temples', 'astrology'];
+    sidebarCategories = [...sidebarCategories].sort((a, b) => {
+      const slugA = a.slug.toLowerCase();
+      const titleA = a.title?.toLowerCase() || '';
+      const slugB = b.slug.toLowerCase();
+      const titleB = b.title?.toLowerCase() || '';
+      
+      const indexA = priority.findIndex(p => slugA === p || titleA === p);
+      const indexB = priority.findIndex(p => slugB === p || titleB === p);
+      
+      if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+      if (indexA !== -1) return -1;
+      if (indexB !== -1) return 1;
+      return 0;
+    });
+  } else if (isNews) {
+    const priority = ['tamilnadu', 'india', 'world'];
+    sidebarCategories = [...sidebarCategories].sort((a, b) => {
+      const slugA = a.slug.toLowerCase();
+      const slugB = b.slug.toLowerCase();
+      const indexA = priority.indexOf(slugA);
+      const indexB = priority.indexOf(slugB);
+      if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+      if (indexA !== -1) return -1;
+      if (indexB !== -1) return 1;
+      return 0;
+    });
+  } else if (isLifestyle) {
+    const priority = ['beauty-tips', 'beauty tips', 'health', 'food-recipes', 'food recipes'];
+    sidebarCategories = [...sidebarCategories].sort((a, b) => {
+      const slugA = a.slug.toLowerCase();
+      const titleA = a.title?.toLowerCase() || '';
+      const slugB = b.slug.toLowerCase();
+      const titleB = b.title?.toLowerCase() || '';
+      
+      const indexA = priority.findIndex(p => slugA === p || titleA === p);
+      const indexB = priority.findIndex(p => slugB === p || titleB === p);
+      
+      if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+      if (indexA !== -1) return -1;
+      if (indexB !== -1) return 1;
+      return 0;
+    });
+  } else if (isBusiness) {
+    const priority = ['gold-silver-price', 'gold silver price', 'fuel-price', 'fuel price', 'stocks'];
+    sidebarCategories = [...sidebarCategories].sort((a, b) => {
+      const slugA = a.slug.toLowerCase();
+      const titleA = a.title?.toLowerCase() || '';
+      const slugB = b.slug.toLowerCase();
+      const titleB = b.title?.toLowerCase() || '';
+      
+      const indexA = priority.findIndex(p => slugA === p || titleA === p);
+      const indexB = priority.findIndex(p => slugB === p || titleB === p);
+      
+      if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+      if (indexA !== -1) return -1;
+      if (indexB !== -1) return 1;
+      return 0;
+    });
+  }
+
+  const sidebarContent = await Promise.all(
+    sidebarCategories.map(async (cat, index) => {
+      // Custom fetch limits
+      const isCelebrities = cat.slug.toLowerCase() === 'celebrities';
+      const isLifestyleTips = cat.slug.toLowerCase() === 'lifestyle-tips';
+      const fetchLimit = (isCelebrities || isLifestyleTips) ? 8 : 5;
+      const { posts: catPosts } = await fetchPostsByCategoryId(cat.id, 1, fetchLimit);
+      return {
+        category: cat,
+        posts: await Promise.all(catPosts.map(async (p) => {
+          const postLink = await resolvePostPathForContext(
+            p,
+            { topLevelSlug: cat.slug },
+            fetchParentCategory
+          );
+          return { ...p, postLink };
+        }))
+      };
+    })
+  );
+
+  // Limit Sidebar Hubs to top 3 for all parent categories
+  const sidebarHubs = isParentCategory ? sidebarContent.slice(0, 3) : [];
+  // Processed slugs should only include what we show in the sidebar so the rest goes to the grid
+  const processedSlugs = sidebarHubs.map(item => item.category.slug.toLowerCase());
+  
+  const remainingGrid = sidebarContent.filter(item => !processedSlugs.includes(item.category.slug.toLowerCase()));
 
   // Build pagination link tags (next / prev) after totalPages is known
+  const totalPages = Math.ceil(total / limit);
   const paginationLinks: React.ReactNode[] = [];
   if (page > 1) {
     paginationLinks.push(
@@ -296,6 +534,7 @@ export default async function CategoryPage({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: buildBreadcrumbLd([
             { name: "Home", url: "https://www.dinasuvadu.com/" },
+            ...(parentCategoryData ? [{ name: parentCategoryData.title, url: `https://www.dinasuvadu.com/${parentCategoryData.slug}` }] : []),
             { name: categoryTitle, url: `https://www.dinasuvadu.com/${categorySlug}` },
           ]) }}
         />
@@ -304,149 +543,221 @@ export default async function CategoryPage({
         {/* Breadcrumbs */}
         <nav
           aria-label="Breadcrumb"
-          className="mb-8 text-sm font-medium text-gray-500 site-main"
+          className="mb-2 text-sm font-medium text-gray-500 site"
         >
-          <div className="flex items-center space-x-2 breadcrumbs">
+          <div className="flex items-center space-x-2 breadcrumbs pl-[12px]">
             <Link
               href="/"
               className="text-blue-600 hover:text-blue-800 transition-colors"
             >
               Home
             </Link>
+            {parentCategoryData && (
+              <>
+                <span className="text-gray-400">{">"}</span>
+                <Link
+                  href={`/${parentCategoryData.slug}`}
+                  className="text-blue-600 hover:text-blue-800 transition-colors"
+                >
+                  {parentCategoryData.title}
+                </Link>
+              </>
+            )}
             <span className="text-gray-400">{">"}</span>
             <span className="text-gray-700">{categoryTitle}</span>
           </div>
         </nav>
-
-      {/* Category Header */}
-      <header className="mb-10 site-main">
-        <h1 className="category-title">{categoryTitle}</h1>
-      </header>
-
-      {/* Posts Grid */}
-      {posts.length > 0 ? (
-        <>
-          <div className="category-grid">
-            {await Promise.all(posts.map(async (post) => {
-              const imageUrl = getImageUrl(post.heroImage?.url);
-              const imageAlt = post.heroImage?.alt || post.title;
-              const postLink = await resolvePostPathForContext(
-                post,
-                { topLevelSlug: categorySlug },
-                fetchParentCategory
-              );
-
-              return (
-                <article key={post.id} className="post-item-category">
-                  <div className="flex-1">
-                    <Link href={postLink}>
-                      <h3 className="post-title-1">{post.title}</h3>
-                      {post.meta?.description && (
-                        <p className="post-description">
-                          {post.meta.description}
-                        </p>
-                      )}
-                    </Link>
-                    <div className="post-meta-footer">
-                      <div className="post-meta-left">
-                        {Array.isArray(post.tags) && post.tags.length > 0 && post.tags[0] && (
-                          <Link href={`/tag/${post.tags[0].slug}`} className="category-tag-link">
-                            #{post.tags[0].name}
-                          </Link>
-                        )}
-                        <span className="read-time">5 Min Read</span>
+        
+        {/* Category Spotlight Section (Parent only) */}
+        {isParentCategory && spotlightPosts.length > 0 && (
+          <div className="site mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+              {/* Big Featured Card (Overlay Style) */}
+              <div className="md:col-span-2 lg:col-span-2">
+                {spotlightPosts[0] && (
+                  <Link href={spotlightPosts[0].postLink || "#"} className="group block relative aspect-[16/9] lg:h-full rounded-2xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-800">
+                    <Image
+                      src={spotlightPosts[0].heroImage?.url ? (spotlightPosts[0].heroImage.url.startsWith("http") ? spotlightPosts[0].heroImage.url : `${apiUrl}${spotlightPosts[0].heroImage.url}`) : "/placeholder-news.jpg"}
+                      alt={spotlightPosts[0].heroImage?.alt || spotlightPosts[0].title}
+                      fill
+                      className="object-cover transition-transform duration-700 group-hover:scale-105"
+                      unoptimized
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
+                    <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-[10px] text-white/80 font-bold uppercase tracking-wider">{category.title}</span>
+                        <span className="text-[10px] text-white/40">•</span>
+                        <span className="text-[10px] text-white/80 font-bold uppercase tracking-wider">{timeAgo(spotlightPosts[0].publishedAt)}</span>
                       </div>
-                      <ShareButton
-                          url={`${baseUrl}${postLink}`}
-                          title={post.title}
-                          description={post.meta?.description}
+                      <h2 className="text-lg md:text-xl font-bold text-white leading-tight line-clamp-2 para-txt">
+                        {spotlightPosts[0].title}
+                      </h2>
+                    </div>
+                  </Link>
+                )}
+              </div>
+
+              {/* Three Vertical Cards */}
+              <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-4">
+                {spotlightPosts.slice(1).map((post) => (
+                  <Link key={post.id} href={post.postLink || "#"} className="group flex flex-col bg-white dark:bg-[#111] rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden h-full">
+                    <div className="relative aspect-video overflow-hidden">
+                      <Image
+                        src={post.heroImage?.url ? (post.heroImage.url.startsWith("http") ? post.heroImage.url : `${apiUrl}${post.heroImage.url}`) : "/placeholder-news.jpg"}
+                        alt={post.heroImage?.alt || post.title}
+                        fill
+                        className="object-cover transition-transform duration-500 group-hover:scale-105"
+                        unoptimized
                       />
                     </div>
-                  </div>
-                  {/* Image */}
-                  {imageUrl ? (
-                    <Link href={postLink}>
-                      <img
-                        src={imageUrl}
-                        alt={imageAlt}
-                      />
-                    </Link>
-                  ) : (
-                    <div className="bg-gray-100 rounded-lg flex items-center justify-center shrink-0" style={{ width: '280px', height: '180px' }}>
-                      <span className="text-gray-400 text-sm">No Image</span>
+                    <div className="p-4 flex flex-col flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">{category.title}</span>
+                        <span className="text-[10px] text-gray-300 dark:text-gray-700">•</span>
+                        <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">{timeAgo(post.publishedAt)}</span>
+                      </div>
+                      <h3 className="text-[14px] md:text-[15px] font-bold text-gray-900 dark:text-white leading-tight line-clamp-3 para-txt group-hover:text-blue-600 transition-colors">
+                        {post.title}
+                      </h3>
                     </div>
-                  )}
-                </article>
-              );
-            }))}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+      <div className="site-main">
+        <div className="grid grid-cols-1 lg:grid-cols-10 gap-4">
+          <div className="lg:col-span-7">
+            {initialPosts.length > 0 && (
+              <div className="bg-white dark:bg-[#111] pt-4 px-6 pb-6 md:pt-5 md:px-8 md:pb-8 rounded-2xl shadow-md border border-gray-100 dark:border-gray-800">
+                {/* Unified Category Header */}
+                <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 pb-2 mb-4">
+                  <h1 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white para-txt">
+                    {categoryTitle}
+                  </h1>
+                </div>
+
+                <CategoryFeed 
+                  initialPosts={initialPosts}
+                  categoryId={category.id}
+                  categorySlug={categorySlug}
+                  apiUrl={apiUrl}
+                />
+              </div>
+            )}
           </div>
 
-          {/* Pagination Controls */}
-          {totalPages > 1 && (
-            <div className="web-stories-pagination">
-              {page > 1 && (
-                <Link
-                  href={`/${categorySlug}?page=${page - 1}`}
-                  className="pagination-link"
-                >
-                  Prev
-                </Link>
-              )}
+          {/* Right Sidebar Hub Column (Unified for all parent categories) */}
+          {sidebarHubs.length > 0 && (
+            <div className="lg:col-span-3 space-y-8">
+              {sidebarHubs.map(({ category: sidebarCat, posts: sidebarPosts }) => {
+                if (sidebarPosts.length === 0) return null;
+                
+                const featuredPost = sidebarPosts[0];
+                const listPosts = sidebarPosts.slice(1);
 
-              {/* First Page */}
-              <Link
-                href={`/${categorySlug}?page=1`}
-                className={`pagination-link ${page === 1 ? "active" : ""}`}
-              >
-                1
-              </Link>
-
-              {/* Ellipsis after first page if current page is greater than 2 */}
-              {page > 2 && <span className="pagination-ellipsis">…</span>}
-
-              {/* Current Page (only if it's not the first or last page) */}
-              {page !== 1 && page !== totalPages && (
-                <Link
-                  href={`/${categorySlug}?page=${page}`}
-                  className="pagination-link active"
-                >
-                  {page}
-                </Link>
-              )}
-
-              {/* Ellipsis before last page if current page is less than totalPages - 1 */}
-              {page < totalPages - 1 && (
-                <span className="pagination-ellipsis">…</span>
-              )}
-
-              {/* Last Page (only if totalPages > 1) */}
-              {totalPages > 1 && (
-                <Link
-                  href={`/${categorySlug}?page=${totalPages}`}
-                  className={`pagination-link ${
-                    page === totalPages ? "active" : ""
-                  }`}
-                >
-                  {totalPages}
-                </Link>
-              )}
-
-              {page < totalPages && (
-                <Link
-                  href={`/${categorySlug}?page=${page + 1}`}
-                  className="pagination-link"
-                >
-                  Next
-                </Link>
-              )}
+                return (
+                  <div key={sidebarCat.id} className="bg-white dark:bg-[#111] p-5 rounded-2xl shadow-md border border-gray-100 dark:border-gray-800 flex flex-col">
+                    <Link href={`/${categorySlug}/${sidebarCat.slug}`} className="flex items-center justify-between mb-4 hover:opacity-80 transition-opacity">
+                      <h2 className="text-lg font-bold text-gray-900 dark:text-white para-txt">{sidebarCat.title}</h2>
+                      <div className="w-7 h-7 bg-blue-600 rounded-full flex items-center justify-center text-white transition-transform hover:scale-110">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M13 17l5-5-5-5M6 17l5-5-5-5"/>
+                        </svg>
+                      </div>
+                    </Link>
+                    <div className="mb-4">
+                      <Link href={featuredPost.postLink || "#"} className="group block">
+                        <div className="relative aspect-[16/11] rounded-xl overflow-hidden mb-2 border border-gray-100 dark:border-gray-800">
+                          <Image
+                            src={featuredPost.heroImage?.url ? (featuredPost.heroImage.url.startsWith("http") ? featuredPost.heroImage.url : `${apiUrl}${featuredPost.heroImage.url}`) : "/placeholder-news.jpg"}
+                            alt={featuredPost.heroImage?.alt || featuredPost.title}
+                            fill
+                            className="object-cover transition-transform duration-500 group-hover:scale-105"
+                            unoptimized
+                          />
+                        </div>
+                        <h3 className="text-[15px] font-bold text-gray-900 dark:text-white leading-tight line-clamp-2 para-txt group-hover:text-blue-600 transition-colors">
+                          {featuredPost.title}
+                        </h3>
+                      </Link>
+                    </div>
+                    <div className="space-y-3 pt-3 border-t border-gray-100 dark:border-gray-800">
+                      {listPosts.map((post) => (
+                        <Link key={post.id} href={post.postLink || "#"} className="group flex gap-3 items-start">
+                          <div className="relative w-20 h-14 flex-shrink-0 rounded-lg overflow-hidden border border-gray-100 dark:border-gray-800">
+                            <Image
+                              src={post.heroImage?.url ? (post.heroImage.url.startsWith("http") ? post.heroImage.url : `${apiUrl}${post.heroImage.url}`) : "/placeholder-news.jpg"}
+                              alt={post.heroImage?.alt || post.title}
+                              fill
+                              className="object-cover"
+                              unoptimized
+                            />
+                          </div>
+                          <h4 className="text-[13px] font-bold text-gray-800 dark:text-gray-200 leading-snug line-clamp-2 group-hover:text-blue-600 transition-colors para-txt">
+                            {post.title}
+                          </h4>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
-        </>
-      ) : (
-        <p className="text-gray-600 text-center">
-          No posts available in this category.
-        </p>
-      )}
+        </div>
+
+        {/* Row 2: Remaining Categories in a 4-column Grid Section */}
+        {remainingGrid.length > 0 && (
+          <div className="space-y-12 mt-12 mb-12">
+            {remainingGrid.map(({ category: gridCat, posts: gridPosts }) => {
+              if (gridPosts.length === 0) return null;
+
+              return (
+                <div key={gridCat.id} className="bg-white dark:bg-[#111] p-6 rounded-2xl shadow-md border border-gray-100 dark:border-gray-800">
+                  {/* Grid Header */}
+                  <div className="flex items-center justify-between mb-6 pb-2 border-b-2 border-gray-200 dark:border-gray-700">
+                    <h2 className="text-xl md:text-2xl font-bold text-[#2a2a6a] dark:text-white para-txt">
+                      {gridCat.title}
+                    </h2>
+                    <Link href={`/${categorySlug}/${gridCat.slug}`} className="text-[#2a2a6a] dark:text-blue-400 font-bold hover:translate-x-1 transition-transform flex items-center">
+                      <span className="mr-1">மேலும்</span>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M13 17l5-5-5-5M6 17l5-5-5-5"/>
+                      </svg>
+                    </Link>
+                  </div>
+
+                  {/* 4-Column Grid of Cards */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    {gridPosts.map((post) => (
+                      <Link key={post.id} href={post.postLink || "#"} className="group flex flex-col bg-white dark:bg-[#111] rounded-xl overflow-hidden shadow-md hover:shadow-lg hover:-translate-y-1 transition-all duration-300 h-full border border-gray-100 dark:border-gray-800">
+                        <div className="relative aspect-[16/11] overflow-hidden">
+                          <Image
+                            src={post.heroImage?.url ? (post.heroImage.url.startsWith("http") ? post.heroImage.url : `${apiUrl}${post.heroImage.url}`) : "/placeholder-news.jpg"}
+                            alt={post.heroImage?.alt || post.title}
+                            fill
+                            className="object-cover transition-transform duration-500 group-hover:scale-105"
+                            unoptimized
+                          />
+                        </div>
+                        <div className="p-3 flex flex-col flex-1">
+                          <h3 className="text-[15px] font-bold text-gray-900 dark:text-white leading-tight line-clamp-2 para-txt group-hover:text-blue-600 transition-colors">
+                            {post.title}
+                          </h3>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
     </>
   );

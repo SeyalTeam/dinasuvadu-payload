@@ -9,7 +9,7 @@ import { notFound, redirect } from "next/navigation";
 import { getPayload } from "payload";
 import config from "@/payload.config";
 import type { Metadata } from "next";
-import { Suspense } from "react";
+import React, { Suspense } from "react";
 import { buildMetadata, buildBreadcrumbLd, buildArticleLd } from "@/lib/seo";
 import {
   hasTopLevelAndPostSlugMatch,
@@ -137,6 +137,26 @@ function formatNewsTimestamp(value?: string): string | null {
   });
 
   return `${datePart} at ${timePart} IST`;
+}
+
+function formatTimeAgo(dateString: string): string {
+  if (!dateString) return "சமீபத்தில்";
+  const now = new Date();
+  const date = new Date(dateString);
+  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+  if (diffInSeconds < 60) return "Just now";
+  
+  const diffInMinutes = Math.floor(diffInSeconds / 60);
+  if (diffInMinutes < 60) return `${diffInMinutes} hr ago`; 
+  
+  const diffInHours = Math.floor(diffInMinutes / 60);
+  if (diffInHours < 24) return `${diffInHours} hr ago`;
+  
+  const diffInDays = Math.floor(diffInHours / 24);
+  if (diffInDays < 7) return `${diffInDays} day ago`;
+  
+  return date.toLocaleDateString("en-GB", { day: "2-digit", month: "short" });
 }
 
 // API base URL
@@ -317,6 +337,7 @@ const fetchLatestPosts = unstable_cache(
           categories: true,
           heroImage: true,
           meta: true,
+          publishedAt: true,
         },
       });
       return (response.docs as unknown as Post[]) || [];
@@ -354,17 +375,14 @@ async function LatestPostsSidebar({ currentPostSlug }: { currentPostSlug: string
 
   return (
     <aside className="single-post-sidebar latest-posts">
-      <div className="single-post-sidebar-card sticky top-20">
-        <h2 className="single-post-sidebar-title">Latest Posts</h2>
+      <div className="sticky top-24 space-y-6">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-1.5 h-8 bg-blue-600 rounded-full"></div>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white para-txt">சமீபத்திய செய்திகள்</h2>
+        </div>
+        
         {latestPosts.length > 0 ? (
-          <div
-            className="space-y-4"
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "15px",
-            }}
-          >
+          <div className="space-y-4">
             {latestPosts.map((latestPost) => {
               const latestCategory = latestPost.categories?.[0];
               let latestCategorySlug = latestCategory?.slug || "uncategorized";
@@ -385,10 +403,8 @@ async function LatestPostsSidebar({ currentPostSlug }: { currentPostSlug: string
                 latestPost.heroImage || latestPost.meta?.image,
                 "thumb"
               );
-              const imageAlt =
-                latestPost.heroImage?.alt ||
-                latestPost.meta?.image?.alt ||
-                "Post Image";
+              const imageAlt = latestPost.heroImage?.alt || latestPost.title;
+              const timeAgo = formatTimeAgo(latestPost.publishedAt);
 
               return (
                 <Link
@@ -398,53 +414,48 @@ async function LatestPostsSidebar({ currentPostSlug }: { currentPostSlug: string
                       ? `/${latestCategorySlug}/${latestSubCategorySlug}/${latestPost.slug}`
                       : `/${latestCategorySlug}/${latestPost.slug}`
                   }
-                  className="block p-4 bg-white border border-gray-200 rounded-md hover:shadow-md hover:bg-gray-100 transition-all"
+                  className="group flex gap-4 p-3 bg-white dark:bg-[#111] border border-gray-100 dark:border-gray-800 rounded-xl hover:shadow-lg hover:border-blue-100 dark:hover:border-blue-900/30 transition-all duration-300"
                 >
-                  <div className="latest-post-rt">
-                    <div style={{ flex: 1 }}>
-                      <div
-                        className="para-txt"
-                        style={{
-                          ...clampStyle,
-                          fontSize: "13px",
-                          fontWeight: "500",
-                          WebkitBoxOrient: "vertical" as const,
-                        }}
-                      >
-                        {latestPost.title}
-                      </div>
+                  <div className="flex-1 flex flex-col justify-between py-0.5">
+                    <h3 className="text-[14px] font-bold text-gray-800 dark:text-gray-200 leading-snug line-clamp-2 transition-colors para-txt">
+                      {latestPost.title}
+                    </h3>
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-gray-600 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded">
+                        {latestCategory?.title || 'News'}
+                      </span>
+                      <span className="text-[11px] text-gray-400 dark:text-gray-500 flex items-center gap-1">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                        </svg>
+                        {timeAgo}
+                      </span>
                     </div>
-                    {imageUrl ? (
+                  </div>
+                  
+                  {imageUrl ? (
+                    <div className="relative w-24 h-20 flex-shrink-0 rounded-lg overflow-hidden">
                       <Image
                         alt={imageAlt}
                         src={imageUrl}
-                        width={120}
-                        height={80}
-                        sizes="120px"
-                        style={{
-                          objectFit: "cover",
-                          borderRadius: "4px",
-                          marginLeft: "12px",
-                        }}
+                        fill
+                        className="object-cover transition-transform duration-500 group-hover:scale-110"
                         unoptimized
                       />
-                    ) : (
-                      <div>
-                        <span
-                          className="text-gray-500"
-                          style={{ fontSize: "12px" }}
-                        >
-                          No Image
-                        </span>
-                      </div>
-                    )}
-                  </div>
+                    </div>
+                  ) : (
+                    <div className="w-24 h-20 flex-shrink-0 bg-gray-50 dark:bg-gray-800 rounded-lg flex items-center justify-center">
+                      <span className="text-[10px] text-gray-400">No Image</span>
+                    </div>
+                  )}
                 </Link>
               );
             })}
           </div>
         ) : (
-          <p className="text-gray-600">No recent posts available.</p>
+          <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-6 text-center border border-dashed border-gray-200 dark:border-gray-800">
+            <p className="text-sm text-gray-500">சமீபத்திய செய்திகள் இல்லை.</p>
+          </div>
         )}
       </div>
     </aside>
@@ -454,9 +465,22 @@ async function LatestPostsSidebar({ currentPostSlug }: { currentPostSlug: string
 function LatestPostsSidebarFallback() {
   return (
     <aside className="single-post-sidebar latest-posts">
-      <div className="single-post-sidebar-card sticky top-20">
-        <h2 className="single-post-sidebar-title">Latest Posts</h2>
-        <p className="text-gray-600">Loading latest posts...</p>
+      <div className="sticky top-24 space-y-6">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-1.5 h-8 bg-gray-200 rounded-full animate-pulse"></div>
+          <div className="h-6 w-32 bg-gray-200 rounded animate-pulse"></div>
+        </div>
+        <div className="space-y-4">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="flex gap-4 p-3 bg-white border border-gray-100 rounded-xl animate-pulse">
+              <div className="flex-1 space-y-2">
+                <div className="h-4 bg-gray-200 rounded w-full"></div>
+                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+              </div>
+              <div className="w-24 h-20 bg-gray-200 rounded-lg"></div>
+            </div>
+          ))}
+        </div>
       </div>
     </aside>
   );
@@ -667,7 +691,23 @@ export default async function SubCategoryPostPage({
               <div className="single-post-meta-top">
                 <p className="single-post-author">
                   <span className="single-post-author-prefix">By</span>
-                  <span className="single-post-author-name">{authorLine}</span>
+                  <span className="single-post-author-name">
+                    {post.populatedAuthors && post.populatedAuthors.length > 0 ? (
+                      post.populatedAuthors.map((author: any, index: number) => (
+                        <React.Fragment key={author.id}>
+                          <Link 
+                            href={`/author/${author.slug || author.id}`} 
+                            className="text-gray-900 dark:text-gray-100 font-bold transition-all"
+                          >
+                            {author.name}
+                          </Link>
+                          {index < (post.populatedAuthors?.length || 0) - 1 && ", "}
+                        </React.Fragment>
+                      ))
+                    ) : (
+                      <span className="font-bold text-gray-900">Dinasuvadu Team</span>
+                    )}
+                  </span>
                   <span
                     className="single-post-verified"
                     aria-label="Verified"
@@ -744,6 +784,7 @@ export default async function SubCategoryPostPage({
               <PostImageActions
                 url={canonicalUrl}
                 title={post.title}
+                postSlug={subPostSlug}
                 description={post.meta?.description}
               />
             </>
@@ -797,6 +838,7 @@ export default async function SubCategoryPostPage({
           <PostBottomInteraction
             url={canonicalUrl}
             title={post.title}
+            postSlug={subPostSlug}
             description={post.meta?.description}
           />
         </article>

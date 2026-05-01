@@ -431,6 +431,33 @@ export default function Header({ categories, homepageCategories }: HeaderProps) 
               </ul>
               
               <div className="header-right-actions" style={{ display: "flex", alignItems: "center", gap: "10px", marginLeft: "auto", paddingLeft: "15px" }}>
+                <Link
+                  href="/latest-feed"
+                  className="feed-btn"
+                  title="Latest Feed"
+                  style={{
+                    background: "#0066ff",
+                    color: "#ffffff",
+                    border: "none",
+                    cursor: "pointer",
+                    padding: "6px 12px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    borderRadius: "20px",
+                    fontSize: "11px",
+                    fontWeight: "900",
+                    gap: "6px",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.5px",
+                    boxShadow: "0 2px 4px rgba(0, 102, 255, 0.2)",
+                    textDecoration: "none"
+                  }}
+                >
+                  <span style={{ width: "8px", height: "8px", background: "white", borderRadius: "50%", display: "inline-block" }} className="animate-pulse" />
+                  FEED
+                </Link>
+
                 <button
                   className="theme-toggle-btn"
                   onClick={toggleTheme}

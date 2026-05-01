@@ -12,6 +12,13 @@ export type SignupData = {
   mobile?: string
 }
 
+interface PostImageActionsProps {
+  url: string;
+  title: string;
+  postSlug: string; 
+  description?: string;
+}
+
 export const checkUserAction = async (identifier: string) => {
   try {
     const payload = await getPayload({ config })
@@ -170,8 +177,11 @@ export const submitCommentAction = async (data: { postSlug: string, userId: stri
       return { success: false, error: 'Post not found' }
     }
 
-    const postId = posts.docs[0].id
-    console.log('[Comment Action] Found Post ID:', postId);
+    const postId = posts.docs?.[0]?.id;
+    if (!postId) {
+      console.error('[Comment Action] Post document missing ID');
+      return { success: false, error: 'Post data corrupted' };
+    }
 
     // 2. Create the comment
     console.log('[Comment Action] Creating comment in DB...');

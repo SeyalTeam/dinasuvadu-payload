@@ -19,7 +19,15 @@ import {
   hasTopLevelAliasMatch,
   resolveCanonicalPostPath,
   resolvePostPathCandidates,
+  resolvePostPathForContext,
 } from "@/lib/post-url";
+import { CategoryFeed } from "@/components/CategoryFeed";
+import { 
+  calculateReadingTime, 
+  extractPlainTextFromRichText, 
+  stripHtml, 
+  estimateReadTimeMinutes 
+} from "@/utilities/readingTime";
 
 // Type definitions
 type RichTextChild = {
@@ -165,19 +173,6 @@ function getImageUrl(media: any, variant: ImageVariant = "original"): string | n
   return toAbsoluteImageUrl(path);
 }
 
-// Utility function to extract plain text from richText content
-function extractPlainTextFromRichText(content: Post["content"]): string {
-  if (!content?.root?.children) return "";
-  return content.root.children
-    .map((block) => {
-      if (block && block.children && Array.isArray(block.children)) {
-        return block.children.map((child: any) => child?.text || "").join("");
-      }
-      return "";
-    })
-    .join("\n");
-}
-
 function trimTrailingEmptyHtmlBlocks(html: string): string {
   if (!html) return html;
   return html
@@ -188,18 +183,7 @@ function trimTrailingEmptyHtmlBlocks(html: string): string {
     .trim();
 }
 
-function stripHtml(value: string): string {
-  return value.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
-}
 
-function estimateReadTimeMinutes(text: string): number {
-  // Use a more accurate word count for non-English text
-  const words = text.trim().split(/\s+/).filter(Boolean).length;
-  if (words < 1) return 1;
-  // Adjust speed to ~160 words per minute for Tamil/Complex scripts
-  const speed = 160;
-  return Math.max(1, Math.ceil(words / speed));
-}
 
 function formatNewsTimestamp(value?: string): string | null {
   if (!value) return null;
@@ -220,6 +204,26 @@ function formatNewsTimestamp(value?: string): string | null {
   });
 
   return `${datePart} at ${timePart} IST`;
+}
+
+function formatTimeAgo(dateString: string): string {
+  if (!dateString) return "சமீபத்தில்";
+  const now = new Date();
+  const date = new Date(dateString);
+  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+  if (diffInSeconds < 60) return "Just now";
+  
+  const diffInMinutes = Math.floor(diffInSeconds / 60);
+  if (diffInMinutes < 60) return `${diffInMinutes} hr ago`; // Following user image style "9 hr ago" actually means relative.
+  
+  const diffInHours = Math.floor(diffInMinutes / 60);
+  if (diffInHours < 24) return `${diffInHours} hr ago`;
+  
+  const diffInDays = Math.floor(diffInHours / 24);
+  if (diffInDays < 7) return `${diffInDays} day ago`;
+  
+  return date.toLocaleDateString("en-GB", { day: "2-digit", month: "short" });
 }
 
 const normalizeSlug = (slug: string): string => {
@@ -427,6 +431,7 @@ const fetchLatestPosts = unstable_cache(
           categories: true,
           heroImage: true,
           meta: true,
+          publishedAt: true,
         },
       });
       return (response.docs as unknown as Post[]) || [];
@@ -464,17 +469,14 @@ async function LatestPostsSidebar({ currentPostSlug }: { currentPostSlug: string
 
   return (
     <aside className="single-post-sidebar latest-posts">
-      <div className="single-post-sidebar-card sticky top-20">
-        <h2 className="single-post-sidebar-title">Latest Posts</h2>
+      <div className="sticky top-24 space-y-6">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-1.5 h-8 bg-blue-600 rounded-full"></div>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white para-txt">சமீபத்திய செய்திகள்</h2>
+        </div>
+        
         {latestPosts.length > 0 ? (
-          <div
-            className="space-y-4"
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "15px",
-            }}
-          >
+          <div className="space-y-4">
             {latestPosts.map((latestPost) => {
               const latestCategory = latestPost.categories?.[0];
               let latestCategorySlug = latestCategory?.slug || "uncategorized";
@@ -495,10 +497,8 @@ async function LatestPostsSidebar({ currentPostSlug }: { currentPostSlug: string
                 latestPost.heroImage || latestPost.meta?.image,
                 "thumb"
               );
-              const imageAlt =
-                latestPost.heroImage?.alt ||
-                latestPost.meta?.image?.alt ||
-                "Post Image";
+              const imageAlt = latestPost.heroImage?.alt || latestPost.title;
+              const timeAgo = formatTimeAgo(latestPost.publishedAt);
 
               return (
                 <Link
@@ -508,53 +508,48 @@ async function LatestPostsSidebar({ currentPostSlug }: { currentPostSlug: string
                       ? `/${latestCategorySlug}/${latestSubCategorySlug}/${latestPost.slug}`
                       : `/${latestCategorySlug}/${latestPost.slug}`
                   }
-                  className="group block border-b border-gray-200 pb-4 last:border-b-0"
+                  className="group flex gap-4 p-3 bg-white dark:bg-[#111] border border-gray-100 dark:border-gray-800 rounded-xl hover:shadow-lg hover:border-blue-100 dark:hover:border-blue-900/30 transition-all duration-300"
                 >
-                  <div className="latest-post-rt">
-                    <div style={{ flex: 1 }}>
-                      <div
-                        className="para-txt"
-                        style={{
-                          ...clampStyle,
-                          fontSize: "13px",
-                          fontWeight: "500",
-                          WebkitBoxOrient: "vertical" as const,
-                        }}
-                      >
-                        {latestPost.title}
-                      </div>
+                  <div className="flex-1 flex flex-col justify-between py-0.5">
+                    <h3 className="text-[14px] font-bold text-gray-800 dark:text-gray-200 leading-snug line-clamp-2 transition-colors para-txt">
+                      {latestPost.title}
+                    </h3>
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-gray-600 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded">
+                        {latestCategory?.title || 'News'}
+                      </span>
+                      <span className="text-[11px] text-gray-400 dark:text-gray-500 flex items-center gap-1">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                        </svg>
+                        {timeAgo}
+                      </span>
                     </div>
-                    {imageUrl ? (
+                  </div>
+                  
+                  {imageUrl ? (
+                    <div className="relative w-24 h-20 flex-shrink-0 rounded-lg overflow-hidden">
                       <Image
                         alt={imageAlt}
                         src={imageUrl}
-                        width={120}
-                        height={80}
-                        sizes="120px"
-                        style={{
-                          objectFit: "cover",
-                          borderRadius: "4px",
-                          marginLeft: "12px",
-                        }}
+                        fill
+                        className="object-cover transition-transform duration-500 group-hover:scale-110"
                         unoptimized
                       />
-                    ) : (
-                      <div>
-                        <span
-                          className="text-gray-500"
-                          style={{ fontSize: "12px" }}
-                        >
-                          No Image
-                        </span>
-                      </div>
-                    )}
-                  </div>
+                    </div>
+                  ) : (
+                    <div className="w-24 h-20 flex-shrink-0 bg-gray-50 dark:bg-gray-800 rounded-lg flex items-center justify-center">
+                      <span className="text-[10px] text-gray-400">No Image</span>
+                    </div>
+                  )}
                 </Link>
               );
             })}
           </div>
         ) : (
-          <p className="text-gray-600">No recent posts available.</p>
+          <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-6 text-center border border-dashed border-gray-200 dark:border-gray-800">
+            <p className="text-sm text-gray-500">சமீபத்திய செய்திகள் இல்லை.</p>
+          </div>
         )}
       </div>
     </aside>
@@ -564,9 +559,22 @@ async function LatestPostsSidebar({ currentPostSlug }: { currentPostSlug: string
 function LatestPostsSidebarFallback() {
   return (
     <aside className="single-post-sidebar latest-posts">
-      <div className="single-post-sidebar-card sticky top-20">
-        <h2 className="single-post-sidebar-title">Latest Posts</h2>
-        <p className="text-gray-600">Loading latest posts...</p>
+      <div className="sticky top-24 space-y-6">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-1.5 h-8 bg-gray-200 rounded-full animate-pulse"></div>
+          <div className="h-6 w-32 bg-gray-200 rounded animate-pulse"></div>
+        </div>
+        <div className="space-y-4">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="flex gap-4 p-3 bg-white border border-gray-100 rounded-xl animate-pulse">
+              <div className="flex-1 space-y-2">
+                <div className="h-4 bg-gray-200 rounded w-full"></div>
+                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+              </div>
+              <div className="w-24 h-20 bg-gray-200 rounded-lg"></div>
+            </div>
+          ))}
+        </div>
       </div>
     </aside>
   );
@@ -652,21 +660,30 @@ export default async function PostOrSubCategoryPage({
       }
     }
 
-    const { posts, total } = await fetchPostsByCategory(postSlug, page, limit);
+    const { posts: rawPosts, total } = await fetchPostsByCategory(postSlug, page, limit);
+
+    // Resolve posts with full paths for the client component
+    const posts = await Promise.all(
+      rawPosts.map(async (p) => {
+        const postLink = await resolvePostPathForContext(
+          p,
+          { topLevelSlug: categorySlug },
+          fetchParentCategory
+        );
+        return { ...p, postLink };
+      })
+    );
+
     const totalPages = Math.ceil(total / limit);
-    const pageHref = (pageNumber: number): string =>
-      pageNumber <= 1
-        ? `/${categorySlug}/${postSlug}`
-        : `/${categorySlug}/${postSlug}/p/${pageNumber}`;
 
     return (
       <div className="site ">
         {/* Breadcrumbs */}
         <nav
           aria-label="Breadcrumb"
-          className="mb-8 text-sm font-medium text-gray-500 site-main"
+          className="mb-2 text-sm font-medium text-gray-500 site"
         >
-          <div className="flex items-center space-x-2 breadcrumbs">
+          <div className="flex items-center space-x-2 breadcrumbs pl-[12px]">
             <Link
               href="/"
               className="text-blue-600 hover:text-blue-800 transition-colors"
@@ -685,134 +702,39 @@ export default async function PostOrSubCategoryPage({
           </div>
         </nav>
 
-        {/* Subcategory Header */}
-        <header className="mb-10 site-main">
-          <h1 className="category-title">{subCategoryTitle}</h1>
-        </header>
+        <div className="site-main">
+          <div className="grid grid-cols-1 lg:grid-cols-10 gap-4">
+            <div className="lg:col-span-7">
+              {/* Posts Grid */}
+              {posts.length > 0 ? (
+                <div className="bg-white dark:bg-[#111] pt-4 px-6 pb-6 md:pt-5 md:px-8 md:pb-8 rounded-2xl shadow-md border border-gray-100 dark:border-gray-800">
+                  {/* Category Header Bar - Now merged inside the main card */}
+                  <div className="flex items-center justify-between mb-4 border-b border-gray-100 dark:border-gray-800 pb-2">
+                    <h1 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white para-txt">
+                      {subCategoryTitle}
+                    </h1>
+                  </div>
 
-        {/* Posts Grid */}
-        {posts.length > 0 ? (
-          <>
-            <div className="category-grid">
-              {posts.map((post: Post) => {
-                const imageUrl = getImageUrl(post.heroImage, "card");
-                const imageAlt = post.heroImage?.alt || post.title;
-
-                return (
-                  <article key={post.id} className="post-item-category">
-                    <div className="flex-1">
-                      <Link href={`/${categorySlug}/${postSlug}/${post.slug}`}>
-                        <h3 className="post-title-1">{post.title}</h3>
-                        {post.meta?.description && (
-                          <p className="post-description">
-                            {post.meta.description}
-                          </p>
-                        )}
-                      </Link>
-                      <div className="post-meta-footer">
-                        <div className="post-meta-left">
-                          {Array.isArray(post.tags) && post.tags.length > 0 && post.tags[0] && (
-                            <Link href={`/tag/${post.tags[0].slug}`} className="category-tag-link">
-                              #{post.tags[0].name}
-                            </Link>
-                          )}
-                          <span className="read-time">5 Min Read</span>
-                        </div>
-                        <ShareButton
-                          url={`${baseUrl}/${categorySlug}/${postSlug}/${post.slug}`}
-                          title={post.title}
-                          description={post.meta?.description}
-                        />
-                      </div>
-                    </div>
-                    {/* Image */}
-                    {imageUrl ? (
-                      <Link href={`/${categorySlug}/${postSlug}/${post.slug}`}>
-                        <Image
-                          src={imageUrl}
-                          alt={imageAlt}
-                          width={280}
-                          height={180}
-                          sizes="(max-width: 768px) 100vw, 280px"
-                          unoptimized
-                        />
-                      </Link>
-                    ) : (
-                      <div className="bg-gray-100 rounded-lg flex items-center justify-center shrink-0" style={{ width: '280px', height: '180px' }}>
-                        <span className="text-gray-400 text-sm">No Image</span>
-                      </div>
-                    )}
-                  </article>
-                );
-              })}
+                  <CategoryFeed 
+                    initialPosts={posts}
+                    categoryId={possibleSubCategory.id}
+                    categorySlug={categorySlug}
+                    apiUrl={apiUrl}
+                    initialOffset={10}
+                  />
+                </div>
+              ) : (
+                <div className="bg-white dark:bg-[#111] p-20 rounded-2xl shadow-md border border-gray-100 dark:border-gray-800 text-center">
+                  <p className="text-gray-600">
+                    No posts available in this subcategory.
+                  </p>
+                </div>
+              )}
             </div>
-
-            {/* Pagination Controls */}
-            {totalPages > 1 && (
-              <div className="flex justify-center space-x-2 mt-8 web-stories-pagination">
-                {page > 1 && (
-                  <Link
-                    href={pageHref(page - 1)}
-                    className="pagination-link"
-                  >
-                    Prev
-                  </Link>
-                )}
-
-                {/* First Page */}
-                <Link
-                  href={pageHref(1)}
-                  className={`pagination-link ${page === 1 ? "active" : ""}`}
-                >
-                  1
-                </Link>
-
-                {/* Ellipsis after first page if current page is greater than 2 */}
-                {page > 2 && <span className="pagination-ellipsis">…</span>}
-
-                {/* Current Page (only if it's not the first or last page) */}
-                {page !== 1 && page !== totalPages && (
-                  <Link
-                    href={pageHref(page)}
-                    className="pagination-link active"
-                  >
-                    {page}
-                  </Link>
-                )}
-
-                {/* Ellipsis before last page if current page is less than totalPages - 1 */}
-                {page < totalPages - 1 && (
-                  <span className="pagination-ellipsis">…</span>
-                )}
-
-                {/* Last Page (only if totalPages > 1) */}
-                {totalPages > 1 && (
-                  <Link
-                    href={pageHref(totalPages)}
-                    className={`pagination-link ${
-                      page === totalPages ? "active" : ""
-                    }`}
-                  >
-                    {totalPages}
-                  </Link>
-                )}
-
-                {page < totalPages && (
-                  <Link
-                    href={pageHref(page + 1)}
-                    className="pagination-link"
-                  >
-                    Next
-                  </Link>
-                )}
-              </div>
-            )}
-          </>
-        ) : (
-          <p className="text-gray-600 text-center">
-            No posts available in this subcategory.
-          </p>
-        )}
+            {/* Empty Right Column (3/10th width = 30%) */}
+            <div className="hidden lg:block lg:col-span-3" />
+          </div>
+        </div>
       </div>
     );
   }
@@ -845,14 +767,14 @@ export default async function PostOrSubCategoryPage({
     ? extractPlainTextFromRichText(post.content)
     : "";
   const layoutContentText = (post.layout ?? [])
-    .map((block) => {
+    .map((block: any) => {
       if (block.blockType === "content" && block.content) {
         return stripHtml(block.content);
       }
       return "";
     })
     .join(" ");
-  const fullContentText = `${postContent} ${layoutContentText} ${post.meta?.description || ""}`;
+  const fullContentText = `${post.title || ""} ${postContent} ${layoutContentText} ${post.meta?.description || ""}`;
   const wordsCount = fullContentText.trim().split(/\s+/).filter(Boolean).length;
   const readTimeMinutes = estimateReadTimeMinutes(fullContentText);
   const publishedLabel = formatNewsTimestamp(post.publishedAt);
@@ -917,7 +839,23 @@ export default async function PostOrSubCategoryPage({
               <div className="single-post-meta-top">
                 <p className="single-post-author">
                   <span className="single-post-author-prefix">By</span>
-                  <span className="single-post-author-name">{authorLine}</span>
+                  <span className="single-post-author-name">
+                    {post.populatedAuthors && post.populatedAuthors.length > 0 ? (
+                      post.populatedAuthors.map((author: any, index: number) => (
+                        <React.Fragment key={author.id}>
+                          <Link 
+                            href={`/author/${author.slug || author.id}`} 
+                            className="text-gray-900 dark:text-gray-100 font-bold transition-all"
+                          >
+                            {author.name}
+                          </Link>
+                          {index < (post.populatedAuthors?.length || 0) - 1 && ", "}
+                        </React.Fragment>
+                      ))
+                    ) : (
+                      <span className="font-bold text-gray-900">Dinasuvadu Team</span>
+                    )}
+                  </span>
                   <span
                     className="single-post-verified"
                     aria-label="Verified"

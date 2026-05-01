@@ -398,7 +398,9 @@ export interface Tag {
  */
 export interface User {
   id: string;
-  name?: string | null;
+  name: string;
+  slug?: string | null;
+  slugLock?: boolean | null;
   mobile?: string | null;
   updatedAt: string;
   createdAt: string;
@@ -754,6 +756,8 @@ export interface Form {
   createdAt: string;
 }
 /**
+ * Manage user comments on posts.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "comments".
  */
@@ -1318,6 +1322,8 @@ export interface CategoriesSelect<T extends boolean = true> {
  */
 export interface UsersSelect<T extends boolean = true> {
   name?: T;
+  slug?: T;
+  slugLock?: T;
   mobile?: T;
   updatedAt?: T;
   createdAt?: T;

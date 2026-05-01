@@ -21,7 +21,9 @@ export const Users: CollectionConfig = {
     {
       name: 'name',
       type: 'text',
+      required: true,
     },
+    ...slugField('name'),
     {
       name: 'mobile',
       type: 'text',

@@ -7,6 +7,8 @@ import { getPayload } from "payload";
 import config from "@/payload.config";
 import type { Metadata } from "next";
 import { buildMetadata, buildPersonLd } from "@/lib/seo";
+import { resolvePostPathForContext } from "@/lib/post-url";
+import { AuthorFeed } from "@/components/AuthorFeed";
 
 // Generate dynamic metadata for author pages
 export async function generateMetadata({ params }: { params: Promise<{ authorSlug: string }> }): Promise<Metadata> {
@@ -169,7 +171,8 @@ export default async function AuthorPage({
   const { authorSlug } = await params;
   const query = await searchParams;
   const page = getPageNumber(query.page);
-  const limit = 10;
+  const initialListLimit = 12;
+  const limit = initialListLimit;
 
   const author = await fetchAuthorBySlug(authorSlug);
 
@@ -178,7 +181,37 @@ export default async function AuthorPage({
   }
 
   const { posts, total } = await fetchPostsByAuthor(author.id, page, limit);
-  const totalPages = Math.ceil(total / limit);
+
+  // Sidebar Data: Fetch top parent categories to show in the sidebar
+  const payload = await getPayload({ config });
+  const topCategoriesRes = await payload.find({
+    collection: "categories",
+    where: {
+      parent: { exists: false },
+    },
+    limit: 3,
+    depth: 1,
+  });
+  
+  const sidebarCategories = topCategoriesRes.docs as any[];
+  const sidebarContent = await Promise.all(
+    sidebarCategories.map(async (cat) => {
+      const { posts: catPosts } = await (payload as any).find({
+        collection: "posts",
+        where: { categories: { in: [cat.id] } },
+        limit: 5,
+        sort: "-publishedAt",
+        depth: 2,
+      });
+      return {
+        category: cat,
+        posts: await Promise.all((catPosts || []).map(async (p: any) => {
+          const postLink = `/${cat.slug}/${p.slug}`;
+          return { ...p, postLink };
+        }))
+      };
+    })
+  );
 
   return (
     <>
@@ -192,127 +225,101 @@ export default async function AuthorPage({
           }),
         }}
       />
-    <div className="site" style={{ minHeight: "100vh", padding: "20px" }}>
-      <div className="site-main" style={{ marginBottom: "40px" }}>
-        <h1 className="category-title">
-          Author: {author.name}
-        </h1>
-      </div>
+    <div className="site">
+      {/* Breadcrumbs */}
+      <nav aria-label="Breadcrumb" className="mb-4 text-sm font-medium text-gray-500 site">
+        <div className="flex items-center space-x-2 breadcrumbs pl-[12px]">
+          <Link href="/" className="text-blue-600 hover:text-blue-800 transition-colors">Home</Link>
+          <span className="text-gray-400">{">"}</span>
+          <span className="text-gray-700">Author: {author.name}</span>
+        </div>
+      </nav>
 
-      {posts.length === 0 ? (
-        <p className="text-gray-500 text-center">
-          No posts found by this author.
-        </p>
-      ) : (
-        <>
-          <div className="category-grid">
-            {await Promise.all(
-              posts.map(async (post) => {
-                const imageUrl = getImageUrl(post.heroImage?.url);
-                const imageAlt = post.heroImage?.alt || post.title;
+      <div className="site-main">
+        <div className="grid grid-cols-1 lg:grid-cols-10 gap-4">
+          <div className="lg:col-span-7">
+            {posts.length > 0 ? (
+              <div className="bg-white dark:bg-[#111] pt-4 px-6 pb-6 md:pt-5 md:px-8 md:pb-8 rounded-2xl shadow-md border border-gray-100 dark:border-gray-800">
+                {/* Unified Header */}
+                <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 pb-2 mb-4">
+                  <h1 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white para-txt">
+                    Author: {author.name}
+                  </h1>
+                </div>
 
-                const category = post.categories?.[0];
-                const categorySlug = category?.slug || "uncategorized";
-
-                let postUrl = `/${categorySlug}/${post.slug}`;
-                if (category?.parent) {
-                  const parent =
-                    typeof category.parent === "string"
-                      ? await fetchParentCategory(category.parent)
-                      : category.parent;
-                  if (parent) {
-                    postUrl = `/${(parent as any).slug}/${categorySlug}/${post.slug}`;
-                  }
-                }
-
-                return (
-                  <article key={post.id} className="post-item-category">
-                    <div className="flex-1">
-                      <Link href={postUrl}>
-                        <h3 className="post-title-1">{post.title}</h3>
-                        {post.meta?.description && (
-                          <p className="post-description">
-                            {post.meta.description}
-                          </p>
-                        )}
-                      </Link>
-                      <div className="post-meta-footer">
-                        <div className="post-meta-left">
-                          {Array.isArray(post.tags) && post.tags.length > 0 && post.tags[0] && (
-                            <Link href={`/tag/${post.tags[0].slug}`} className="category-tag-link">
-                              #{post.tags[0].name}
-                            </Link>
-                          )}
-                          <span className="read-time">5 Min Read</span>
-                        </div>
-                        <ShareButton
-                          url={`${baseUrl}${postUrl}`}
-                          title={post.title}
-                          description={post.meta?.description}
-                        />
-                      </div>
-                    </div>
-                    {/* Image */}
-                    {imageUrl && imageUrl !== "/placeholder-image.jpg" ? (
-                      <Link href={postUrl}>
-                        <img
-                          src={imageUrl}
-                          alt={imageAlt}
-                        />
-                      </Link>
-                    ) : (
-                      <div className="bg-gray-100 rounded-lg flex items-center justify-center shrink-0" style={{ width: '280px', height: '180px' }}>
-                        <span className="text-gray-400 text-sm">No Image</span>
-                      </div>
-                    )}
-                  </article>
-                );
-              })
+                <AuthorFeed 
+                  initialPosts={await Promise.all(posts.map(async (post) => {
+                    const postLink = await resolvePostPathForContext(
+                      post,
+                      {},
+                      fetchParentCategory as any
+                    );
+                    return { ...post, postLink };
+                  }))}
+                  authorId={author.id}
+                  apiUrl={apiUrl}
+                />
+              </div>
+            ) : (
+              <div className="bg-white dark:bg-[#111] p-10 rounded-2xl shadow-md text-center">
+                <p className="text-gray-500">No posts found by this author.</p>
+              </div>
             )}
           </div>
 
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="web-stories-pagination">
-              {page > 1 && (
-                <Link
-                  href={`/author/${authorSlug}?page=${page - 1}`}
-                  className="pagination-link"
-                >
-                  Prev
-                </Link>
-              )}
-              {[...Array(totalPages)].map((_, i) => {
-                const p = i + 1;
-                // Simple pagination: show first, last, and current surroundings
-                if (p === 1 || p === totalPages || (p >= page - 2 && p <= page + 2)) {
-                  return (
-                    <Link
-                      key={p}
-                      href={`/author/${authorSlug}?page=${p}`}
-                      className={`pagination-link ${page === p ? "active" : ""}`}
-                    >
-                      {p}
+          {/* Right Sidebar for Author */}
+          <div className="lg:col-span-3 space-y-8">
+            {sidebarContent.map(({ category: sidebarCat, posts: sidebarPosts }) => {
+              if (sidebarPosts.length === 0) return null;
+              const featuredPost = sidebarPosts[0];
+              const listPosts = sidebarPosts.slice(1);
+
+              return (
+                <div key={sidebarCat.id} className="bg-white dark:bg-[#111] p-5 rounded-2xl shadow-md border border-gray-100 dark:border-gray-800 flex flex-col">
+                  <Link href={`/${sidebarCat.slug}`} className="flex items-center justify-between mb-4 hover:opacity-80 transition-opacity">
+                    <h2 className="text-lg font-bold text-gray-900 dark:text-white para-txt">{sidebarCat.title}</h2>
+                    <div className="w-7 h-7 bg-blue-600 rounded-full flex items-center justify-center text-white transition-transform hover:scale-110">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M13 17l5-5-5-5M6 17l5-5-5-5"/>
+                      </svg>
+                    </div>
+                  </Link>
+                  <div className="mb-4">
+                    <Link href={featuredPost.postLink} className="group block">
+                      <div className="relative aspect-[16/11] rounded-xl overflow-hidden mb-2 border border-gray-100 dark:border-gray-800">
+                        <img
+                          src={featuredPost.heroImage?.url ? (featuredPost.heroImage.url.startsWith("http") ? featuredPost.heroImage.url : `${apiUrl}${featuredPost.heroImage.url}`) : "/placeholder-news.jpg"}
+                          alt={featuredPost.title}
+                          className="object-cover transition-transform duration-500 group-hover:scale-105 w-full h-full"
+                        />
+                      </div>
+                      <h3 className="text-[15px] font-bold text-gray-900 dark:text-white leading-tight line-clamp-2 para-txt group-hover:text-blue-600 transition-colors">
+                        {featuredPost.title}
+                      </h3>
                     </Link>
-                  );
-                }
-                if (p === 2 || p === totalPages - 1) {
-                  return <span key={p} className="pagination-ellipsis">…</span>;
-                }
-                return null;
-              })}
-              {page < totalPages && (
-                <Link
-                  href={`/author/${authorSlug}?page=${page + 1}`}
-                  className="pagination-link"
-                >
-                  Next
-                </Link>
-              )}
-            </div>
-          )}
-        </>
-      )}
+                  </div>
+                  <div className="space-y-3 pt-3 border-t border-gray-100 dark:border-gray-800">
+                    {listPosts.map((post: any) => (
+                      <Link key={post.id} href={post.postLink} className="group flex gap-3 items-start">
+                        <div className="relative w-20 h-14 flex-shrink-0 rounded-lg overflow-hidden border border-gray-100 dark:border-gray-800">
+                          <img
+                            src={post.heroImage?.url ? (post.heroImage.url.startsWith("http") ? post.heroImage.url : `${apiUrl}${post.heroImage.url}`) : "/placeholder-news.jpg"}
+                            alt={post.title}
+                            className="object-cover w-full h-full"
+                          />
+                        </div>
+                        <h4 className="text-[13px] font-bold text-gray-800 dark:text-gray-200 leading-snug line-clamp-2 group-hover:text-blue-600 transition-colors para-txt">
+                          {post.title}
+                        </h4>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
     </div>
     </>
   );

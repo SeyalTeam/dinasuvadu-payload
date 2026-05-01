@@ -8,10 +8,13 @@ export const Comments: CollectionConfig = {
     create: () => true, 
     update: authenticated,
     delete: authenticated,
+    admin: authenticated,
   },
   admin: {
     useAsTitle: 'content',
     defaultColumns: ['user', 'post', 'status', 'createdAt'],
+    group: 'User Engagement',
+    description: 'Manage user comments on posts.',
   },
   fields: [
     {
