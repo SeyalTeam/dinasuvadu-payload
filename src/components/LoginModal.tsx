@@ -290,7 +290,7 @@ export const LoginModal: React.FC = () => {
                     <div className="recaptcha-check">
                       {isRobotChecked && <div className="checkmark-icon"></div>}
                     </div>
-                    <span className="recaptcha-text">I'm not a robot</span>
+                    <span className="recaptcha-text">I&apos;m not a robot</span>
                   </div>
                   <div className="recaptcha-branding">
                     <RefreshCw size={24} className="recaptcha-logo" />

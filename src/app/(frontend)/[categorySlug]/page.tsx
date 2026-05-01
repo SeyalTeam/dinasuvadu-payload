@@ -315,7 +315,7 @@ export default async function CategoryPage({
     notFound();
   }
 
-  let categoryTitle = category.title || "Uncategorized";
+  const categoryTitle = category.title || "Uncategorized";
   let parentCategoryData = null;
 
   if (category.parent) {

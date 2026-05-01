@@ -482,7 +482,7 @@ export default async function Home() {
                         {/* Define categoryLink for additionalPosts section */}
                         {(() => {
                           let categoryLink = "/uncategorized";
-                          let categoryTitle = "Uncategorized";
+                          const categoryTitle = "Uncategorized";
                           if (post.categories && post.categories.length > 0) {
                             const cat = post.categories[0];
                             if (cat) {
