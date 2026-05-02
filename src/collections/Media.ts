@@ -11,6 +11,8 @@ import { fileURLToPath } from 'url'
 import { anyone } from '../access/anyone'
 import { authenticated } from '../access/authenticated'
 
+import { STORAGE_PREFIX } from '../lib/storage-prefix'
+
 const filename = fileURLToPath(import.meta.url)
 
 export const Media: CollectionConfig = {
@@ -25,6 +27,13 @@ export const Media: CollectionConfig = {
     {
       name: 'alt',
       type: 'text',
+    },
+    {
+      name: 'prefix',
+      type: 'text',
+      admin: {
+        hidden: true,
+      },
     },
     {
       name: 'caption',
@@ -76,16 +85,29 @@ export const Media: CollectionConfig = {
     ],
   },
   hooks: {
+    beforeChange: [
+      ({ data, req, operation }) => {
+        if (operation === 'create') {
+          data.prefix = STORAGE_PREFIX
+        }
+        return data
+      },
+    ],
     afterRead: [
       async ({ doc }) => {
         if (doc.filename) {
           const baseUrl = `https://media.dinasuvadu.com`
-          const date = new Date(doc.createdAt || Date.now())
-          const year = date.getFullYear()
-          const month = String(date.getMonth() + 1).padStart(2, '0')
-          const folderPath = `uploads/${year}/${month}`
+          
+          // Use stored prefix if available, otherwise fallback to createdAt logic
+          let folderPath = doc.prefix
+          if (!folderPath) {
+            const date = new Date(doc.createdAt || Date.now())
+            const year = date.getFullYear()
+            const month = String(date.getMonth() + 1).padStart(2, '0')
+            folderPath = `uploads/${year}/${month}`
+          }
 
-          // Set the main file URL (assuming original is unchanged)
+          // Set the main file URL
           doc.url = `${baseUrl}/${folderPath}/${doc.filename}`
 
           // Set URLs for image sizes with custom suffix
@@ -97,7 +119,6 @@ export const Media: CollectionConfig = {
                 const width = doc.sizes[size].width
                 const height = doc.sizes[size].height
                 const customFilename = `${originalWithoutExt}-${width}x${height}.${ext}`
-                doc.sizes[size].filename = customFilename // Optional: Update metadata if needed
                 doc.sizes[size].url = `${baseUrl}/${folderPath}/${customFilename}`
               }
             })

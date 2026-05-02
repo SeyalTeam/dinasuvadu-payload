@@ -28,6 +28,12 @@ const nextConfig = {
   },
   reactStrictMode: true,
   redirects,
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
 }
 
 

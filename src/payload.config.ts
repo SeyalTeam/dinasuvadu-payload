@@ -18,6 +18,8 @@ import { plugins } from './plugins'
 import { defaultLexical } from '@/fields/defaultLexical'
 import { s3Storage } from '@payloadcms/storage-s3'
 
+import { STORAGE_PREFIX } from './lib/storage-prefix'
+
 const serverURL =
   process.env.NODE_ENV === 'production' && process.env.LOCAL_TEST
     ? 'http://localhost:3000'
@@ -26,10 +28,6 @@ const serverURL =
       : 'http://localhost:3000'
 
 process.env.PAYLOAD_PUBLIC_SERVER_URL = serverURL
-
-const date = new Date()
-const year = date.getFullYear()
-const month = String(date.getMonth() + 1).padStart(2, '0')
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -92,7 +90,7 @@ export default buildConfig({
     s3Storage({
       collections: {
         media: {
-          prefix: `uploads/${year}/${month}`,
+          prefix: STORAGE_PREFIX,
         },
       },
       bucket: process.env.S3_BUCKET || '',

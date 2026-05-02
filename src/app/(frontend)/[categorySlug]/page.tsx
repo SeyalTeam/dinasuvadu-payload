@@ -316,12 +316,8 @@ export default async function CategoryPage({
   }
 
   const categoryTitle = category.title || "Uncategorized";
-  let parentCategoryData = null;
+  let parentCategoryData: { slug: string; title: string } | null = null;
 
-  if (category.parent) {
-    const parentId = typeof category.parent === "string" ? category.parent : category.parent.id;
-    parentCategoryData = await fetchParentCategory(parentId);
-  }
 
   const { posts: rawPosts, total } = await fetchPostsByCategory(
     categorySlug,
@@ -534,7 +530,6 @@ export default async function CategoryPage({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: buildBreadcrumbLd([
             { name: "Home", url: "https://www.dinasuvadu.com/" },
-            ...(parentCategoryData ? [{ name: parentCategoryData.title, url: `https://www.dinasuvadu.com/${parentCategoryData.slug}` }] : []),
             { name: categoryTitle, url: `https://www.dinasuvadu.com/${categorySlug}` },
           ]) }}
         />
@@ -552,17 +547,6 @@ export default async function CategoryPage({
             >
               Home
             </Link>
-            {parentCategoryData && (
-              <>
-                <span className="text-gray-400">{">"}</span>
-                <Link
-                  href={`/${parentCategoryData.slug}`}
-                  className="text-blue-600 hover:text-blue-800 transition-colors"
-                >
-                  {parentCategoryData.title}
-                </Link>
-              </>
-            )}
             <span className="text-gray-400">{">"}</span>
             <span className="text-gray-700">{categoryTitle}</span>
           </div>
