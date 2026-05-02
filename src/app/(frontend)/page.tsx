@@ -293,6 +293,69 @@ export default async function Home() {
         }}
       />
     <div className="site">
+      {/* Mobile-Only Redesign Feed */}
+      <div className="md:hidden pt-2 bg-white px-4">
+        {/* First Post: Image Top, Title Bottom */}
+        {latestPosts[0] && (
+          <div className="mb-8 border-b-2 border-gray-100 pb-8">
+            <Link 
+              href={await getPostUrl(latestPosts[0])} 
+              className="block group"
+            >
+              <div className="relative w-full h-[240px] rounded-2xl overflow-hidden mb-5">
+                <img
+                  alt={latestPosts[0].heroImage?.alt || latestPosts[0].title}
+                  src={getImageUrl(latestPosts[0].heroImage?.url) || ""}
+                  className="w-full h-full object-cover shadow-sm"
+                />
+              </div>
+              <h3 
+                className="text-[24px] font-black leading-[1.2] text-[#111] px-1"
+                style={{
+                  display: "-webkit-box",
+                  WebkitLineClamp: 3,
+                  WebkitBoxOrient: "vertical",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  letterSpacing: "-0.5px"
+                }}
+              >
+                {latestPosts[0].title}
+              </h3>
+            </Link>
+          </div>
+        )}
+
+        {/* Next Posts: Image Left, Title Right List */}
+        <div className="space-y-0">
+          {await Promise.all(
+            latestPosts.slice(1, 12).map(async (post) => (
+              <Link 
+                key={post.id} 
+                href={await getPostUrl(post)} 
+                className="block py-5 border-b border-gray-200 last:border-0"
+              >
+                <div className="flex gap-4 items-start">
+                  <div className="w-32 h-24 shrink-0 rounded-xl overflow-hidden bg-gray-50 shadow-sm">
+                    <img
+                      alt={post.heroImage?.alt || post.title}
+                      src={getImageUrl(post.heroImage?.url) || ""}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="flex-1 pt-0.5">
+                    <h3 className="text-[17px] font-extrabold text-[#222] line-clamp-3 leading-[1.35] tracking-tight">
+                      {post.title}
+                    </h3>
+                  </div>
+                </div>
+              </Link>
+            ))
+          )}
+        </div>
+      </div>
+
+      <div className="hidden md:block">
       {/* Latest News Section */}
       {(featuredPost || smallerPosts.length > 0) && (
         <section className="mb-8 mt-4">
@@ -482,7 +545,7 @@ export default async function Home() {
                         {/* Define categoryLink for additionalPosts section */}
                         {(() => {
                           let categoryLink = "/uncategorized";
-                          const categoryTitle = "Uncategorized";
+                          let categoryTitle = "Uncategorized";
                           if (post.categories && post.categories.length > 0) {
                             const cat = post.categories[0];
                             if (cat) {
@@ -789,6 +852,7 @@ export default async function Home() {
           })
         )
       )}
+      </div>
     </div>
     </>
   );

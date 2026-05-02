@@ -291,14 +291,130 @@ export default function Header({ categories, homepageCategories }: HeaderProps) 
       <header className="site-main">
         <div className="main-header">
           <div className="site">
-            <div className="header-one" style={{ display: "flex", justifyContent: "flex-start", alignItems: "center" }}>
-            <Link href="/" className="logo-link">
-              <img
-                src="/dinasuvadu.svg"
-                alt="Dinasuvadu Logo"
-                className="logo"
-              />
-            </Link>
+            <div className="header-one" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
+              <Link href="/" className="logo-link">
+                <img
+                  src="/dinasuvadu.svg"
+                  alt="Dinasuvadu Logo"
+                  className="logo"
+                />
+              </Link>
+
+              <div className="header-right-actions" style={{ display: "flex", alignItems: "center", gap: "10px", paddingLeft: "15px" }}>
+                <Link
+                  href="/latest-feed"
+                  className="feed-btn"
+                  title="Latest Feed"
+                  style={{
+                    background: "#0066ff",
+                    color: "#ffffff",
+                    border: "none",
+                    cursor: "pointer",
+                    padding: "6px 12px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    borderRadius: "20px",
+                    fontSize: "11px",
+                    fontWeight: "900",
+                    gap: "6px",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.5px",
+                    boxShadow: "0 2px 4px rgba(0, 102, 255, 0.2)",
+                    textDecoration: "none"
+                  }}
+                >
+                  <span style={{ width: "8px", height: "8px", background: "white", borderRadius: "50%", display: "inline-block" }} className="animate-pulse" />
+                  FEED
+                </Link>
+
+                <button
+                  className="theme-toggle-btn"
+                  onClick={toggleTheme}
+                  title={theme === "light" ? "Dark Mode" : "Light Mode"}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    padding: "8px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "inherit",
+                  }}
+                >
+                  {theme === "light" ? (
+                    <svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                  ) : (
+                    <svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <circle cx="12" cy="12" r="5"></circle>
+                      <line x1="12" y1="1" x2="12" y2="3"></line>
+                      <line x1="12" y1="21" x2="12" y2="23"></line>
+                      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                      <line x1="1" y1="12" x2="3" y2="12"></line>
+                      <line x1="21" y1="12" x2="23" y2="12"></line>
+                      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                  )}
+                </button>
+
+                <button
+                  className="search-btn-top"
+                  onClick={toggleSearch}
+                  title="Search"
+                  style={{ padding: 0, margin: 0, background: "none", border: "none", cursor: "pointer", color: "inherit" }}
+                >
+                  <svg
+                    width="22"
+                    height="22"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                    ></path>
+                  </svg>
+                </button>
+
+                <button 
+                  className="menu-btn" 
+                  onClick={() => setDrawerVisible(true)}
+                  style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", color: "inherit", padding: "8px" }}
+                >
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="3" y1="12" x2="21" y2="12"></line>
+                    <line x1="3" y1="6" x2="21" y2="6"></line>
+                    <line x1="3" y1="18" x2="21" y2="18"></line>
+                  </svg>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -429,125 +545,9 @@ export default function Header({ categories, homepageCategories }: HeaderProps) 
                   </li>
                 )}
               </ul>
-              
-              <div className="header-right-actions" style={{ display: "flex", alignItems: "center", gap: "10px", marginLeft: "auto", paddingLeft: "15px" }}>
-                <Link
-                  href="/latest-feed"
-                  className="feed-btn"
-                  title="Latest Feed"
-                  style={{
-                    background: "#0066ff",
-                    color: "#ffffff",
-                    border: "none",
-                    cursor: "pointer",
-                    padding: "6px 12px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    borderRadius: "20px",
-                    fontSize: "11px",
-                    fontWeight: "900",
-                    gap: "6px",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.5px",
-                    boxShadow: "0 2px 4px rgba(0, 102, 255, 0.2)",
-                    textDecoration: "none"
-                  }}
-                >
-                  <span style={{ width: "8px", height: "8px", background: "white", borderRadius: "50%", display: "inline-block" }} className="animate-pulse" />
-                  FEED
-                </Link>
-
-                <button
-                  className="theme-toggle-btn"
-                  onClick={toggleTheme}
-                  title={theme === "light" ? "Dark Mode" : "Light Mode"}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
-                    padding: "8px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    color: "inherit",
-                  }}
-                >
-                  {theme === "light" ? (
-                    <svg
-                      width="20"
-                      height="20"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-                    </svg>
-                  ) : (
-                    <svg
-                      width="20"
-                      height="20"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <circle cx="12" cy="12" r="5"></circle>
-                      <line x1="12" y1="1" x2="12" y2="3"></line>
-                      <line x1="12" y1="21" x2="12" y2="23"></line>
-                      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-                      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-                      <line x1="1" y1="12" x2="3" y2="12"></line>
-                      <line x1="21" y1="12" x2="23" y2="12"></line>
-                      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-                      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-                    </svg>
-                  )}
-                </button>
-
-                <button
-                  className="search-btn-top"
-                  onClick={toggleSearch}
-                  title="Search"
-                  style={{ padding: 0, margin: 0, background: "none", border: "none", cursor: "pointer", color: "inherit" }}
-                >
-                  <svg
-                    width="22"
-                    height="22"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                    ></path>
-                  </svg>
-                </button>
-
-                <button 
-                  className="menu-btn" 
-                  onClick={() => setDrawerVisible(true)}
-                  style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", color: "inherit", padding: "8px" }}
-                >
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="3" y1="12" x2="21" y2="12"></line>
-                    <line x1="3" y1="6" x2="21" y2="6"></line>
-                    <line x1="3" y1="18" x2="21" y2="18"></line>
-                  </svg>
-                </button>
               </div>
             </div>
-          </div>
-        </nav>
+          </nav>
 
           <div className={`search-bar ${searchVisible ? "visible" : "hidden"}`}>
             <input
