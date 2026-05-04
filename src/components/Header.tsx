@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useRef, type CSSProperties } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 
 type Category = {
   id: string;
@@ -293,10 +294,13 @@ export default function Header({ categories, homepageCategories }: HeaderProps) 
           <div className="site">
             <div className="header-one" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
               <Link href="/" className="logo-link">
-                <img
+                <Image
                   src="/dinasuvadu.svg"
                   alt="Dinasuvadu Logo"
+                  width={180}
+                  height={40}
                   className="logo"
+                  priority
                 />
               </Link>
 
@@ -587,7 +591,7 @@ export default function Header({ categories, homepageCategories }: HeaderProps) 
         {/* Drawer */}
         <div className={`mobile-drawer ${drawerVisible ? "open" : ""}`}>
           <div className="drawer-header">
-            <img src="/dinasuvadu.svg" alt="Logo" style={{ height: "30px" }} />
+            <Image src="/dinasuvadu.svg" alt="Dinasuvadu Logo" width={140} height={32} style={{ height: "30px", width: "auto" }} />
             <button className="close-btn-fixed" onClick={() => setDrawerVisible(false)}>
               ✕
             </button>

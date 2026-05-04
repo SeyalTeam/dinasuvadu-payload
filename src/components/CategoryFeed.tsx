@@ -82,10 +82,13 @@ export function CategoryFeed({
               <div key={post.id} className="mb-4 border-b border-gray-100 dark:border-gray-800 pb-6">
                 <Link href={postLink} className="block group">
                   <div className="relative w-full h-[240px] rounded-2xl overflow-hidden mb-5 shadow-sm">
-                    <img
+                    <Image
                       alt={imageAlt}
-                      src={imageUrl || ""}
-                      className="w-full h-full object-cover"
+                      src={imageUrl || "/placeholder-news.jpg"}
+                      fill
+                      className="object-cover"
+                      priority
+                      unoptimized
                     />
                   </div>
                   <h3 className="text-[24px] font-black leading-[1.2] text-[#111] dark:text-white px-1 line-clamp-3 tracking-tight para-txt">
@@ -105,10 +108,12 @@ export function CategoryFeed({
             >
               <div className="flex gap-4 items-start">
                 <div className="w-32 h-24 shrink-0 rounded-xl overflow-hidden bg-gray-50 shadow-sm">
-                  <img
+                  <Image
                     alt={imageAlt}
-                    src={imageUrl || ""}
-                    className="w-full h-full object-cover"
+                    src={imageUrl || "/placeholder-news.jpg"}
+                    fill
+                    className="object-cover"
+                    unoptimized
                   />
                 </div>
                 <div className="flex-1 pt-0.5">

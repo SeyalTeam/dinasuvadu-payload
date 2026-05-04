@@ -99,7 +99,7 @@ export default async function RootLayout({
   const { all, homepage } = await fetchCategories();
 
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="ta" suppressHydrationWarning>
       <body className={muktaMalar.variable} suppressHydrationWarning>
         <Providers>
           <Header categories={all} homepageCategories={homepage} />

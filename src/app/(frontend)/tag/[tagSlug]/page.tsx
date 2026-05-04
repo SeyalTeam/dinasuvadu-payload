@@ -150,7 +150,7 @@ export default async function TagPage({
   const { tagSlug } = await params;
   const query = await searchParams;
   const page = getPageNumber(query.page);
-  const initialListLimit = 12;
+  const initialListLimit = 15;
   const limit = initialListLimit;
 
   const tag = await fetchTagBySlug(tagSlug);
@@ -207,7 +207,7 @@ export default async function TagPage({
       <div className="site">
         {/* Breadcrumbs */}
         <nav aria-label="Breadcrumb" className="mb-4 text-sm font-medium text-gray-500 site">
-          <div className="flex items-center space-x-2 breadcrumbs pl-[12px]">
+          <div className="flex items-center space-x-2 breadcrumbs">
             <Link href="/" className="text-blue-600 hover:text-blue-800 transition-colors">Home</Link>
             <span className="text-gray-400">{">"}</span>
             <span className="text-gray-700">Tag: {tag.name}</span>
@@ -218,7 +218,7 @@ export default async function TagPage({
           <div className="grid grid-cols-1 lg:grid-cols-10 gap-4">
             <div className="lg:col-span-7">
               {posts.length > 0 ? (
-                <div className="bg-white dark:bg-[#111] pt-4 px-6 pb-6 md:pt-5 md:px-8 md:pb-8 rounded-2xl shadow-md border border-gray-100 dark:border-gray-800">
+                <div className="bg-white dark:bg-[#23272e] pt-2 md:pt-5 px-4 md:px-8 pb-6 md:pb-8 md:rounded-2xl md:shadow-md md:border border-gray-100 dark:border-gray-800">
                   {/* Unified Header */}
                   <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 pb-2 mb-4">
                     <h1 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white para-txt">

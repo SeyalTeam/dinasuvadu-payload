@@ -296,9 +296,9 @@ export default async function CategoryPage({
   const isLifestyle = categorySlug.toLowerCase() === "lifestyle";
   const isBusiness = categorySlug.toLowerCase() === "business";
   const page = parseInt((query.page as string) || "1", 10);
-  const initialListLimit = 10;
+  const initialListLimit = 15;
   const spotlightLimit = 4;
-  const limit = spotlightLimit + initialListLimit;
+  const limit = 15;
   console.log(`Handling route: /${categorySlug}?page=${page}, initialListLimit: ${initialListLimit}`);
 
 
@@ -340,7 +340,7 @@ export default async function CategoryPage({
   // Split spotlight and feed posts
   const isParentCategory = !category.parent;
   const spotlightPosts = isParentCategory ? resolvedPosts.slice(0, spotlightLimit) : [];
-  const initialPosts = isParentCategory ? resolvedPosts.slice(spotlightLimit, 10) : resolvedPosts.slice(0, initialListLimit);
+  const initialPosts = isParentCategory ? resolvedPosts.slice(spotlightLimit, limit) : resolvedPosts.slice(0, initialListLimit);
 
   // Sidebar Data: Fetch children categories for the current parent
   let sidebarCategories = await fetchChildrenCategories(category.id);
@@ -540,7 +540,7 @@ export default async function CategoryPage({
           aria-label="Breadcrumb"
           className="mb-2 text-sm font-medium text-gray-500 site"
         >
-          <div className="flex items-center space-x-2 breadcrumbs pl-[12px]">
+          <div className="flex items-center space-x-2 breadcrumbs">
             <Link
               href="/"
               className="text-blue-600 hover:text-blue-800 transition-colors"
@@ -616,7 +616,7 @@ export default async function CategoryPage({
         <div className="grid grid-cols-1 lg:grid-cols-10 gap-4">
           <div className="lg:col-span-7">
             {(isParentCategory ? (spotlightPosts.length > 0 || initialPosts.length > 0) : initialPosts.length > 0) && (
-              <div className="md:bg-white md:dark:bg-[#111] pt-2 md:pt-5 px-4 md:px-8 pb-6 md:pb-8 md:rounded-2xl md:shadow-md md:border border-gray-100 dark:border-gray-800">
+              <div className="bg-white dark:bg-[#23272e] pt-2 md:pt-5 px-4 md:px-8 pb-6 md:pb-8 md:rounded-2xl md:shadow-md md:border border-gray-100 dark:border-gray-800">
                 {/* Unified Category Header */}
                 <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 pb-2 mb-4 px-1 md:px-0">
                   <h1 className="text-[20px] md:text-2xl font-black md:font-bold text-gray-900 dark:text-white para-txt uppercase tracking-tight">
@@ -641,7 +641,7 @@ export default async function CategoryPage({
                     categoryId={category.id}
                     categorySlug={categorySlug}
                     apiUrl={apiUrl}
-                    initialOffset={16}
+                    initialOffset={15}
                   />
                 </div>
               </div>

@@ -31,7 +31,7 @@ export function AuthorFeed({
   initialPosts, 
   authorId, 
   apiUrl,
-  initialOffset = 10
+  initialOffset = 15
 }: AuthorFeedProps) {
   const [posts, setPosts] = useState<Post[]>(initialPosts);
   const [offset, setOffset] = useState(initialOffset); 
@@ -60,11 +60,6 @@ export function AuthorFeed({
     setIsLoading(false);
   };
 
-  // Group posts into chunks of 10 for the mobile "Hero + 9 Lists" pattern
-  const mobileChunks: Post[][] = [];
-  for (let i = 0; i < posts.length; i += 10) {
-    mobileChunks.push(posts.slice(i, i + 10));
-  }
 
   return (
     <div className="space-y-0">
@@ -83,10 +78,13 @@ export function AuthorFeed({
               <div key={post.id} className="mb-4 border-b border-gray-100 dark:border-gray-800 pb-6">
                 <Link href={postLink} className="block group">
                   <div className="relative w-full h-[240px] rounded-2xl overflow-hidden mb-5 shadow-sm">
-                    <img
+                    <Image
                       alt={imageAlt}
-                      src={imageUrl || ""}
-                      className="w-full h-full object-cover"
+                      src={imageUrl || "/placeholder-news.jpg"}
+                      fill
+                      className="object-cover"
+                      priority
+                      unoptimized
                     />
                   </div>
                   <h3 className="text-[24px] font-black leading-[1.2] text-[#111] dark:text-white px-1 line-clamp-3 tracking-tight para-txt">
@@ -106,10 +104,12 @@ export function AuthorFeed({
             >
               <div className="flex gap-4 items-start">
                 <div className="w-32 h-24 shrink-0 rounded-xl overflow-hidden bg-gray-50 shadow-sm">
-                  <img
+                  <Image
                     alt={imageAlt}
-                    src={imageUrl || ""}
-                    className="w-full h-full object-cover"
+                    src={imageUrl || "/placeholder-news.jpg"}
+                    fill
+                    className="object-cover"
+                    unoptimized
                   />
                 </div>
                 <div className="flex-1 pt-0.5">

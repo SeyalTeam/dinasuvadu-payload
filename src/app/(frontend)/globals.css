@@ -226,7 +226,7 @@ img {
 .breadcrumbs span {
   color: #444444;
   font-weight: 500;
-  font-size: 13px;
+  font-size: 14px;
   text-decoration: none;
   font-family: var(--font-mukta-malar);
 }
@@ -279,11 +279,19 @@ img {
   .single-post-header-card,
   .prose,
   .post-tags,
-  .single-post-breadcrumbs,
-  .post-bottom-interaction,
   .breadcrumbs {
     padding-left: 16px !important;
     padding-right: 16px !important;
+  }
+
+  .single-post-header-card .breadcrumbs {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  .post-bottom-interaction {
+    margin-left: 16px !important;
+    margin-right: 16px !important;
   }
 
   .single-post-layout {
@@ -981,7 +989,7 @@ a:hover {
 .breadcrumbs a {
   color: #444444;
   font-weight: 500;
-  font-size: 13px;
+  font-size: 14px;
   text-decoration: none;
   font-family: var(--font-mukta-malar);
 }

@@ -1,5 +1,6 @@
 export const revalidate = 10; // Revalidate every 60 seconds
 import Link from "next/link";
+import Image from "next/image";
 import { Row, Col, Card, Space } from "antd";
 import "antd/dist/reset.css";
 // import { ClockCircleOutlined } from '@ant-design/icons';
@@ -303,10 +304,13 @@ export default async function Home() {
               className="block group"
             >
               <div className="relative w-full h-[240px] rounded-2xl overflow-hidden mb-5">
-                <img
+                <Image
                   alt={latestPosts[0].heroImage?.alt || latestPosts[0].title}
-                  src={getImageUrl(latestPosts[0].heroImage?.url) || ""}
-                  className="w-full h-full object-cover shadow-sm"
+                  src={getImageUrl(latestPosts[0].heroImage?.url) || "/placeholder-news.jpg"}
+                  fill
+                  className="object-cover shadow-sm"
+                  priority
+                  unoptimized
                 />
               </div>
               <h3 
@@ -337,10 +341,12 @@ export default async function Home() {
               >
                 <div className="flex gap-4 items-start">
                   <div className="w-32 h-24 shrink-0 rounded-xl overflow-hidden bg-gray-50 shadow-sm">
-                    <img
+                    <Image
                       alt={post.heroImage?.alt || post.title}
-                      src={getImageUrl(post.heroImage?.url) || ""}
-                      className="w-full h-full object-cover"
+                      src={getImageUrl(post.heroImage?.url) || "/placeholder-news.jpg"}
+                      fill
+                      className="object-cover"
+                      unoptimized
                     />
                   </div>
                   <div className="flex-1 pt-0.5">
@@ -380,10 +386,12 @@ export default async function Home() {
                   <div className="mb-4 border-b border-gray-100 dark:border-gray-800 pb-6">
                     <Link href={await getPostUrl(posts[0])} className="block group">
                       <div className="relative w-full h-[240px] rounded-2xl overflow-hidden mb-5 shadow-sm">
-                        <img
+                        <Image
                           alt={posts[0].heroImage?.alt || posts[0].title}
-                          src={getImageUrl(posts[0].heroImage?.url) || ""}
-                          className="w-full h-full object-cover shadow-sm"
+                          src={getImageUrl(posts[0].heroImage?.url) || "/placeholder-news.jpg"}
+                          fill
+                          className="object-cover shadow-sm"
+                          unoptimized
                         />
                       </div>
                       <h3 
@@ -414,10 +422,12 @@ export default async function Home() {
                       >
                         <div className="flex gap-4 items-start">
                           <div className="w-32 h-24 shrink-0 rounded-xl overflow-hidden bg-gray-50 dark:bg-gray-800 shadow-sm">
-                            <img
+                            <Image
                               alt={post.heroImage?.alt || post.title}
-                              src={getImageUrl(post.heroImage?.url) || ""}
-                              className="w-full h-full object-cover"
+                              src={getImageUrl(post.heroImage?.url) || "/placeholder-news.jpg"}
+                              fill
+                              className="object-cover"
+                              unoptimized
                             />
                           </div>
                           <div className="flex-1 pt-0.5">
@@ -445,10 +455,13 @@ export default async function Home() {
             {featuredPost && (
               <Link href={await getPostUrl(featuredPost)} className="block group w-full h-[260px] md:h-[280px] md:col-span-2 lg:col-span-2">
                 <div className="relative w-full h-full rounded-xl overflow-hidden shadow-sm border border-gray-200 dark:border-gray-800">
-                  <img
+                  <Image
                     alt={featuredPost.heroImage?.alt || featuredPost.title}
-                    src={getImageUrl(featuredPost.heroImage?.url) || ""}
-                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    src={getImageUrl(featuredPost.heroImage?.url) || "/placeholder-news.jpg"}
+                    fill
+                    className="object-cover transition-transform duration-300 group-hover:scale-105"
+                    priority
+                    unoptimized
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent z-10" />
                   <div className="absolute bottom-0 left-0 right-0 p-4 z-20 text-white md:p-6">
@@ -482,10 +495,12 @@ export default async function Home() {
                 <Link href={await getPostUrl(post)} className="block group w-full h-[260px] md:h-[280px] lg:col-span-1" key={post.id}>
                   <div className="flex flex-col w-full h-full bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-sm border border-gray-200 dark:border-gray-700 transition-colors">
                     <div className="relative w-full h-[45%] md:h-[48%] overflow-hidden bg-gray-100 dark:bg-gray-900 shrink-0">
-                      <img
+                      <Image
                         alt={post.heroImage?.alt || post.title}
-                        src={getImageUrl(post.heroImage?.url) || ""}
-                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        src={getImageUrl(post.heroImage?.url) || "/placeholder-news.jpg"}
+                        fill
+                        className="object-cover transition-transform duration-300 group-hover:scale-105"
+                        unoptimized
                       />
                     </div>
                     <div className="flex flex-col flex-1 p-3 md:p-4 bg-white dark:bg-gray-800 transition-colors">
@@ -526,10 +541,12 @@ export default async function Home() {
                 <Link href={await getPostUrl(post)} className="block group w-full h-[260px] md:h-[280px]" key={post.id}>
                   <div className="flex flex-col w-full h-full bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-sm border border-gray-200 dark:border-gray-700 transition-colors">
                     <div className="relative w-full h-[45%] md:h-[48%] overflow-hidden bg-gray-100 dark:bg-gray-900 shrink-0">
-                      <img
+                      <Image
                         alt={post.heroImage?.alt || post.title}
-                        src={getImageUrl(post.heroImage?.url) || ""}
-                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        src={getImageUrl(post.heroImage?.url) || "/placeholder-news.jpg"}
+                        fill
+                        className="object-cover transition-transform duration-300 group-hover:scale-105"
+                        unoptimized
                       />
                     </div>
                     <div className="flex flex-col flex-1 p-3 md:p-4 bg-white dark:bg-gray-800 transition-colors">
