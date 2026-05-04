@@ -86,6 +86,7 @@ async function fetchCategories(): Promise<{ all: Category[]; homepage: Category[
 }
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SERVER_URL || "https://dinasuvadu.com"),
   title: "Dinasuvadu - Latest Tamil News",
   description: "Tamil news portal with latest updates on politics, cinema, and sports.",
 };

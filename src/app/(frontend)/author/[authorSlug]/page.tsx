@@ -171,7 +171,7 @@ export default async function AuthorPage({
   const { authorSlug } = await params;
   const query = await searchParams;
   const page = getPageNumber(query.page);
-  const initialListLimit = 12;
+  const initialListLimit = 10;
   const limit = initialListLimit;
 
   const author = await fetchAuthorBySlug(authorSlug);

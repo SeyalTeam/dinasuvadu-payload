@@ -35,6 +35,11 @@ export function buildMetadata({
     },
     // Next.js supports canonical via alternates.canonical
     alternates: canonical ? { canonical } : undefined,
+    robots: {
+      index: true,
+      follow: true,
+      'max-image-preview': 'large',
+    },
   };
 }
 
@@ -81,7 +86,11 @@ export function buildArticleLd({
     "@type": "NewsArticle",
     headline: post.title,
     description: post.meta?.description || "",
-    image: post.meta?.image?.url ? `${apiUrl}${post.meta.image.url}` : undefined,
+    image: post.meta?.image?.url 
+      ? (post.meta.image.url.startsWith('http') ? post.meta.image.url : `${apiUrl}${post.meta.image.url}`)
+      : post.heroImage?.url 
+        ? (post.heroImage.url.startsWith('http') ? post.heroImage.url : `${apiUrl}${post.heroImage.url}`)
+        : undefined,
     author:
       post.populatedAuthors?.map((a: any) => ({
         "@type": "Person",

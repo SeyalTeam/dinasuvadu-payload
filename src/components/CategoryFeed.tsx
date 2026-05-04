@@ -38,7 +38,7 @@ export function CategoryFeed({
 }: CategoryFeedProps) {
   const [posts, setPosts] = useState<Post[]>(initialPosts);
   const [offset, setOffset] = useState(initialOffset); 
-  const [hasMore, setHasMore] = useState(initialPosts.length >= (initialOffset === 16 ? 12 : 5));
+  const [hasMore, setHasMore] = useState(initialPosts.length >= 10);
   const [isLoading, setIsLoading] = useState(false);
 
   const loadMore = async () => {
@@ -66,8 +66,64 @@ export function CategoryFeed({
   };
 
   return (
-    <div className="space-y-8">
-      <div className="news-list-container">
+    <div className="space-y-0">
+      {/* Mobile View - Single Hero at top + List items */}
+      <div className="md:hidden">
+        {posts.map((post, index) => {
+          const imageUrl = post.heroImage?.url 
+            ? (post.heroImage.url.startsWith("http") ? post.heroImage.url : `${apiUrl}${post.heroImage.url}`) 
+            : null;
+          const imageAlt = post.heroImage?.alt || post.title;
+          const postLink = post.postLink || `/${categorySlug}/${post.slug}`;
+
+          if (index === 0) {
+            // Only the first post is a Hero
+            return (
+              <div key={post.id} className="mb-4 border-b border-gray-100 dark:border-gray-800 pb-6">
+                <Link href={postLink} className="block group">
+                  <div className="relative w-full h-[240px] rounded-2xl overflow-hidden mb-5 shadow-sm">
+                    <img
+                      alt={imageAlt}
+                      src={imageUrl || ""}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <h3 className="text-[24px] font-black leading-[1.2] text-[#111] dark:text-white px-1 line-clamp-3 tracking-tight para-txt">
+                    {post.title}
+                  </h3>
+                </Link>
+              </div>
+            );
+          }
+
+          // All other posts are List items
+          return (
+            <Link 
+              key={post.id} 
+              href={postLink} 
+              className="block py-4 border-b border-gray-100 dark:border-gray-800 last:border-0 md:px-0"
+            >
+              <div className="flex gap-4 items-start">
+                <div className="w-32 h-24 shrink-0 rounded-xl overflow-hidden bg-gray-50 shadow-sm">
+                  <img
+                    alt={imageAlt}
+                    src={imageUrl || ""}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div className="flex-1 pt-0.5">
+                  <h3 className="text-[17px] font-extrabold text-[#222] dark:text-gray-100 line-clamp-3 leading-[1.35] tracking-tight para-txt">
+                    {post.title}
+                  </h3>
+                </div>
+              </div>
+            </Link>
+          );
+        })}
+      </div>
+
+      {/* Desktop View - Continuous standard list */}
+      <div className="hidden md:flex flex-col space-y-0">
         {posts.map((post) => {
           const imageUrl = post.heroImage?.url 
             ? (post.heroImage.url.startsWith("http") ? post.heroImage.url : `${apiUrl}${post.heroImage.url}`) 
@@ -77,32 +133,27 @@ export function CategoryFeed({
 
           return (
             <article key={post.id} className="news-list-item">
-              <div className="news-list-content">
+              <div className="news-list-content flex-1">
                 <Link href={postLink} className="news-list-text">
-                  <h3 className="news-list-title">{post.title}</h3>
+                  <h3 className="news-list-title text-[20px] font-bold leading-normal text-gray-900 dark:text-white">
+                    {post.title}
+                  </h3>
                   {post.meta?.description && (
-                    <p className="news-list-desc">
-                      {post.meta.description}
-                    </p>
+                    <p className="news-list-desc line-clamp-2 mt-2">{post.meta.description}</p>
                   )}
                 </Link>
               </div>
-
-              {imageUrl ? (
-                <Link href={postLink} className="news-list-image">
+              {imageUrl && (
+                <Link href={postLink} className="news-list-image w-[160px] h-[100px] shrink-0 rounded-lg overflow-hidden border border-gray-100 dark:border-gray-800 ml-6">
                   <Image
                     src={imageUrl}
                     alt={imageAlt}
                     width={160}
                     height={100}
-                    style={{ objectFit: 'cover' }}
+                    className="w-full h-full object-cover"
                     unoptimized
                   />
                 </Link>
-              ) : (
-                <div className="news-list-image-placeholder">
-                  <span>No Image</span>
-                </div>
               )}
             </article>
           );
@@ -110,7 +161,7 @@ export function CategoryFeed({
       </div>
 
       {hasMore && (
-        <div className="flex justify-center pt-8 border-t border-gray-100 dark:border-gray-800">
+        <div className="flex justify-center pt-8 mb-8 border-t border-gray-100 dark:border-gray-800">
           <button
             onClick={loadMore}
             disabled={isLoading}
@@ -130,7 +181,7 @@ export function CategoryFeed({
                 ஏற்றப்படுகிறது...
               </span>
             ) : (
-              "மேலும் வாசிக்க"
+              "மேலும் படிக்க"
             )}
           </button>
         </div>

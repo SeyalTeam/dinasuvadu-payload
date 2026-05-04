@@ -114,7 +114,7 @@ type ImageVariant = "original" | "og" | "hero" | "content" | "card" | "thumb";
 const imageVariantSizes: Record<ImageVariant, string[]> = {
   original: [],
   og: ["og", "large", "xlarge", "medium"],
-  hero: ["medium", "large", "og", "small", "xlarge"],
+  hero: ["large", "og", "xlarge", "medium", "small"],
   content: ["medium", "small", "large", "xlarge"],
   card: ["small", "medium", "thumbnail", "large"],
   thumb: ["thumbnail", "small", "medium"],
@@ -902,15 +902,15 @@ export default async function PostOrSubCategoryPage({
           (post.heroImage && post.heroImage.url) ? (
             <>
               <figure className="mb-0">
-                <div className="relative rounded-lg overflow-hidden shadow-lg">
+                <div className="relative md:rounded-lg overflow-hidden md:shadow-lg">
                   {post.layout?.[0]?.blockType === "mediaBlock" &&
                   post.layout[0].media ? (
                     <Image
                       src={getImageUrl(post.layout[0].media, "hero")!}
                       alt={post.layout[0].media.alt || "Hero Image"}
                       width={1200}
-                      height={640}
-                      className="w-full h-80 object-cover"
+                      height={675}
+                      className="w-full aspect-video object-cover"
                       sizes="(max-width: 1024px) 100vw, 66vw"
                       priority
                       fetchPriority="high"
@@ -921,8 +921,8 @@ export default async function PostOrSubCategoryPage({
                       src={getImageUrl(post.heroImage, "hero")!}
                       alt={post.heroImage?.alt || "Hero Image"}
                       width={1200}
-                      height={640}
-                      className="w-full h-80 object-cover"
+                      height={675}
+                      className="w-full aspect-video object-cover"
                       sizes="(max-width: 1024px) 100vw, 66vw"
                       priority
                       fetchPriority="high"
@@ -980,7 +980,7 @@ export default async function PostOrSubCategoryPage({
                         alt={block.media.alt || "Media"}
                         width={1200}
                         height={675}
-                        className="w-full max-w-2xl mx-auto h-auto object-cover rounded-md shadow-md"
+                        className="w-full max-w-2xl mx-auto h-auto object-cover md:rounded-md md:shadow-md"
                         sizes="(max-width: 1024px) 100vw, 768px"
                         unoptimized
                       />

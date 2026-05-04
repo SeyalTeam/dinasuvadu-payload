@@ -130,7 +130,7 @@ export default function PostImageActions({
     <>
       <div className="post-image-actions" role="group" aria-label="Post actions">
         <div className="post-image-actions-inner">
-          <div className="post-action-group">
+          <div className="post-action-group hidden md:flex">
             <button
               type="button"
               className="post-image-action-button"
@@ -157,7 +157,7 @@ export default function PostImageActions({
             <span className="post-action-count">{likes}</span>
           </div>
 
-          <div className="post-action-group">
+          <div className="post-action-group hidden md:flex">
             <button
               type="button"
               className="post-image-action-button"

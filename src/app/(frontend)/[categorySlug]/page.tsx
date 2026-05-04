@@ -296,7 +296,7 @@ export default async function CategoryPage({
   const isLifestyle = categorySlug.toLowerCase() === "lifestyle";
   const isBusiness = categorySlug.toLowerCase() === "business";
   const page = parseInt((query.page as string) || "1", 10);
-  const initialListLimit = 12;
+  const initialListLimit = 10;
   const spotlightLimit = 4;
   const limit = spotlightLimit + initialListLimit;
   console.log(`Handling route: /${categorySlug}?page=${page}, initialListLimit: ${initialListLimit}`);
@@ -340,7 +340,7 @@ export default async function CategoryPage({
   // Split spotlight and feed posts
   const isParentCategory = !category.parent;
   const spotlightPosts = isParentCategory ? resolvedPosts.slice(0, spotlightLimit) : [];
-  const initialPosts = isParentCategory ? resolvedPosts.slice(spotlightLimit) : resolvedPosts.slice(0, initialListLimit);
+  const initialPosts = isParentCategory ? resolvedPosts.slice(spotlightLimit, 10) : resolvedPosts.slice(0, initialListLimit);
 
   // Sidebar Data: Fetch children categories for the current parent
   let sidebarCategories = await fetchChildrenCategories(category.id);
@@ -552,9 +552,9 @@ export default async function CategoryPage({
           </div>
         </nav>
         
-        {/* Category Spotlight Section (Parent only) */}
+        {/* Category Spotlight Section (Parent only) - Hidden on mobile to use unified CategoryFeed hero */}
         {isParentCategory && spotlightPosts.length > 0 && (
-          <div className="site mb-8">
+          <div className="site mb-8 hidden md:block">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
               {/* Big Featured Card (Overlay Style) */}
               <div className="md:col-span-2 lg:col-span-2">
@@ -615,28 +615,42 @@ export default async function CategoryPage({
       <div className="site-main">
         <div className="grid grid-cols-1 lg:grid-cols-10 gap-4">
           <div className="lg:col-span-7">
-            {initialPosts.length > 0 && (
-              <div className="bg-white dark:bg-[#111] pt-4 px-6 pb-6 md:pt-5 md:px-8 md:pb-8 rounded-2xl shadow-md border border-gray-100 dark:border-gray-800">
+            {(isParentCategory ? (spotlightPosts.length > 0 || initialPosts.length > 0) : initialPosts.length > 0) && (
+              <div className="md:bg-white md:dark:bg-[#111] pt-2 md:pt-5 px-4 md:px-8 pb-6 md:pb-8 md:rounded-2xl md:shadow-md md:border border-gray-100 dark:border-gray-800">
                 {/* Unified Category Header */}
-                <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 pb-2 mb-4">
-                  <h1 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white para-txt">
+                <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 pb-2 mb-4 px-1 md:px-0">
+                  <h1 className="text-[20px] md:text-2xl font-black md:font-bold text-gray-900 dark:text-white para-txt uppercase tracking-tight">
                     {categoryTitle}
                   </h1>
                 </div>
 
-                <CategoryFeed 
-                  initialPosts={initialPosts}
-                  categoryId={category.id}
-                  categorySlug={categorySlug}
-                  apiUrl={apiUrl}
-                />
+                {/* Mobile version combines spotlight and initial posts, desktop keeps them separate */}
+                <div className="md:hidden">
+                  <CategoryFeed 
+                    initialPosts={isParentCategory ? [...spotlightPosts, ...initialPosts] : initialPosts}
+                    categoryId={category.id}
+                    categorySlug={categorySlug}
+                    apiUrl={apiUrl}
+                    initialOffset={isParentCategory ? spotlightPosts.length + initialPosts.length : initialPosts.length}
+                  />
+                </div>
+
+                <div className="hidden md:block">
+                  <CategoryFeed 
+                    initialPosts={initialPosts}
+                    categoryId={category.id}
+                    categorySlug={categorySlug}
+                    apiUrl={apiUrl}
+                    initialOffset={16}
+                  />
+                </div>
               </div>
             )}
           </div>
 
-          {/* Right Sidebar Hub Column (Unified for all parent categories) */}
+          {/* Right Sidebar Hub Column (Unified for all parent categories) - Hidden on mobile */}
           {sidebarHubs.length > 0 && (
-            <div className="lg:col-span-3 space-y-8">
+            <div className="hidden lg:col-span-3 lg:block space-y-8">
               {sidebarHubs.map(({ category: sidebarCat, posts: sidebarPosts }) => {
                 if (sidebarPosts.length === 0) return null;
                 
@@ -671,7 +685,7 @@ export default async function CategoryPage({
                     </div>
                     <div className="space-y-3 pt-3 border-t border-gray-100 dark:border-gray-800">
                       {listPosts.map((post) => (
-                        <Link key={post.id} href={post.postLink || "#"} className="group flex gap-3 items-start">
+                        <Link key={post.id} href={post.postLink || "#"} className="group flex gap-3 items-start py-4">
                           <div className="relative w-20 h-14 flex-shrink-0 rounded-lg overflow-hidden border border-gray-100 dark:border-gray-800">
                             <Image
                               src={post.heroImage?.url ? (post.heroImage.url.startsWith("http") ? post.heroImage.url : `${apiUrl}${post.heroImage.url}`) : "/placeholder-news.jpg"}
@@ -694,9 +708,9 @@ export default async function CategoryPage({
           )}
         </div>
 
-        {/* Row 2: Remaining Categories in a 4-column Grid Section */}
+        {/* Row 2: Remaining Categories in a 4-column Grid Section - Hidden on mobile */}
         {remainingGrid.length > 0 && (
-          <div className="space-y-12 mt-12 mb-12">
+          <div className="hidden md:block space-y-12 mt-12 mb-12">
             {remainingGrid.map(({ category: gridCat, posts: gridPosts }) => {
               if (gridPosts.length === 0) return null;
 
