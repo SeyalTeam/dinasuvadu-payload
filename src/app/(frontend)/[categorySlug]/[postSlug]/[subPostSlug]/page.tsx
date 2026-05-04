@@ -21,6 +21,12 @@ import { EmbedHydrator } from "@/components/RichText/EmbedHydrator";
 import PostImageActions from "@/components/PostImageActions";
 import PostBottomInteraction from "@/components/PostBottomInteraction";
 
+function resolvePostDescription(post: Pick<Post, "title" | "meta">): string {
+  const metaDescription = post.meta?.description?.trim();
+  if (metaDescription) return metaDescription;
+  return `Read ${post.title} and the latest updates on Dinasuvadu.`;
+}
+
 // Generate dynamic metadata for subcategory post pages
 export async function generateMetadata({ params }: { params: Promise<{ categorySlug: string; postSlug: string; subPostSlug: string }> }): Promise<Metadata> {
   const { subPostSlug } = await params;
@@ -29,7 +35,7 @@ export async function generateMetadata({ params }: { params: Promise<{ categoryS
     return { title: "Post not found – Dinasuvadu" };
   }
   const title = post.title;
-  const description = post.meta?.description || "Read the latest article on Dinasuvadu.";
+  const description = resolvePostDescription(post);
   const imageUrl = getImageUrl(post.heroImage, "og") || undefined;
   const canonicalPath = await resolveCanonicalPostPath(post, fetchParentCategory);
   const canonical = `https://www.dinasuvadu.com${canonicalPath}`;
@@ -710,8 +716,8 @@ export default async function SubCategoryPostPage({
                   </span>
                   <span
                     className="single-post-verified"
-                    aria-label="Verified"
                     title="Verified"
+                    aria-hidden="true"
                   >
                     <svg
                       width="16"
@@ -731,6 +737,7 @@ export default async function SubCategoryPostPage({
                       />
                     </svg>
                   </span>
+                  <span className="sr-only">Verified account</span>
                 </p>
                 <div className="single-post-readtime">
                   <span className="single-post-clock" aria-hidden="true">
@@ -762,11 +769,10 @@ export default async function SubCategoryPostPage({
                         alt={imageAlt}
                         width={1200}
                         height={640}
-                        className="w-full h-64 sm:h-96 object-cover rounded-lg shadow-lg"
+                        className="w-full aspect-video object-cover rounded-lg shadow-lg"
                         sizes="(max-width: 1024px) 100vw, 66vw"
                         priority
                         fetchPriority="high"
-                        unoptimized
                       />
                     ) : (
                       <div className="w-full h-64 sm:h-96 bg-gray-100 rounded-lg flex items-center justify-center">

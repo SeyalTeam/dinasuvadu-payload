@@ -2512,6 +2512,14 @@ a:hover {
   color: #374151;
 }
 
+.comment-textarea::placeholder {
+  color: #4b5563;
+}
+
+.comment-textarea:disabled {
+  color: #4b5563;
+}
+
 .comment-login-prompt {
   display: flex;
   align-items: center;
@@ -2523,8 +2531,8 @@ a:hover {
 
 .comment-login-text {
   font-size: 14px;
-  color: #ef4444;
-  font-weight: 500;
+  color: #b91c1c;
+  font-weight: 600;
 }
 
 .comment-signin-button {

@@ -103,7 +103,7 @@ export default async function RootLayout({
       <body className={muktaMalar.variable} suppressHydrationWarning>
         <Providers>
           <Header categories={all} homepageCategories={homepage} />
-          {children}
+          <main id="main-content">{children}</main>
           <CommentDrawer />
           <LoginModal />
           <Footer />

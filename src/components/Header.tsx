@@ -334,8 +334,10 @@ export default function Header({ categories, homepageCategories }: HeaderProps) 
 
                 <button
                   className="theme-toggle-btn"
+                  type="button"
                   onClick={toggleTheme}
                   title={theme === "light" ? "Dark Mode" : "Light Mode"}
+                  aria-label={theme === "light" ? "Switch to dark mode" : "Switch to light mode"}
                   style={{
                     background: "none",
                     border: "none",
@@ -386,8 +388,10 @@ export default function Header({ categories, homepageCategories }: HeaderProps) 
 
                 <button
                   className="search-btn-top"
+                  type="button"
                   onClick={toggleSearch}
                   title="Search"
+                  aria-label="Search"
                   style={{ padding: 0, margin: 0, background: "none", border: "none", cursor: "pointer", color: "inherit" }}
                 >
                   <svg
@@ -409,6 +413,8 @@ export default function Header({ categories, homepageCategories }: HeaderProps) 
 
                 <button 
                   className="menu-btn" 
+                  type="button"
+                  aria-label="Open navigation menu"
                   onClick={() => setDrawerVisible(true)}
                   style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", color: "inherit", padding: "8px" }}
                 >
@@ -426,29 +432,31 @@ export default function Header({ categories, homepageCategories }: HeaderProps) 
             <div className="site">
               <div className="nav-wrapper" style={{ display: "flex", alignItems: "center", justifyContent: "flex-start", width: "100%", padding: 0, overflow: "visible" }}>
                 <div className="home-icon-container" style={{ display: "flex", alignItems: "center", flexShrink: 0, zIndex: 20, padding: "0 15px 0 12px" }}>
-                  <li className={selectedKey === "home" ? "active" : ""} style={{ display: "flex", alignItems: "center", listStyle: "none" }}>
-                    <Link 
-                      href="/" 
-                      style={{ 
-                        display: "flex", 
-                        alignItems: "center", 
-                        fontWeight: "800",
-                        fontFamily: "'Mukta Malar', sans-serif",
-                        fontSize: "13.5px",
-                        letterSpacing: "-0.2px",
-                        textDecoration: "none",
-                        color: "inherit"
-                      }}
-                    >
-                      முகப்பு
-                    </Link>
-                    {selectedKey === "home" && (
-                      <span
-                        className="underline-bar"
-                        style={{ width: `${underlineWidth}px` }}
-                      />
-                    )}
-                  </li>
+                  <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", alignItems: "center" }}>
+                    <li className={selectedKey === "home" ? "active" : ""} style={{ display: "flex", alignItems: "center", listStyle: "none" }}>
+                      <Link 
+                        href="/" 
+                        style={{ 
+                          display: "flex", 
+                          alignItems: "center", 
+                          fontWeight: "800",
+                          fontFamily: "'Mukta Malar', sans-serif",
+                          fontSize: "13.5px",
+                          letterSpacing: "-0.2px",
+                          textDecoration: "none",
+                          color: "inherit"
+                        }}
+                      >
+                        முகப்பு
+                      </Link>
+                      {selectedKey === "home" && (
+                        <span
+                          className="underline-bar"
+                          style={{ width: `${underlineWidth}px` }}
+                        />
+                      )}
+                    </li>
+                  </ul>
                 </div>
 
               <ul className="drawer-menu" ref={navContainerRef} style={{ padding: 0, flex: 1, display: "flex", alignItems: "center", margin: 0 }}>
@@ -622,30 +630,50 @@ export default function Header({ categories, homepageCategories }: HeaderProps) 
               
               return (
                 <li key={parent.id} className="accordion-item">
-                  <div 
-                    className="accordion-trigger" 
-                    onClick={() => children.length > 0 && setExpandedId(isExpanded ? null : parent.id)}
-                  >
+                  <div className="accordion-trigger">
                     <div style={{ display: "flex", alignItems: "center", gap: "0", flex: 1 }}>
-                       <Link 
-                        href={children.length > 0 ? "#" : getCategoryHref(parent)}
-                        className={`drawer-parent-link ${selectedKey === parent.id ? "active" : ""}`}
-                        onClick={(e) => {
-                          if (children.length > 0) e.preventDefault();
-                          else setDrawerVisible(false);
-                        }}
-                        style={{ 
-                          fontWeight: "800", 
-                          textDecoration: "none", 
-                          fontSize: "14px", 
-                          fontFamily: "'Mukta Malar', sans-serif",
-                          letterSpacing: "-0.2px",
-                          display: "inline-block",
-                          lineHeight: "1"
-                        }}
-                      >
-                        {parent.title}
-                      </Link>
+                      {children.length > 0 ? (
+                        <button
+                          type="button"
+                          className={`drawer-parent-link ${selectedKey === parent.id ? "active" : ""}`}
+                          aria-expanded={isExpanded}
+                          aria-controls={`drawer-children-${parent.id}`}
+                          onClick={() => setExpandedId(isExpanded ? null : parent.id)}
+                          style={{
+                            fontWeight: "800",
+                            textDecoration: "none",
+                            fontSize: "14px",
+                            fontFamily: "'Mukta Malar', sans-serif",
+                            letterSpacing: "-0.2px",
+                            display: "inline-block",
+                            lineHeight: "1",
+                            border: "none",
+                            background: "none",
+                            padding: 0,
+                            cursor: "pointer",
+                            textAlign: "left",
+                          }}
+                        >
+                          {parent.title}
+                        </button>
+                      ) : (
+                        <Link 
+                          href={getCategoryHref(parent)}
+                          className={`drawer-parent-link ${selectedKey === parent.id ? "active" : ""}`}
+                          onClick={() => setDrawerVisible(false)}
+                          style={{ 
+                            fontWeight: "800", 
+                            textDecoration: "none", 
+                            fontSize: "14px", 
+                            fontFamily: "'Mukta Malar', sans-serif",
+                            letterSpacing: "-0.2px",
+                            display: "inline-block",
+                            lineHeight: "1"
+                          }}
+                        >
+                          {parent.title}
+                        </Link>
+                      )}
                     </div>
                     {children.length > 0 && (
                       <ChevronIcon
@@ -659,7 +687,11 @@ export default function Header({ categories, homepageCategories }: HeaderProps) 
                     )}
                   </div>
                   {children.length > 0 && (
-                    <div className={`accordion-content ${isExpanded ? "open" : ""}`} style={{ overflow: "hidden", maxHeight: isExpanded ? "500px" : "0", transition: "max-height 0.3s ease-out" }}>
+                    <div
+                      id={`drawer-children-${parent.id}`}
+                      className={`accordion-content ${isExpanded ? "open" : ""}`}
+                      style={{ overflow: "hidden", maxHeight: isExpanded ? "500px" : "0", transition: "max-height 0.3s ease-out" }}
+                    >
                       <ul style={{ listStyle: "none", padding: "5px 0 15px 0", textAlign: "left" }}>
                         {children.map(child => (
                           <li key={child.id} style={{ padding: "8px 0", textAlign: "left" }}>

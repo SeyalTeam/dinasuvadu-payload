@@ -9,7 +9,6 @@ import { unstable_cache } from "next/cache";
 // import { Space } from "antd";
 // import { ClockCircleOutlined } from "@ant-design/icons";
 import { notFound, redirect } from "next/navigation";
-import ShareButton from "@/components/ShareButton";
 import PostImageActions from "@/components/PostImageActions";
 import PostBottomInteraction from "@/components/PostBottomInteraction";
 import { getPayload } from "payload";
@@ -23,7 +22,6 @@ import {
 } from "@/lib/post-url";
 import { CategoryFeed } from "@/components/CategoryFeed";
 import { 
-  calculateReadingTime, 
   extractPlainTextFromRichText, 
   stripHtml, 
   estimateReadTimeMinutes 
@@ -107,7 +105,6 @@ type Post = {
 
 // API base URL
 const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
-const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3001";
 
 type ImageVariant = "original" | "og" | "hero" | "content" | "card" | "thumb";
 
@@ -118,16 +115,6 @@ const imageVariantSizes: Record<ImageVariant, string[]> = {
   content: ["medium", "small", "large", "xlarge"],
   card: ["small", "medium", "thumbnail", "large"],
   thumb: ["thumbnail", "small", "medium"],
-};
-
-// Define the clamping style for text overflow
-const clampStyle = {
-  display: "-webkit-box",
-  WebkitLineClamp: 3,
-  WebkitBoxOrient: "vertical",
-  overflow: "hidden",
-  textOverflow: "ellipsis",
-  lineHeight: "1.4",
 };
 
 function toAbsoluteImageUrl(path: string): string {
@@ -233,6 +220,12 @@ const normalizeSlug = (slug: string): string => {
     return slug;
   }
 };
+
+function resolvePostDescription(post: Pick<Post, "title" | "meta">): string {
+  const metaDescription = post.meta?.description?.trim();
+  if (metaDescription) return metaDescription;
+  return `Read ${post.title} and the latest updates on Dinasuvadu.`;
+}
 
 // Fetch a category by slug
 const fetchCategoryBySlug = unstable_cache(
@@ -348,8 +341,7 @@ export async function generateMetadata({ params }: { params: Promise<{ categoryS
 
   const canonicalPath = await resolveCanonicalPostPath(post, fetchParentCategory);
   const title = post.title;
-  const description =
-    post.meta?.description || "Read the latest article on Dinasuvadu.";
+  const description = resolvePostDescription(post);
   const imageUrl = post.meta?.image
     ? getImageUrl(post.meta.image, "og") || undefined
     : undefined;
@@ -858,8 +850,8 @@ export default async function PostOrSubCategoryPage({
                   </span>
                   <span
                     className="single-post-verified"
-                    aria-label="Verified"
                     title="Verified"
+                    aria-hidden="true"
                   >
                     <svg
                       width="16"
@@ -879,6 +871,7 @@ export default async function PostOrSubCategoryPage({
                       />
                     </svg>
                   </span>
+                  <span className="sr-only">Verified account</span>
                 </p>
                 <div className="single-post-readtime">
                   <span className="single-post-clock" aria-hidden="true">
@@ -914,7 +907,6 @@ export default async function PostOrSubCategoryPage({
                       sizes="(max-width: 1024px) 100vw, 66vw"
                       priority
                       fetchPriority="high"
-                      unoptimized
                     />
                   ) : (
                     <Image
@@ -926,7 +918,6 @@ export default async function PostOrSubCategoryPage({
                       sizes="(max-width: 1024px) 100vw, 66vw"
                       priority
                       fetchPriority="high"
-                      unoptimized
                     />
                   )}
                   {(post.layout?.[0]?.media?.caption ||
@@ -1061,5 +1052,3 @@ export default async function PostOrSubCategoryPage({
     </>
   );
 }
-
-
