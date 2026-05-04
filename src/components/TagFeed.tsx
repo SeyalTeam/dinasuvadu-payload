@@ -102,7 +102,7 @@ export function TagFeed({
               className="block py-4 border-b border-gray-100 dark:border-gray-800 last:border-0 md:px-0"
             >
               <div className="flex gap-4 items-start">
-                <div className="w-32 h-24 shrink-0 rounded-xl overflow-hidden bg-gray-50 shadow-sm">
+                <div className="relative w-32 h-24 shrink-0 rounded-xl overflow-hidden bg-gray-50 shadow-sm">
                   <Image
                     alt={imageAlt}
                     src={imageUrl || "/placeholder-news.jpg"}

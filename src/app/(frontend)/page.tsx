@@ -340,7 +340,7 @@ export default async function Home() {
                 className="block py-5 border-b border-gray-200 last:border-0"
               >
                 <div className="flex gap-4 items-start">
-                  <div className="w-32 h-24 shrink-0 rounded-xl overflow-hidden bg-gray-50 shadow-sm">
+                  <div className="relative w-32 h-24 shrink-0 rounded-xl overflow-hidden bg-gray-50 shadow-sm">
                     <Image
                       alt={post.heroImage?.alt || post.title}
                       src={getImageUrl(post.heroImage?.url) || "/placeholder-news.jpg"}
@@ -421,7 +421,7 @@ export default async function Home() {
                         className="block py-5 border-b border-gray-100 dark:border-gray-800 last:border-0"
                       >
                         <div className="flex gap-4 items-start">
-                          <div className="w-32 h-24 shrink-0 rounded-xl overflow-hidden bg-gray-50 dark:bg-gray-800 shadow-sm">
+                          <div className="relative w-32 h-24 shrink-0 rounded-xl overflow-hidden bg-gray-50 dark:bg-gray-800 shadow-sm">
                             <Image
                               alt={post.heroImage?.alt || post.title}
                               src={getImageUrl(post.heroImage?.url) || "/placeholder-news.jpg"}
