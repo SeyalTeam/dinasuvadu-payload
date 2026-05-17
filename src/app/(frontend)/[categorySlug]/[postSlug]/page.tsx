@@ -118,8 +118,18 @@ const imageVariantSizes: Record<ImageVariant, string[]> = {
 };
 
 function toAbsoluteImageUrl(path: string): string {
-  if (path.startsWith("http")) return path;
-  const cleanPath = path.startsWith("/") ? path : `/${path}`;
+  if (!path) return "";
+  
+  let processedPath = path;
+  try {
+    const decoded = decodeURI(path);
+    processedPath = encodeURI(decoded);
+  } catch (e) {
+    processedPath = path.replace(/ /g, "%20");
+  }
+
+  if (processedPath.startsWith("http")) return processedPath;
+  const cleanPath = processedPath.startsWith("/") ? processedPath : `/${processedPath}`;
   return `${apiUrl}${cleanPath}`;
 }
 

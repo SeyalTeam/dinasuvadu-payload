@@ -1,0 +1,8 @@
+#!/usr/bin/expect -f
+set timeout -1
+spawn ssh -o StrictHostKeyChecking=no -N -L 27018:localhost:27017 root@168.144.125.226
+expect {
+    "password:" { send "cP@FupTjHw2zsu\r" }
+    "yes/no" { send "yes\r"; exp_continue }
+}
+interact
