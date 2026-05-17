@@ -773,6 +773,7 @@ export default async function SubCategoryPostPage({
                         sizes="(max-width: 1024px) 100vw, 66vw"
                         priority
                         fetchPriority="high"
+                        unoptimized
                       />
                     ) : (
                       <div className="w-full h-64 sm:h-96 bg-gray-100 rounded-lg flex items-center justify-center">

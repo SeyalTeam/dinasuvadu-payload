@@ -101,6 +101,10 @@ export default async function RootLayout({
 
   return (
     <html lang="ta" suppressHydrationWarning>
+      <head>
+        <link rel="preconnect" href="https://media.dinasuvadu.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://media.dinasuvadu.com" />
+      </head>
       <body className={muktaMalar.variable} suppressHydrationWarning>
         <Providers>
           <Header categories={all} homepageCategories={homepage} />

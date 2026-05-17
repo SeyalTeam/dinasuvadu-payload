@@ -909,6 +909,7 @@ export default async function PostOrSubCategoryPage({
                       sizes="(max-width: 1024px) 100vw, 66vw"
                       priority
                       fetchPriority="high"
+                      unoptimized
                     />
                   ) : (
                     <Image
@@ -920,6 +921,7 @@ export default async function PostOrSubCategoryPage({
                       sizes="(max-width: 1024px) 100vw, 66vw"
                       priority
                       fetchPriority="high"
+                      unoptimized
                     />
                   )}
                   {(post.layout?.[0]?.media?.caption ||
