@@ -136,6 +136,8 @@ export default function Header({ categories, homepageCategories }: HeaderProps) 
 
   useEffect(() => {
     setIsMounted(true);
+    let resizeTimer: NodeJS.Timeout;
+    
     const updateVisibleItems = () => {
       if (!navContainerRef.current) return;
 
@@ -154,6 +156,10 @@ export default function Header({ categories, homepageCategories }: HeaderProps) 
       let currentWidth = 0;
       let newVisibleCount = 0;
 
+      // Batch DOM insertions to prevent sequential reflows
+      const fragment = document.createDocumentFragment();
+      const testDivs: HTMLDivElement[] = [];
+
       for (let i = 0; i < sortedParents.length; i++) {
         const parentRef = sortedParents[i];
         if (!parentRef) continue;
@@ -162,18 +168,23 @@ export default function Header({ categories, homepageCategories }: HeaderProps) 
         testDiv.style.visibility = 'hidden';
         testDiv.style.position = 'absolute';
         testDiv.style.whiteSpace = 'nowrap';
-        // USE WEIGHT 900 to match the UI
         testDiv.style.font = '800 13.5px "Mukta Malar", sans-serif'; 
         testDiv.innerText = parentRef.title;
-        document.body.appendChild(testDiv);
-        
-        // margin-right (25px) + gap/chevron if applicable (15px)
+        fragment.appendChild(testDiv);
+        testDivs.push(testDiv);
+      }
+
+      document.body.appendChild(fragment);
+
+      for (let i = 0; i < sortedParents.length; i++) {
+        const parentRef = sortedParents[i];
+        if (!parentRef) continue;
+
+        const testDiv = testDivs[i];
         const hasSub = getSubcategories(parentRef.id).length > 0;
         const itemWidth = testDiv.offsetWidth + 25 + (hasSub ? 15 : 0); 
-        document.body.removeChild(testDiv);
         
         const isLast = i === sortedParents.length - 1;
-        // Buffer for the "More" icon + container padding
         const moreBuffer = isLast ? 0 : 45;
         
         if (currentWidth + itemWidth + moreBuffer > availableWidth) {
@@ -183,13 +194,27 @@ export default function Header({ categories, homepageCategories }: HeaderProps) 
         currentWidth += itemWidth;
         newVisibleCount++;
       }
+
+      // Clean up DOM
+      testDivs.forEach(div => div.remove());
       
       setVisibleCount(newVisibleCount);
     };
 
-    updateVisibleItems();
-    window.addEventListener("resize", updateVisibleItems);
-    return () => window.removeEventListener("resize", updateVisibleItems);
+    // Defer execution of layout measurements to let initial paint (FCP/LCP) run first
+    const initialTimer = setTimeout(updateVisibleItems, 100);
+
+    const handleResize = () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(updateVisibleItems, 150);
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => {
+      clearTimeout(initialTimer);
+      clearTimeout(resizeTimer);
+      window.removeEventListener("resize", handleResize);
+    };
   }, [categories, homepageCategories]);
 
   const visibleParents = sortedParents.slice(0, visibleCount);
