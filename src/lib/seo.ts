@@ -97,6 +97,7 @@ export function buildArticleLd({
         name: a.name,
       })) || [],
     datePublished: post.publishedAt,
+    dateModified: post.updatedAt || post.publishedAt,
     publisher: {
       "@type": "Organization",
       "name": "Dinasuvadu",

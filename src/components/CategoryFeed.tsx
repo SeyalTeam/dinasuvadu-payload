@@ -88,7 +88,7 @@ export function CategoryFeed({
                       fill
                       className="object-cover"
                       priority
-                      unoptimized
+                      fetchPriority="high"
                     />
                   </div>
                   <h3 className="text-[24px] font-black leading-[1.2] text-[#111] dark:text-white px-1 line-clamp-3 tracking-tight para-txt">
@@ -113,7 +113,6 @@ export function CategoryFeed({
                     src={imageUrl || "/placeholder-news.jpg"}
                     fill
                     className="object-cover"
-                    unoptimized
                   />
                 </div>
                 <div className="flex-1 pt-0.5">
@@ -156,7 +155,6 @@ export function CategoryFeed({
                     width={160}
                     height={100}
                     className="w-full h-full object-cover"
-                    unoptimized
                   />
                 </Link>
               )}

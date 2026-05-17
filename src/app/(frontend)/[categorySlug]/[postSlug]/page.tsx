@@ -223,8 +223,11 @@ const normalizeSlug = (slug: string): string => {
 
 function resolvePostDescription(post: Pick<Post, "title" | "meta">): string {
   const metaDescription = post.meta?.description?.trim();
-  if (metaDescription) return metaDescription;
-  return `Read ${post.title} and the latest updates on Dinasuvadu.`;
+  if (metaDescription && metaDescription.length > 50) return metaDescription;
+  
+  // Create a richer fallback description if the meta description is missing or too short
+  const fallback = `${post.title} - Get the latest Tamil news updates, breaking news, in-depth analysis, and exclusive reports on politics, cinema, and sports from Tamil Nadu and across the globe on Dinasuvadu.`;
+  return fallback.slice(0, 160);
 }
 
 // Fetch a category by slug
@@ -526,7 +529,6 @@ async function LatestPostsSidebar({ currentPostSlug }: { currentPostSlug: string
                         src={imageUrl}
                         fill
                         className="object-cover transition-transform duration-500 group-hover:scale-110"
-                        unoptimized
                       />
                     </div>
                   ) : (
@@ -973,7 +975,6 @@ export default async function PostOrSubCategoryPage({
                         height={675}
                         className="w-full max-w-2xl mx-auto h-auto object-cover md:rounded-md md:shadow-md"
                         sizes="(max-width: 1024px) 100vw, 768px"
-                        unoptimized
                       />
                     )}
                     {block.media.caption && (

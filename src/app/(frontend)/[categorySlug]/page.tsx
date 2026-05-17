@@ -565,7 +565,8 @@ export default async function CategoryPage({
                       alt={spotlightPosts[0].heroImage?.alt || spotlightPosts[0].title}
                       fill
                       className="object-cover transition-transform duration-700 group-hover:scale-105"
-                      unoptimized
+                      priority
+                      fetchPriority="high"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
                     <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6">
@@ -592,7 +593,6 @@ export default async function CategoryPage({
                         alt={post.heroImage?.alt || post.title}
                         fill
                         className="object-cover transition-transform duration-500 group-hover:scale-105"
-                        unoptimized
                       />
                     </div>
                     <div className="p-4 flex flex-col flex-1">
@@ -675,7 +675,6 @@ export default async function CategoryPage({
                             alt={featuredPost.heroImage?.alt || featuredPost.title}
                             fill
                             className="object-cover transition-transform duration-500 group-hover:scale-105"
-                            unoptimized
                           />
                         </div>
                         <h3 className="text-[15px] font-bold text-gray-900 dark:text-white leading-tight line-clamp-2 para-txt group-hover:text-blue-600 transition-colors">
@@ -692,7 +691,6 @@ export default async function CategoryPage({
                               alt={post.heroImage?.alt || post.title}
                               fill
                               className="object-cover"
-                              unoptimized
                             />
                           </div>
                           <h4 className="text-[13px] font-bold text-gray-800 dark:text-gray-200 leading-snug line-clamp-2 group-hover:text-blue-600 transition-colors para-txt">
@@ -739,7 +737,6 @@ export default async function CategoryPage({
                             alt={post.heroImage?.alt || post.title}
                             fill
                             className="object-cover transition-transform duration-500 group-hover:scale-105"
-                            unoptimized
                           />
                         </div>
                         <div className="p-3 flex flex-col flex-1">

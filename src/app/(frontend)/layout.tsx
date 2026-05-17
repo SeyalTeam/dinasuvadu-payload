@@ -7,8 +7,9 @@ import config from "@/payload.config";
 import Script from "next/script";
 import { unstable_cache } from "next/cache";
 import { Mukta_Malar } from "next/font/google";
-import { CommentDrawer } from "@/components/CommentDrawer";
-import { LoginModal } from "@/components/LoginModal";
+import dynamic from "next/dynamic";
+const CommentDrawer = dynamic(() => import("@/components/CommentDrawer").then(mod => mod.CommentDrawer));
+const LoginModal = dynamic(() => import("@/components/LoginModal").then(mod => mod.LoginModal));
 import { Providers } from "@/providers";
 
 const muktaMalar = Mukta_Malar({

@@ -362,7 +362,7 @@ export default async function SubCategoryPaginatedPage({
                         width={280}
                         height={180}
                         sizes="(max-width: 768px) 100vw, 280px"
-                        unoptimized
+                        priority
                       />
                     </Link>
                   ) : (
