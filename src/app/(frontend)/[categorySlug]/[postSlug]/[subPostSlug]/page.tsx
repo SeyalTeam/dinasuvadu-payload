@@ -239,132 +239,140 @@ const normalizeSlug = (slug: string): string => {
 };
 
 // Fetch a category by slug
-const fetchCategoryBySlug = unstable_cache(
-  async (slug: string): Promise<Category | null> => {
-    try {
-      const payload = await getPayload({ config });
-      const res = await payload.find({
-        collection: "categories",
-        where: {
-          slug: {
-            equals: normalizeSlug(slug),
-          },
+async function fetchCategoryBySlugRaw(slug: string): Promise<Category | null> {
+  try {
+    const payload = await getPayload({ config });
+    const res = await payload.find({
+      collection: "categories",
+      where: {
+        slug: {
+          equals: normalizeSlug(slug),
         },
-        limit: 1,
-        depth: 1,
-      });
-      return (res.docs[0] as unknown as Category) || null;
-    } catch (error) {
-      console.error(`Error fetching category with slug ${slug}:`, error);
-      return null;
-    }
-  },
-  ["subpost-route-category-by-slug"],
+      },
+      limit: 1,
+      depth: 1,
+    });
+    return (res.docs[0] as unknown as Category) || null;
+  } catch (error) {
+    console.error(`Error fetching category with slug ${slug}:`, error);
+    return null;
+  }
+}
+
+const fetchCategoryBySlug = (slug: string) => unstable_cache(
+  async () => fetchCategoryBySlugRaw(slug),
+  ["subpost-route-category-by-slug", slug],
   { revalidate: 300 }
-);
+)();
 
 // Fetch parent category details by ID
-const fetchParentCategory = unstable_cache(
-  async (parentId: string): Promise<{ slug: string; title: string } | null> => {
-    try {
-      const payload = await getPayload({ config });
-      const res = await payload.findByID({
-        collection: "categories",
-        id: parentId,
-        depth: 1,
-      });
-      const parentCategory = (res as unknown as Category) || null;
-      if (!parentCategory) return null;
-      return {
-        slug: parentCategory.slug || "uncategorized",
-        title: parentCategory.title || "Uncategorized",
-      };
-    } catch (err) {
-      console.error(`Error fetching parent category with ID ${parentId}:`, err);
-      return null;
-    }
-  },
-  ["subpost-route-parent-category"],
+async function fetchParentCategoryRaw(parentId: string): Promise<{ slug: string; title: string } | null> {
+  try {
+    const payload = await getPayload({ config });
+    const res = await payload.findByID({
+      collection: "categories",
+      id: parentId,
+      depth: 1,
+    });
+    const parentCategory = (res as unknown as Category) || null;
+    if (!parentCategory) return null;
+    return {
+      slug: parentCategory.slug || "uncategorized",
+      title: parentCategory.title || "Uncategorized",
+    };
+  } catch (err) {
+    console.error(`Error fetching parent category with ID ${parentId}:`, err);
+    return null;
+  }
+}
+
+const fetchParentCategory = (parentId: string) => unstable_cache(
+  async () => fetchParentCategoryRaw(parentId),
+  ["subpost-route-parent-category", parentId],
   { revalidate: 300 }
-);
+)();
 
 // Fetch a single post by slug
-const fetchPost = unstable_cache(
-  async (slug: string): Promise<Post | null> => {
-    try {
-      const payload = await getPayload({ config });
-      const response = await payload.find({
-        collection: "posts",
-        where: {
-          and: [
-            {
-              slug: {
-                equals: normalizeSlug(slug),
-              },
+async function fetchPostRaw(slug: string): Promise<Post | null> {
+  try {
+    const payload = await getPayload({ config });
+    const response = await payload.find({
+      collection: "posts",
+      where: {
+        and: [
+          {
+            slug: {
+              equals: normalizeSlug(slug),
             },
-            {
-              _status: {
-                equals: "published",
-              },
+          },
+          {
+            _status: {
+              equals: "published",
             },
-          ],
-        },
-        limit: 1,
-        depth: 1,
-      });
-      return (response.docs[0] as unknown as Post) || null;
-    } catch (error) {
-      console.error("Error fetching post with slug " + slug + ":", error);
-      return null;
-    }
-  },
-  ["subpost-route-post-by-slug"],
+          },
+        ],
+      },
+      limit: 1,
+      depth: 1,
+    });
+    return (response.docs[0] as unknown as Post) || null;
+  } catch (error) {
+    console.error("Error fetching post with slug " + slug + ":", error);
+    return null;
+  }
+}
+
+const fetchPost = (slug: string) => unstable_cache(
+  async () => fetchPostRaw(slug),
+  ["subpost-route-post-by-slug", slug],
   { revalidate: 60 }
-);
+)();
 
 // Fetch the latest posts (excluding the current post)
-const fetchLatestPosts = unstable_cache(
-  async (currentPostSlug: string): Promise<Post[]> => {
-    try {
-      const payload = await getPayload({ config });
-      const response = await payload.find({
-        collection: "posts",
-        limit: 5,
-        sort: "-publishedAt",
-        where: {
-          and: [
-            {
-              slug: {
-                not_equals: currentPostSlug,
-              },
+async function fetchLatestPostsRaw(currentPostSlug: string): Promise<Post[]> {
+  try {
+    const payload = await getPayload({ config });
+    const response = await payload.find({
+      collection: "posts",
+      limit: 5,
+      sort: "-publishedAt",
+      where: {
+        and: [
+          {
+            slug: {
+              not_equals: currentPostSlug,
             },
-            {
-              _status: {
-                equals: "published",
-              },
+          },
+          {
+            _status: {
+              equals: "published",
             },
-          ],
-        },
-        depth: 1,
-        select: {
-          id: true,
-          slug: true,
-          title: true,
-          categories: true,
-          heroImage: true,
-          meta: true,
-          publishedAt: true,
-        },
-      });
-      return (response.docs as unknown as Post[]) || [];
-    } catch (error) {
-      console.error("Error fetching latest posts:", error);
-      return [];
-    }
-  },
-  ["subpost-route-latest-posts"],
+          },
+        ],
+      },
+      depth: 1,
+      select: {
+        id: true,
+        slug: true,
+        title: true,
+        categories: true,
+        heroImage: true,
+        meta: true,
+        publishedAt: true,
+      },
+    });
+    return (response.docs as unknown as Post[]) || [];
+  } catch (error) {
+    console.error("Error fetching latest posts:", error);
+    return [];
+  }
+}
+
+const fetchLatestPosts = (currentPostSlug: string) => unstable_cache(
+  async () => fetchLatestPostsRaw(currentPostSlug),
+  ["subpost-route-latest-posts", currentPostSlug],
   { revalidate: 60 }
-);
+)();
 
 async function LatestPostsSidebar({ currentPostSlug }: { currentPostSlug: string }) {
   const latestPosts = await fetchLatestPosts(currentPostSlug);
