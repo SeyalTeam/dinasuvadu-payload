@@ -20,7 +20,7 @@ type PostWithHero = {
 const imageVariantSizes: Record<ImageVariant, string[]> = {
   original: [],
   og: ["og", "large", "xlarge", "medium"],
-  hero: ["large", "og", "xlarge", "medium", "small"],
+  hero: ["medium", "large", "og", "small", "xlarge"],
   content: ["medium", "small", "large", "xlarge"],
   card: ["small", "medium", "thumbnail", "large"],
   thumb: ["thumbnail", "small", "medium"],

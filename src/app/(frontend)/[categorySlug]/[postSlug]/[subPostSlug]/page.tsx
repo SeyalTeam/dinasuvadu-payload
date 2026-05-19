@@ -1,4 +1,4 @@
-export const revalidate = 60; // Revalidate every 60 seconds
+export const revalidate = 300; // Revalidate every 5 minutes (ISR cache for TTFB)
 export const dynamicParams = true; // Enable on-demand rendering
 import Link from "next/link";
 import Image from "next/image";
@@ -272,7 +272,7 @@ async function fetchPostRaw(slug: string): Promise<Post | null> {
 const fetchPost = (slug: string) => unstable_cache(
   async () => fetchPostRaw(slug),
   ["subpost-route-post-by-slug", slug],
-  { revalidate: 60 }
+  { revalidate: 300 }
 )();
 
 // Fetch the latest posts (excluding the current post)
@@ -318,7 +318,7 @@ async function fetchLatestPostsRaw(currentPostSlug: string): Promise<Post[]> {
 const fetchLatestPosts = (currentPostSlug: string) => unstable_cache(
   async () => fetchLatestPostsRaw(currentPostSlug),
   ["subpost-route-latest-posts", currentPostSlug],
-  { revalidate: 60 }
+  { revalidate: 300 }
 )();
 
 async function LatestPostsSidebar({ currentPostSlug }: { currentPostSlug: string }) {
