@@ -464,7 +464,6 @@ async function LatestPostsSidebar({ currentPostSlug }: { currentPostSlug: string
                         src={imageUrl}
                         fill
                         className="object-cover transition-transform duration-500 group-hover:scale-110"
-                        priority
                       />
                     </div>
                   ) : (
