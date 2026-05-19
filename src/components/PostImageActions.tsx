@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useLayoutEffect } from "react";
 import { useInteractionSync } from "@/hooks/useInteractionSync";
 import { useLoginModal } from "@/providers/LoginModal";
 import { useCommentDrawer } from "@/providers/CommentDrawer";
@@ -34,12 +34,16 @@ export default function PostImageActions({
 
   const { isLiked, likes, updateLike, comments } = useInteractionSync(url);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const storedScale = Number(
       window.localStorage.getItem(FONT_SCALE_KEY) || "1"
     );
     const nextScale = Number.isFinite(storedScale) ? clampScale(storedScale) : 1;
     setFontScale(nextScale);
+    document.documentElement.style.setProperty(
+      "--article-font-scale",
+      String(nextScale)
+    );
 
     const storedBookmarks = JSON.parse(
       window.localStorage.getItem(BOOKMARK_KEY) || "[]"

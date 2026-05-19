@@ -9,6 +9,7 @@ import { unstable_cache } from "next/cache";
 // import { Space } from "antd";
 // import { ClockCircleOutlined } from "@ant-design/icons";
 import { notFound, redirect } from "next/navigation";
+import { ArticleFontScaleScript } from "@/components/ArticleFontScaleScript";
 import PostImageActions from "@/components/PostImageActions";
 import PostBottomInteraction from "@/components/PostBottomInteraction";
 import { PostHeroImage } from "@/components/PostHeroImage";
@@ -571,14 +572,10 @@ export default async function PostOrSubCategoryPage({
   const page = 1;
   const limit = 10;
 
-  const topLevelCategoryPromise = fetchCategoryBySlug(categorySlug);
-  const possibleSubCategoryPromise = looksLikeArticleSlug
-    ? Promise.resolve(null)
-    : fetchCategoryBySlug(postSlug);
-
-  const [topLevelCategory, possibleSubCategory] = await Promise.all([
-    topLevelCategoryPromise,
-    possibleSubCategoryPromise,
+  const [topLevelCategory, possibleSubCategory, prefetchedPost] = await Promise.all([
+    fetchCategoryBySlug(categorySlug),
+    looksLikeArticleSlug ? Promise.resolve(null) : fetchCategoryBySlug(postSlug),
+    looksLikeArticleSlug ? fetchPost(postSlug) : Promise.resolve(null),
   ]);
 
   if (!topLevelCategory) {
@@ -693,7 +690,7 @@ export default async function PostOrSubCategoryPage({
     );
   }
 
-  const post = await fetchPost(postSlug);
+  const post = prefetchedPost ?? (await fetchPost(postSlug));
   if (!post) {
     notFound();
   }
@@ -766,6 +763,38 @@ export default async function PostOrSubCategoryPage({
       <div className="single-post-layout">
         {/* Main Article Content */}
         <article className="single-post-main">
+          <ArticleFontScaleScript />
+
+          {heroImageUrl ? (
+            <div className="single-post-hero-wrap">
+              <figure className="mb-0">
+                <div className="single-post-hero-media md:rounded-lg md:shadow-lg">
+                  <PostHeroImage
+                    src={heroImageUrl}
+                    alt={
+                      post.layout?.[0]?.blockType === "mediaBlock"
+                        ? post.layout[0].media?.alt || "Hero Image"
+                        : post.heroImage?.alt || "Hero Image"
+                    }
+                  />
+                  {(post.layout?.[0]?.media?.caption ||
+                    post.heroImage?.caption) && (
+                    <figcaption className="absolute bottom-0 left-0 right-0 bg-black/70 text-white text-sm p-4">
+                      {post.layout?.[0]?.media?.caption ||
+                        post.heroImage?.caption}
+                    </figcaption>
+                  )}
+                </div>
+              </figure>
+              <PostImageActions
+                url={canonicalUrl}
+                title={post.title}
+                postSlug={postSlug}
+                description={post.meta?.description}
+              />
+            </div>
+          ) : null}
+
           <header className="single-post-header-card">
             <nav aria-label="Breadcrumb" className="single-post-breadcrumbs">
               <div className="flex items-center space-x-2 breadcrumbs">
@@ -853,38 +882,7 @@ export default async function PostOrSubCategoryPage({
             </div>
           </header>
 
-          {/* Hero Image */}
-          {heroImageUrl ? (
-            <>
-              <figure className="mb-0">
-                <div className="relative md:rounded-lg overflow-hidden md:shadow-lg">
-                  <PostHeroImage
-                    src={heroImageUrl}
-                    alt={
-                      post.layout?.[0]?.blockType === "mediaBlock"
-                        ? post.layout[0].media?.alt || "Hero Image"
-                        : post.heroImage?.alt || "Hero Image"
-                    }
-                    className="w-full aspect-video object-cover"
-                  />
-                  {(post.layout?.[0]?.media?.caption ||
-                    post.heroImage?.caption) && (
-                    <figcaption className="absolute bottom-0 left-0 right-0 bg-black/70 text-white text-sm p-4">
-                      {post.layout?.[0]?.media?.caption ||
-                        post.heroImage?.caption}
-                    </figcaption>
-                  )}
-                </div>
-              </figure>
-              <PostImageActions
-                url={canonicalUrl}
-                title={post.title}
-                postSlug={postSlug}
-                description={post.meta?.description}
-              />
-            </>
-          ) : null}
-
+          <div className="single-post-body">
           {/* Hero Rich Text */}
           {Array.isArray(post.hero?.richText) &&
             post.hero.richText.length > 0 && (
@@ -988,6 +986,7 @@ export default async function PostOrSubCategoryPage({
             postSlug={postSlug}
             description={post.meta?.description}
           />
+          </div>
         </article>
 
         <Suspense fallback={<LatestPostsSidebarFallback />}>

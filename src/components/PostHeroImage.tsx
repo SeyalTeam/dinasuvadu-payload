@@ -29,8 +29,8 @@ export function PostHeroImage({
       alt={alt}
       width={width}
       height={height}
-      className={className}
-      sizes="(max-width: 1024px) 100vw, 66vw"
+      className={className ?? "w-full h-full object-cover"}
+      sizes="(max-width: 991px) 100vw, 66vw"
       priority
       fetchPriority="high"
       unoptimized={useCdnDirect}
