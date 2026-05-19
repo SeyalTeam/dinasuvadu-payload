@@ -325,7 +325,6 @@ export default function Header({ categories, homepageCategories }: HeaderProps) 
                   width={180}
                   height={40}
                   className="logo"
-                  priority
                 />
               </Link>
 

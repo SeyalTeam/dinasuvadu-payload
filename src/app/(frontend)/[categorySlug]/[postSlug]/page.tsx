@@ -11,6 +11,13 @@ import { unstable_cache } from "next/cache";
 import { notFound, redirect } from "next/navigation";
 import PostImageActions from "@/components/PostImageActions";
 import PostBottomInteraction from "@/components/PostBottomInteraction";
+import { PostHeroImage } from "@/components/PostHeroImage";
+import {
+  getImageUrl,
+  resolvePostHeroImageUrl,
+  resolvePostOgImageUrl,
+} from "@/lib/post-images";
+import { preloadLcpImage } from "@/lib/preload-lcp-image";
 import { getPayload } from "payload";
 import config from "@/payload.config";
 import { buildMetadata, buildBreadcrumbLd, buildArticleLd } from "@/lib/seo";
@@ -105,70 +112,6 @@ type Post = {
 
 // API base URL
 const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
-
-type ImageVariant = "original" | "og" | "hero" | "content" | "card" | "thumb";
-
-const imageVariantSizes: Record<ImageVariant, string[]> = {
-  original: [],
-  og: ["og", "large", "xlarge", "medium"],
-  hero: ["large", "og", "xlarge", "medium", "small"],
-  content: ["medium", "small", "large", "xlarge"],
-  card: ["small", "medium", "thumbnail", "large"],
-  thumb: ["thumbnail", "small", "medium"],
-};
-
-function toAbsoluteImageUrl(path: string): string {
-  if (!path) return "";
-  
-  let processedPath = path;
-  try {
-    const decoded = decodeURI(path);
-    processedPath = encodeURI(decoded);
-  } catch (e) {
-    processedPath = path.replace(/ /g, "%20");
-  }
-
-  if (processedPath.startsWith("http")) return processedPath;
-  const cleanPath = processedPath.startsWith("/") ? processedPath : `/${processedPath}`;
-  return `${apiUrl}${cleanPath}`;
-}
-
-// Helper function to get the image URL with proper base URL
-function getImageUrl(media: any, variant: ImageVariant = "original"): string | null {
-  if (!media) return null;
-
-  if (typeof media !== "string" && media.sizes && variant !== "original") {
-    const sizeOrder = imageVariantSizes[variant] || [];
-
-    for (const sizeKey of sizeOrder) {
-      const sizedUrl = media.sizes?.[sizeKey]?.url;
-      if (sizedUrl) {
-        return toAbsoluteImageUrl(sizedUrl);
-      }
-    }
-
-    const sizeEntries = Object.values(
-      media.sizes as Record<string, { url?: string }>
-    );
-    const fallbackSizedUrl = sizeEntries.find((entry) => entry?.url)?.url;
-    if (fallbackSizedUrl) {
-      return toAbsoluteImageUrl(fallbackSizedUrl);
-    }
-  }
-  
-  // Use explicit URL if available
-  let path = typeof media === 'string' ? media : media.url;
-  
-  // Fallback to reconstructing from prefix and filename if URL is missing
-  if (!path && media.filename) {
-    const prefix = media.prefix ? media.prefix : 'media';
-    const cleanPrefix = prefix.endsWith('/') ? prefix : `${prefix}/`;
-    path = `/${cleanPrefix}${media.filename}`;
-  }
-  
-  if (!path) return null;
-  return toAbsoluteImageUrl(path);
-}
 
 function trimTrailingEmptyHtmlBlocks(html: string): string {
   if (!html) return html;
@@ -361,9 +304,8 @@ export async function generateMetadata({ params }: { params: Promise<{ categoryS
   const canonicalPath = await resolveCanonicalPostPath(post, fetchParentCategory);
   const title = post.title;
   const description = resolvePostDescription(post);
-  const imageUrl = post.meta?.image
-    ? getImageUrl(post.meta.image, "og") || undefined
-    : undefined;
+  const imageUrl = resolvePostOgImageUrl(post) || undefined;
+  preloadLcpImage(resolvePostHeroImageUrl(post));
   const canonical = `https://www.dinasuvadu.com${canonicalPath}`;
   return buildMetadata({ title, description, imageUrl, type: "article", canonical });
 }
@@ -793,6 +735,8 @@ export default async function PostOrSubCategoryPage({
   const updatedLabel = formatNewsTimestamp(post.updatedAt || post.publishedAt);
   const showUpdated = Boolean(updatedLabel);
   const canonicalUrl = `https://www.dinasuvadu.com${canonicalPath}`;
+  const heroImageUrl = resolvePostHeroImageUrl(post);
+  preloadLcpImage(heroImageUrl);
   const authorLine =
     (post.populatedAuthors ?? [])
       .map((author) => author?.name)
@@ -910,36 +854,19 @@ export default async function PostOrSubCategoryPage({
           </header>
 
           {/* Hero Image */}
-          {(post.layout?.[0]?.blockType === "mediaBlock" &&
-            post.layout[0].media?.url) ||
-          (post.heroImage && post.heroImage.url) ? (
+          {heroImageUrl ? (
             <>
               <figure className="mb-0">
                 <div className="relative md:rounded-lg overflow-hidden md:shadow-lg">
-                  {post.layout?.[0]?.blockType === "mediaBlock" &&
-                  post.layout[0].media ? (
-                    <Image
-                      src={getImageUrl(post.layout[0].media, "hero")!}
-                      alt={post.layout[0].media.alt || "Hero Image"}
-                      width={1200}
-                      height={675}
-                      className="w-full aspect-video object-cover"
-                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 100vw, 66vw"
-                      priority
-                      fetchPriority="high"
-                    />
-                  ) : (
-                    <Image
-                      src={getImageUrl(post.heroImage, "hero")!}
-                      alt={post.heroImage?.alt || "Hero Image"}
-                      width={1200}
-                      height={675}
-                      className="w-full aspect-video object-cover"
-                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 100vw, 66vw"
-                      priority
-                      fetchPriority="high"
-                    />
-                  )}
+                  <PostHeroImage
+                    src={heroImageUrl}
+                    alt={
+                      post.layout?.[0]?.blockType === "mediaBlock"
+                        ? post.layout[0].media?.alt || "Hero Image"
+                        : post.heroImage?.alt || "Hero Image"
+                    }
+                    className="w-full aspect-video object-cover"
+                  />
                   {(post.layout?.[0]?.media?.caption ||
                     post.heroImage?.caption) && (
                     <figcaption className="absolute bottom-0 left-0 right-0 bg-black/70 text-white text-sm p-4">
