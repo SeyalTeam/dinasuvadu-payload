@@ -787,10 +787,9 @@ export default async function SubCategoryPostPage({
                         width={1200}
                         height={640}
                         className="w-full aspect-video object-cover rounded-lg shadow-lg"
-                        sizes="(max-width: 1024px) 100vw, 66vw"
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 100vw, 66vw"
                         priority
                         fetchPriority="high"
-                        unoptimized
                       />
                     ) : (
                       <div className="w-full h-64 sm:h-96 bg-gray-100 rounded-lg flex items-center justify-center">

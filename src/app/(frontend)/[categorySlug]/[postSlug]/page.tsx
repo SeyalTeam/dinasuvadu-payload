@@ -924,10 +924,9 @@ export default async function PostOrSubCategoryPage({
                       width={1200}
                       height={675}
                       className="w-full aspect-video object-cover"
-                      sizes="(max-width: 1024px) 100vw, 66vw"
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 100vw, 66vw"
                       priority
                       fetchPriority="high"
-                      unoptimized
                     />
                   ) : (
                     <Image
@@ -936,10 +935,9 @@ export default async function PostOrSubCategoryPage({
                       width={1200}
                       height={675}
                       className="w-full aspect-video object-cover"
-                      sizes="(max-width: 1024px) 100vw, 66vw"
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 100vw, 66vw"
                       priority
                       fetchPriority="high"
-                      unoptimized
                     />
                   )}
                   {(post.layout?.[0]?.media?.caption ||
