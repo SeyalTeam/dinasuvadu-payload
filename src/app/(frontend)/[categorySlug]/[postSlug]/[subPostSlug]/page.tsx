@@ -29,6 +29,15 @@ import {
 } from "@/lib/post-images";
 import { preloadLcpImage } from "@/lib/preload-lcp-image";
 
+const DEBUG_ENDPOINT = "http://127.0.0.1:7344/ingest/92e5850f-f625-4cb5-ae35-900a5437d3dc";
+const DEBUG_SESSION_ID = "06e0e7";
+
+function debugLog(location: string, message: string, data: Record<string, unknown>, runId: string, hypothesisId: string) {
+  // #region agent log
+  fetch(DEBUG_ENDPOINT,{method:"POST",headers:{"Content-Type":"application/json","X-Debug-Session-Id":"06e0e7"},body:JSON.stringify({sessionId:"06e0e7",runId,hypothesisId,location,message,data,timestamp:Date.now()})}).catch(()=>{});
+  // #endregion
+}
+
 function resolvePostDescription(post: Pick<Post, "title" | "meta">): string {
   const metaDescription = post.meta?.description?.trim();
   if (metaDescription) return metaDescription;
@@ -38,6 +47,7 @@ function resolvePostDescription(post: Pick<Post, "title" | "meta">): string {
 // Generate dynamic metadata for subcategory post pages
 export async function generateMetadata({ params }: { params: Promise<{ categorySlug: string; postSlug: string; subPostSlug: string }> }): Promise<Metadata> {
   const { subPostSlug } = await params;
+  const metaStart = Date.now();
   const post = await fetchPost(subPostSlug);
   if (!post) {
     return { title: "Post not found – Dinasuvadu" };
@@ -48,6 +58,13 @@ export async function generateMetadata({ params }: { params: Promise<{ categoryS
   preloadLcpImage(resolvePostHeroImageUrl(post));
   const canonicalPath = await resolveCanonicalPostPath(post, fetchParentCategory);
   const canonical = `https://www.dinasuvadu.com${canonicalPath}`;
+  debugLog(
+    "src/app/(frontend)/[categorySlug]/[postSlug]/[subPostSlug]/page.tsx:generateMetadata",
+    "metadata_ready",
+    { subPostSlug, durationMs: Date.now() - metaStart, hasPost: Boolean(post), canonicalPath },
+    `subpost-meta-${subPostSlug}`,
+    "H5"
+  );
   return buildMetadata({ title, description, imageUrl, type: "article", canonical });
 }
 
@@ -242,6 +259,7 @@ const fetchParentCategory = (parentId: string) => unstable_cache(
 // Fetch a single post by slug
 async function fetchPostRaw(slug: string): Promise<Post | null> {
   try {
+    const startedAt = Date.now();
     const payload = await getPayload({ config });
     const response = await payload.find({
       collection: "posts",
@@ -262,6 +280,13 @@ async function fetchPostRaw(slug: string): Promise<Post | null> {
       limit: 1,
       depth: 1,
     });
+    debugLog(
+      "src/app/(frontend)/[categorySlug]/[postSlug]/[subPostSlug]/page.tsx:fetchPostRaw",
+      "post_query_complete",
+      { slug, durationMs: Date.now() - startedAt, docsCount: response?.docs?.length ?? 0 },
+      `subpost-${slug}`,
+      "H1"
+    );
     return (response.docs[0] as unknown as Post) || null;
   } catch (error) {
     console.error("Error fetching post with slug " + slug + ":", error);
@@ -521,6 +546,14 @@ export default async function SubCategoryPostPage({
   }>;
 }) {
   const { categorySlug, postSlug, subPostSlug } = await params;
+  const runId = `${categorySlug}/${postSlug}/${subPostSlug}`;
+  debugLog(
+    "src/app/(frontend)/[categorySlug]/[postSlug]/[subPostSlug]/page.tsx:entry",
+    "page_entry",
+    { categorySlug, postSlug, subPostSlug },
+    runId,
+    "H4"
+  );
 
   const [post, subCategory] = await Promise.all([
     fetchPost(subPostSlug),
@@ -531,8 +564,16 @@ export default async function SubCategoryPostPage({
   }
 
   const incomingPath = `/${categorySlug}/${postSlug}/${subPostSlug}`;
+  const pathResolveStart = Date.now();
   const validPaths = await resolvePostPathCandidates(post, fetchParentCategory);
   const canonicalPath = await resolveCanonicalPostPath(post, fetchParentCategory);
+  debugLog(
+    "src/app/(frontend)/[categorySlug]/[postSlug]/[subPostSlug]/page.tsx:pathResolve",
+    "path_resolution_complete",
+    { durationMs: Date.now() - pathResolveStart, validPathCount: validPaths.length, canonicalPath },
+    runId,
+    "H2"
+  );
   const isExactPathMatch = validPaths.includes(incomingPath);
   const isTopLevelPostSlugMatch = hasTopLevelAndPostSlugMatch(
     validPaths,
@@ -586,6 +627,13 @@ export default async function SubCategoryPostPage({
   const showUpdated = Boolean(updatedLabel && updatedLabel !== publishedLabel);
   const canonicalUrl = `https://www.dinasuvadu.com${canonicalPath}`;
   const heroImageUrl = resolvePostHeroImageUrl(post);
+  debugLog(
+    "src/app/(frontend)/[categorySlug]/[postSlug]/[subPostSlug]/page.tsx:hero",
+    "hero_resolved",
+    { heroImageUrl, hasHeroImage: Boolean(post.heroImage?.url), contentLength: postContentHtml.length },
+    runId,
+    "H3"
+  );
   preloadLcpImage(heroImageUrl);
   const authorLine =
     (post.populatedAuthors ?? [])
