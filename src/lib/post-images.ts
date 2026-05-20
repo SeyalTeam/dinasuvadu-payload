@@ -20,24 +20,39 @@ type PostWithHero = {
 };
 
 export type HeroImageSources = {
+  /** Smallest variant — fallback for img src */
   src: string;
+  /** Full srcset for desktop */
   srcSet: string;
+  /** Mobile-only srcset (≤640w descriptors) so 2x phones don't pick 900w */
+  mobileSrcSet: string;
   sizes: string;
   width: number;
   height: number;
+  /** URL to preload (largest mobile candidate, typically ~600w) */
+  preloadSrc: string;
 };
 
 /** Payload image size name → display width for srcset */
 const HERO_SRCSET_WIDTHS: Record<string, number> = {
   thumbnail: 300,
   small: 600,
+  square: 500,
   medium: 900,
   large: 1400,
   og: 1200,
   xlarge: 1920,
 };
 
-const HERO_SRCSET_ORDER = ["thumbnail", "small", "medium", "large", "og"] as const;
+const HERO_SRCSET_ORDER = ["thumbnail", "small", "square", "medium", "large", "og"] as const;
+
+const HERO_MOBILE_MAX_WIDTH = 640;
+
+/** WordPress-style uploads: `name-900x506.webp` → width 900 */
+function widthFromUrl(url: string): number | null {
+  const match = url.match(/-(\d{2,4})x\d+\.(?:webp|jpe?g|png|avif)/i);
+  return match ? Number.parseInt(match[1], 10) : null;
+}
 
 const imageVariantSizes: Record<ImageVariant, string[]> = {
   original: [],
@@ -111,46 +126,63 @@ export function resolvePostHeroMedia(post: PostWithHero): PostMedia | null {
   return null;
 }
 
-/** Responsive hero URLs from Payload sizes — mobile gets ~600px, desktop up to 1400px */
+function buildSrcSetEntries(media: PostMedia): { w: number; url: string }[] {
+  const seen = new Set<string>();
+  const entries: { w: number; url: string }[] = [];
+
+  for (const key of HERO_SRCSET_ORDER) {
+    const url = getSizedUrl(media, key);
+    if (!url || seen.has(url)) continue;
+    seen.add(url);
+    const w = widthFromUrl(url) ?? HERO_SRCSET_WIDTHS[key] ?? 0;
+    if (w > 0) entries.push({ w, url });
+  }
+
+  entries.sort((a, b) => a.w - b.w);
+  return entries;
+}
+
+/** Responsive hero URLs from Payload sizes — mobile capped at 600w via `<picture>` */
 export function resolvePostHeroSources(post: PostWithHero): HeroImageSources | null {
   const media = resolvePostHeroMedia(post);
   if (!media) return null;
 
-  const srcSetEntries: { w: number; url: string }[] = [];
-
-  for (const key of HERO_SRCSET_ORDER) {
-    const url = getSizedUrl(media, key);
-    const w = HERO_SRCSET_WIDTHS[key];
-    if (url && w) {
-      srcSetEntries.push({ w, url });
-    }
-  }
-
+  const srcSetEntries = buildSrcSetEntries(media);
   const fallbackUrl = getImageUrl(media, "hero");
+
   if (!srcSetEntries.length && fallbackUrl) {
+    const w = widthFromUrl(fallbackUrl) ?? 900;
     return {
       src: fallbackUrl,
       srcSet: "",
+      mobileSrcSet: "",
       sizes: "(max-width: 991px) 100vw, 66vw",
       width: 1200,
       height: 675,
+      preloadSrc: fallbackUrl,
     };
   }
 
   if (!srcSetEntries.length) return null;
 
-  // Default src: smallest size that is at least ~500px (good for mobile LCP), else first
-  const defaultEntry =
-    srcSetEntries.find((e) => e.w >= 500) ?? srcSetEntries[srcSetEntries.length - 1];
+  const smallest = srcSetEntries[0];
+  const mobileEntries = srcSetEntries.filter((e) => e.w <= HERO_MOBILE_MAX_WIDTH);
+  const preloadEntry =
+    mobileEntries[mobileEntries.length - 1] ?? smallest;
 
   const srcSet = srcSetEntries.map((e) => `${e.url} ${e.w}w`).join(", ");
+  const mobileSrcSet = (mobileEntries.length ? mobileEntries : [smallest])
+    .map((e) => `${e.url} ${e.w}w`)
+    .join(", ");
 
   return {
-    src: defaultEntry.url,
+    src: smallest.url,
     srcSet,
+    mobileSrcSet,
     sizes: "(max-width: 640px) 100vw, (max-width: 991px) 100vw, 66vw",
     width: 1200,
     height: 675,
+    preloadSrc: preloadEntry.url,
   };
 }
 

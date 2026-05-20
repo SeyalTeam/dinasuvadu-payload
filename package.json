@@ -90,10 +90,10 @@
     "typescript": "5.7.3"
   },
   "browserslist": [
-    "chrome >= 90",
-    "firefox >= 90",
-    "safari >= 14",
-    "edge >= 90"
+    "last 2 Chrome versions",
+    "last 2 Firefox versions",
+    "last 2 Safari versions",
+    "last 2 Edge versions"
   ],
   "engines": {
     "node": "^18.20.2 || >=20.9.0",

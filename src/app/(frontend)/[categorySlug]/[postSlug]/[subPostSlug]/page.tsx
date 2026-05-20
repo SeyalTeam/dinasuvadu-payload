@@ -47,7 +47,7 @@ export async function generateMetadata({ params }: { params: Promise<{ categoryS
   const imageUrl = resolvePostOgImageUrl(post) || undefined;
   const canonicalPath = await resolveCanonicalPostPath(post, fetchParentCategory);
   const canonical = `https://www.dinasuvadu.com${canonicalPath}`;
-  preloadLcpImage(resolvePostHeroSources(post)?.src);
+  preloadLcpImage(resolvePostHeroSources(post));
   return buildMetadata({ title, description, imageUrl, type: "article", canonical });
 }
 
@@ -261,6 +261,20 @@ async function fetchPostRaw(slug: string): Promise<Post | null> {
       },
       limit: 1,
       depth: 1,
+      select: {
+        id: true,
+        slug: true,
+        title: true,
+        content: true,
+        layout: true,
+        heroImage: true,
+        meta: true,
+        categories: true,
+        populatedAuthors: true,
+        publishedAt: true,
+        updatedAt: true,
+        tags: true,
+      },
     });
     return (response.docs[0] as unknown as Post) || null;
   } catch (error) {
@@ -274,6 +288,20 @@ const fetchPost = (slug: string) => unstable_cache(
   ["subpost-route-post-by-slug", slug],
   { revalidate: 300 }
 )();
+
+async function resolvePostPathsForPage(post: Post) {
+  return unstable_cache(
+    async () => {
+      const [validPaths, canonicalPath] = await Promise.all([
+        resolvePostPathCandidates(post, fetchParentCategory),
+        resolveCanonicalPostPath(post, fetchParentCategory),
+      ]);
+      return { validPaths, canonicalPath };
+    },
+    ["subpost-route-paths", String(post.id)],
+    { revalidate: 300 }
+  )();
+}
 
 // Fetch the latest posts (excluding the current post)
 async function fetchLatestPostsRaw(currentPostSlug: string): Promise<Post[]> {
@@ -531,8 +559,7 @@ export default async function SubCategoryPostPage({
   }
 
   const incomingPath = `/${categorySlug}/${postSlug}/${subPostSlug}`;
-  const validPaths = await resolvePostPathCandidates(post, fetchParentCategory);
-  const canonicalPath = await resolveCanonicalPostPath(post, fetchParentCategory);
+  const { validPaths, canonicalPath } = await resolvePostPathsForPage(post);
   const isExactPathMatch = validPaths.includes(incomingPath);
   const isTopLevelPostSlugMatch = hasTopLevelAndPostSlugMatch(
     validPaths,
@@ -586,7 +613,7 @@ export default async function SubCategoryPostPage({
   const showUpdated = Boolean(updatedLabel && updatedLabel !== publishedLabel);
   const canonicalUrl = `https://www.dinasuvadu.com${canonicalPath}`;
   const heroSources = resolvePostHeroSources(post);
-  preloadLcpImage(heroSources?.src);
+  preloadLcpImage(heroSources);
   const authorLine =
     (post.populatedAuthors ?? [])
       .map((author) => author?.name)
