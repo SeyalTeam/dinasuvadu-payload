@@ -1,39 +1,27 @@
-import Image from "next/image";
-
-const CDN_HOST = "media.dinasuvadu.com";
+import type { HeroImageSources } from "@/lib/post-images";
 
 type PostHeroImageProps = {
-  src: string;
+  sources: HeroImageSources;
   alt: string;
-  width?: number;
-  height?: number;
   className?: string;
 };
 
 /**
- * LCP hero image: loads pre-sized CDN assets directly (skips /_next/image)
- * when the source is already on media.dinasuvadu.com.
+ * LCP hero: native img with Payload srcset (CDN direct, no /_next/image hop).
  */
-export function PostHeroImage({
-  src,
-  alt,
-  width = 1200,
-  height = 675,
-  className,
-}: PostHeroImageProps) {
-  const useCdnDirect = src.includes(CDN_HOST);
-
+export function PostHeroImage({ sources, alt, className }: PostHeroImageProps) {
   return (
-    <Image
-      src={src}
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={sources.src}
+      srcSet={sources.srcSet || undefined}
+      sizes={sources.sizes}
       alt={alt}
-      width={width}
-      height={height}
+      width={sources.width}
+      height={sources.height}
       className={className ?? "w-full h-full object-cover"}
-      sizes="(max-width: 991px) 100vw, 66vw"
-      priority
+      decoding="async"
       fetchPriority="high"
-      unoptimized={useCdnDirect}
     />
   );
 }

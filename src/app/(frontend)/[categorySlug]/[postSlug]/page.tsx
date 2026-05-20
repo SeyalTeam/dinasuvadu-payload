@@ -15,7 +15,7 @@ import PostBottomInteraction from "@/components/PostBottomInteraction";
 import { PostHeroImage } from "@/components/PostHeroImage";
 import {
   getImageUrl,
-  resolvePostHeroImageUrl,
+  resolvePostHeroSources,
   resolvePostOgImageUrl,
 } from "@/lib/post-images";
 import { preloadLcpImage } from "@/lib/preload-lcp-image";
@@ -34,15 +34,6 @@ import {
   stripHtml, 
   estimateReadTimeMinutes 
 } from "@/utilities/readingTime";
-
-const DEBUG_ENDPOINT = "http://127.0.0.1:7344/ingest/92e5850f-f625-4cb5-ae35-900a5437d3dc";
-const DEBUG_SESSION_ID = "06e0e7";
-
-function debugLog(location: string, message: string, data: Record<string, unknown>, runId: string, hypothesisId: string) {
-  // #region agent log
-  fetch(DEBUG_ENDPOINT,{method:"POST",headers:{"Content-Type":"application/json","X-Debug-Session-Id":"06e0e7"},body:JSON.stringify({sessionId:"06e0e7",runId,hypothesisId,location,message,data,timestamp:Date.now()})}).catch(()=>{});
-  // #endregion
-}
 
 // Type definitions
 type RichTextChild = {
@@ -250,7 +241,6 @@ const fetchParentCategory = (parentId: string) => unstable_cache(
 // Fetch a single post by slug
 async function fetchPostRaw(slug: string): Promise<Post | null> {
   try {
-    const startedAt = Date.now();
     const payload = await getPayload({ config });
     const response = await payload.find({
       collection: "posts",
@@ -271,13 +261,6 @@ async function fetchPostRaw(slug: string): Promise<Post | null> {
       limit: 1,
       depth: 1,
     });
-    debugLog(
-      "src/app/(frontend)/[categorySlug]/[postSlug]/page.tsx:fetchPostRaw",
-      "post_query_complete",
-      { slug, durationMs: Date.now() - startedAt, docsCount: response?.docs?.length ?? 0 },
-      `post-${slug}`,
-      "H1"
-    );
     return (response?.docs?.[0] as unknown as Post) || null;
   } catch (error) {
     console.error(`Error fetching post with slug ${slug}:`, error);
@@ -323,7 +306,7 @@ export async function generateMetadata({ params }: { params: Promise<{ categoryS
   const title = post.title;
   const description = resolvePostDescription(post);
   const imageUrl = resolvePostOgImageUrl(post) || undefined;
-  preloadLcpImage(resolvePostHeroImageUrl(post));
+  preloadLcpImage(resolvePostHeroSources(post)?.src);
   const canonical = `https://www.dinasuvadu.com${canonicalPath}`;
   return buildMetadata({ title, description, imageUrl, type: "article", canonical });
 }
@@ -585,14 +568,6 @@ export default async function PostOrSubCategoryPage({
   params: Promise<{ categorySlug: string; postSlug: string }>;
 }) {
   const { categorySlug, postSlug } = await params;
-  const runId = `${categorySlug}/${postSlug}`;
-  debugLog(
-    "src/app/(frontend)/[categorySlug]/[postSlug]/page.tsx:entry",
-    "page_entry",
-    { categorySlug, postSlug },
-    runId,
-    "H2"
-  );
   const looksLikeArticleSlug = /-\d+$/.test(normalizeSlug(postSlug));
   const page = 1;
   const limit = 10;
@@ -721,16 +696,8 @@ export default async function PostOrSubCategoryPage({
   }
 
   const incomingPath = `/${categorySlug}/${postSlug}`;
-  const pathResolveStart = Date.now();
   const validPaths = await resolvePostPathCandidates(post, fetchParentCategory);
   const canonicalPath = await resolveCanonicalPostPath(post, fetchParentCategory);
-  debugLog(
-    "src/app/(frontend)/[categorySlug]/[postSlug]/page.tsx:pathResolve",
-    "path_resolution_complete",
-    { durationMs: Date.now() - pathResolveStart, validPathCount: validPaths.length, canonicalPath },
-    runId,
-    "H2"
-  );
   const isExactPathMatch = validPaths.includes(incomingPath);
   const isLegacyTopLevelAlias = hasTopLevelAliasMatch(
     validPaths,
@@ -765,15 +732,8 @@ export default async function PostOrSubCategoryPage({
   const updatedLabel = formatNewsTimestamp(post.updatedAt || post.publishedAt);
   const showUpdated = Boolean(updatedLabel);
   const canonicalUrl = `https://www.dinasuvadu.com${canonicalPath}`;
-  const heroImageUrl = resolvePostHeroImageUrl(post);
-  debugLog(
-    "src/app/(frontend)/[categorySlug]/[postSlug]/page.tsx:hero",
-    "hero_resolved",
-    { heroImageUrl, hasLayoutHero: post.layout?.[0]?.blockType === "mediaBlock", hasHeroImage: Boolean(post.heroImage?.url) },
-    runId,
-    "H3"
-  );
-  preloadLcpImage(heroImageUrl);
+  const heroSources = resolvePostHeroSources(post);
+  preloadLcpImage(heroSources?.src);
   const authorLine =
     (post.populatedAuthors ?? [])
       .map((author) => author?.name)
@@ -805,12 +765,12 @@ export default async function PostOrSubCategoryPage({
         <article className="single-post-main">
           <ArticleFontScaleScript />
 
-          {heroImageUrl ? (
+          {heroSources ? (
             <div className="single-post-hero-wrap">
               <figure className="mb-0">
                 <div className="single-post-hero-media md:rounded-lg md:shadow-lg">
                   <PostHeroImage
-                    src={heroImageUrl}
+                    sources={heroSources}
                     alt={
                       post.layout?.[0]?.blockType === "mediaBlock"
                         ? post.layout[0].media?.alt || "Hero Image"

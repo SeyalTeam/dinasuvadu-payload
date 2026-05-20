@@ -6,9 +6,11 @@ export type PostMedia = {
   url?: string;
   filename?: string;
   prefix?: string;
-  sizes?: Record<string, { url?: string }>;
+  sizes?: Record<string, { url?: string; width?: number; height?: number }>;
   alt?: string;
   caption?: string;
+  width?: number;
+  height?: number;
 };
 
 type PostWithHero = {
@@ -17,10 +19,30 @@ type PostWithHero = {
   meta?: { image?: PostMedia };
 };
 
+export type HeroImageSources = {
+  src: string;
+  srcSet: string;
+  sizes: string;
+  width: number;
+  height: number;
+};
+
+/** Payload image size name → display width for srcset */
+const HERO_SRCSET_WIDTHS: Record<string, number> = {
+  thumbnail: 300,
+  small: 600,
+  medium: 900,
+  large: 1400,
+  og: 1200,
+  xlarge: 1920,
+};
+
+const HERO_SRCSET_ORDER = ["thumbnail", "small", "medium", "large", "og"] as const;
+
 const imageVariantSizes: Record<ImageVariant, string[]> = {
   original: [],
   og: ["og", "large", "xlarge", "medium"],
-  hero: ["medium", "large", "og", "small", "xlarge"],
+  hero: ["small", "medium", "large", "og"],
   content: ["medium", "small", "large", "xlarge"],
   card: ["small", "medium", "thumbnail", "large"],
   thumb: ["thumbnail", "small", "medium"],
@@ -42,6 +64,12 @@ function toAbsoluteImageUrl(path: string): string {
   return `${apiUrl}${cleanPath}`;
 }
 
+function getSizedUrl(media: PostMedia, sizeKey: string): string | null {
+  const sizedUrl = media.sizes?.[sizeKey]?.url;
+  if (sizedUrl) return toAbsoluteImageUrl(sizedUrl);
+  return null;
+}
+
 export function getImageUrl(
   media: PostMedia | string | null | undefined,
   variant: ImageVariant = "original"
@@ -52,10 +80,8 @@ export function getImageUrl(
     const sizeOrder = imageVariantSizes[variant] || [];
 
     for (const sizeKey of sizeOrder) {
-      const sizedUrl = media.sizes?.[sizeKey]?.url;
-      if (sizedUrl) {
-        return toAbsoluteImageUrl(sizedUrl);
-      }
+      const sizedUrl = getSizedUrl(media, sizeKey);
+      if (sizedUrl) return sizedUrl;
     }
 
     const sizeEntries = Object.values(media.sizes);
@@ -85,11 +111,54 @@ export function resolvePostHeroMedia(post: PostWithHero): PostMedia | null {
   return null;
 }
 
+/** Responsive hero URLs from Payload sizes — mobile gets ~600px, desktop up to 1400px */
+export function resolvePostHeroSources(post: PostWithHero): HeroImageSources | null {
+  const media = resolvePostHeroMedia(post);
+  if (!media) return null;
+
+  const srcSetEntries: { w: number; url: string }[] = [];
+
+  for (const key of HERO_SRCSET_ORDER) {
+    const url = getSizedUrl(media, key);
+    const w = HERO_SRCSET_WIDTHS[key];
+    if (url && w) {
+      srcSetEntries.push({ w, url });
+    }
+  }
+
+  const fallbackUrl = getImageUrl(media, "hero");
+  if (!srcSetEntries.length && fallbackUrl) {
+    return {
+      src: fallbackUrl,
+      srcSet: "",
+      sizes: "(max-width: 991px) 100vw, 66vw",
+      width: 1200,
+      height: 675,
+    };
+  }
+
+  if (!srcSetEntries.length) return null;
+
+  // Default src: smallest size that is at least ~500px (good for mobile LCP), else first
+  const defaultEntry =
+    srcSetEntries.find((e) => e.w >= 500) ?? srcSetEntries[srcSetEntries.length - 1];
+
+  const srcSet = srcSetEntries.map((e) => `${e.url} ${e.w}w`).join(", ");
+
+  return {
+    src: defaultEntry.url,
+    srcSet,
+    sizes: "(max-width: 640px) 100vw, (max-width: 991px) 100vw, 66vw",
+    width: 1200,
+    height: 675,
+  };
+}
+
 export function resolvePostHeroImageUrl(
   post: PostWithHero,
   variant: ImageVariant = "hero"
 ): string | null {
-  return getImageUrl(resolvePostHeroMedia(post), variant);
+  return resolvePostHeroSources(post)?.src ?? getImageUrl(resolvePostHeroMedia(post), variant);
 }
 
 export function resolvePostOgImageUrl(post: PostWithHero): string | null {
