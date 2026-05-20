@@ -1,6 +1,7 @@
-export const revalidate = 10; // Revalidate every 60 seconds
+export const revalidate = 300; // ISR: avoid rebuilding heavy homepage every few seconds
 import Link from "next/link";
 import Image from "next/image";
+import { unstable_cache } from "next/cache";
 import { getPayload } from "payload";
 import config from "@/payload.config";
 import type { Metadata } from "next";
@@ -41,8 +42,7 @@ type Post = {
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 
-// Fetch categories
-async function fetchCategories(): Promise<Category[]> {
+async function fetchCategoriesRaw(): Promise<Category[]> {
   try {
     const payload = await getPayload({ config });
     const res = await payload.find({
@@ -50,16 +50,17 @@ async function fetchCategories(): Promise<Category[]> {
       limit: 100,
       depth: 2,
     });
-    const categories = (res.docs as unknown as Category[]) || [];
-    return categories;
+    return (res.docs as unknown as Category[]) || [];
   } catch (err) {
     console.error("Error fetching categories:", err);
     return [];
   }
 }
 
-// Fetch latest posts
-async function fetchLatestPosts(): Promise<Post[]> {
+const fetchCategories = () =>
+  unstable_cache(fetchCategoriesRaw, ["homepage-categories"], { revalidate: 300 })();
+
+async function fetchLatestPostsRaw(): Promise<Post[]> {
   try {
     const payload = await getPayload({ config });
     const res = await payload.find({
@@ -75,12 +76,13 @@ async function fetchLatestPosts(): Promise<Post[]> {
   }
 }
 
-// Fetch posts by category
-async function fetchPostsByCategory(categoryId: string): Promise<Post[]> {
+const fetchLatestPosts = () =>
+  unstable_cache(fetchLatestPostsRaw, ["homepage-latest-posts"], { revalidate: 300 })();
+
+async function fetchPostsByCategoryRaw(categoryId: string): Promise<Post[]> {
   try {
     const payload = await getPayload({ config });
 
-    // Fetch child categories to include their posts in the parent view
     const childrenRes = await payload.find({
       collection: "categories",
       where: {
@@ -92,7 +94,7 @@ async function fetchPostsByCategory(categoryId: string): Promise<Post[]> {
       limit: 100,
     });
 
-    const childIds = childrenRes.docs.map((c: any) => c.id);
+    const childIds = childrenRes.docs.map((c: { id: string }) => c.id);
     const allCategoryIds = [categoryId, ...childIds];
 
     const res = await payload.find({
@@ -112,6 +114,13 @@ async function fetchPostsByCategory(categoryId: string): Promise<Post[]> {
     return [];
   }
 }
+
+const fetchPostsByCategory = (categoryId: string) =>
+  unstable_cache(
+    async () => fetchPostsByCategoryRaw(categoryId),
+    ["homepage-category-posts", categoryId],
+    { revalidate: 300 }
+  )();
 
 // Fetch parent category details by ID
 async function fetchParentCategory(
@@ -223,6 +232,15 @@ export default async function Home() {
 
   const latestPosts = await fetchLatestPosts();
 
+  const postsByCategoryId = new Map(
+    await Promise.all(
+      sortedCategories.map(async (category) => {
+        const posts = await fetchPostsByCategory(category.id);
+        return [category.id, posts] as const;
+      })
+    )
+  );
+
   const featuredPost = latestPosts.length > 0 ? latestPosts[0] : null;
   const smallerPosts = latestPosts.length > 1 ? latestPosts.slice(1, 4) : [];
   const nextFivePosts = latestPosts.length > 4 ? latestPosts.slice(4, 9) : [];
@@ -324,7 +342,7 @@ export default async function Home() {
         {/* Mobile Category Sections */}
         {await Promise.all(
           sortedCategories.map(async (category) => {
-            const posts = await fetchPostsByCategory(category.id);
+            const posts = postsByCategoryId.get(category.id) ?? [];
             if (posts.length === 0) return null;
 
             let categoryLink = `/${category.slug}`;
@@ -494,7 +512,7 @@ export default async function Home() {
         {sortedCategories.length > 0 && (
           await Promise.all(
             sortedCategories.map(async (category) => {
-              const posts = await fetchPostsByCategory(category.id);
+              const posts = postsByCategoryId.get(category.id) ?? [];
               if (posts.length === 0) return null;
 
               const categoryFeaturedPost = posts.length > 0 ? posts[0] : null;
