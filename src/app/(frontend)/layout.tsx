@@ -6,15 +6,13 @@ import { HeaderFallback } from "@/components/HeaderFallback";
 import Footer from "@/components/Footer";
 import Script from "next/script";
 import { Mukta_Malar } from "next/font/google";
-import dynamic from "next/dynamic";
-const CommentDrawer = dynamic(() => import("@/components/CommentDrawer").then(mod => mod.CommentDrawer));
-const LoginModal = dynamic(() => import("@/components/LoginModal").then(mod => mod.LoginModal));
+import { ModalsContainer } from "@/components/ModalsContainer";
 import { Providers } from "@/providers";
 
 const muktaMalar = Mukta_Malar({
   subsets: ["tamil", "latin"],
   // Keep only commonly used weights to reduce initial font preload pressure.
-  weight: ["400", "500", "700", "800"],
+  weight: ["400", "700"],
   display: "swap",
   variable: "--font-mukta-malar",
 });
@@ -42,8 +40,7 @@ export default function RootLayout({
             <HeaderWithCategories />
           </Suspense>
           <main id="main-content">{children}</main>
-          <CommentDrawer />
-          <LoginModal />
+          <ModalsContainer />
           <Footer />
         </Providers>
         {/* Google Analytics GA4 */}

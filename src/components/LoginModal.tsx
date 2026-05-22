@@ -1,5 +1,6 @@
 'use client';
 
+import './LoginModal.css';
 import React, { useState, useEffect } from 'react';
 import { X, Mail, User, Lock, Smartphone, RefreshCw, Eye, EyeOff } from 'lucide-react';
 import { useLoginModal } from '@/providers/LoginModal';

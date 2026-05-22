@@ -1,5 +1,6 @@
 'use client';
 
+import './CommentDrawer.css';
 import React, { useState } from 'react';
 import { X, MessageSquare, ChevronDown, Info, ArrowUp } from 'lucide-react';
 import { useCommentDrawer } from '@/providers/CommentDrawer';
