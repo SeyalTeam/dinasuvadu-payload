@@ -18,7 +18,6 @@ import {
   resolvePostHeroSources,
   resolvePostOgImageUrl,
 } from "@/lib/post-images";
-import { preloadLcpImage } from "@/lib/preload-lcp-image";
 import { getPayload } from "payload";
 import config from "@/payload.config";
 import { buildMetadata, buildBreadcrumbLd, buildArticleLd } from "@/lib/seo";
@@ -309,7 +308,6 @@ export async function generateMetadata({ params }: { params: Promise<{ categoryS
   const title = post.title;
   const description = resolvePostDescription(post);
   const imageUrl = resolvePostOgImageUrl(post) || undefined;
-  preloadLcpImage(resolvePostHeroSources(post));
   const canonical = `https://www.dinasuvadu.com${canonicalPath}`;
   return buildMetadata({ title, description, imageUrl, type: "article", canonical });
 }
@@ -736,7 +734,6 @@ export default async function PostOrSubCategoryPage({
   const showUpdated = Boolean(updatedLabel);
   const canonicalUrl = `https://www.dinasuvadu.com${canonicalPath}`;
   const heroSources = resolvePostHeroSources(post);
-  preloadLcpImage(heroSources);
   const authorLine =
     (post.populatedAuthors ?? [])
       .map((author) => author?.name)

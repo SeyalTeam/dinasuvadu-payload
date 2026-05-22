@@ -31,6 +31,8 @@ export type HeroImageSources = {
   height: number;
   /** URL to preload (largest mobile candidate, typically ~600w) */
   preloadSrc: string;
+  /** Original high-resolution image URL for next/image dynamic resizing */
+  originalUrl?: string;
 };
 
 /** Payload image size name → display width for srcset */
@@ -149,6 +151,7 @@ export function resolvePostHeroSources(post: PostWithHero): HeroImageSources | n
 
   const srcSetEntries = buildSrcSetEntries(media);
   const fallbackUrl = getImageUrl(media, "hero");
+  const originalUrl = getImageUrl(media, "original") || fallbackUrl || undefined;
 
   if (!srcSetEntries.length && fallbackUrl) {
     const w = widthFromUrl(fallbackUrl) ?? 900;
@@ -160,6 +163,7 @@ export function resolvePostHeroSources(post: PostWithHero): HeroImageSources | n
       width: 1200,
       height: 675,
       preloadSrc: fallbackUrl,
+      originalUrl,
     };
   }
 
@@ -183,6 +187,7 @@ export function resolvePostHeroSources(post: PostWithHero): HeroImageSources | n
     width: 1200,
     height: 675,
     preloadSrc: preloadEntry.url,
+    originalUrl,
   };
 }
 

@@ -1,3 +1,4 @@
+import Image from "next/image";
 import type { HeroImageSources } from "@/lib/post-images";
 
 type PostHeroImageProps = {
@@ -7,30 +8,21 @@ type PostHeroImageProps = {
 };
 
 /**
- * LCP hero: native img with Payload srcset (CDN direct, no /_next/image hop).
+ * LCP hero: standard Next.js Image component for on-the-fly resizing and optimization.
  */
 export function PostHeroImage({ sources, alt, className }: PostHeroImageProps) {
   const imgClass = className ?? "w-full h-full object-cover";
 
   return (
-    <picture>
-      {sources.mobileSrcSet ? (
-        <source
-          media="(max-width: 640px)"
-          srcSet={sources.mobileSrcSet}
-          sizes="100vw"
-        />
-      ) : null}
-      <img
-        src={sources.src}
-        srcSet={sources.srcSet || undefined}
-        sizes={sources.sizes}
-        alt={alt}
-        width={sources.width}
-        height={sources.height}
-        className={imgClass}
-        fetchPriority="high"
-      />
-    </picture>
+    <Image
+      src={sources.originalUrl || sources.src}
+      alt={alt}
+      width={sources.width}
+      height={sources.height}
+      className={imgClass}
+      sizes="(max-width: 640px) 100vw, (max-width: 991px) 100vw, 66vw"
+      priority
+      fetchPriority="high"
+    />
   );
 }
