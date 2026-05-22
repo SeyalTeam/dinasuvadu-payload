@@ -112,6 +112,17 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  webpack: (config, { webpack, isServer }) => {
+    if (!isServer) {
+      config.plugins.push(
+        new webpack.NormalModuleReplacementPlugin(
+          /next[\\/]dist[\\/]build[\\/]polyfills[\\/]polyfill-module\.js$/,
+          path.resolve(dirname, './src/empty-polyfill.js')
+        )
+      )
+    }
+    return config
+  },
 }
 
 
