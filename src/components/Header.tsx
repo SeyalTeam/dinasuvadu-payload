@@ -148,55 +148,39 @@ export default function Header({ categories, homepageCategories }: HeaderProps) 
       }
 
       const container = navContainerRef.current;
+      // Read clientWidth only once — no writes before this read, so no forced reflow
       const containerWidth = container.parentElement?.clientWidth || container.clientWidth;
       
       // Buffer for "முகப்பு" + Navigation icon + Actions + Padding (approx 195px)
       const availableWidth = containerWidth - 195; 
 
+      // Use canvas.measureText instead of DOM insertion to avoid forced reflow
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      ctx.font = '800 13.5px "Mukta Malar", sans-serif';
+
       let currentWidth = 0;
       let newVisibleCount = 0;
 
-      // Batch DOM insertions to prevent sequential reflows
-      const fragment = document.createDocumentFragment();
-      const testDivs: HTMLDivElement[] = [];
-
       for (let i = 0; i < sortedParents.length; i++) {
         const parentRef = sortedParents[i];
         if (!parentRef) continue;
 
-        const testDiv = document.createElement('div');
-        testDiv.style.visibility = 'hidden';
-        testDiv.style.position = 'absolute';
-        testDiv.style.whiteSpace = 'nowrap';
-        testDiv.style.font = '800 13.5px "Mukta Malar", sans-serif'; 
-        testDiv.innerText = parentRef.title;
-        fragment.appendChild(testDiv);
-        testDivs.push(testDiv);
-      }
-
-      document.body.appendChild(fragment);
-
-      for (let i = 0; i < sortedParents.length; i++) {
-        const parentRef = sortedParents[i];
-        if (!parentRef) continue;
-
-        const testDiv = testDivs[i];
         const hasSub = getSubcategories(parentRef.id).length > 0;
-        const itemWidth = testDiv.offsetWidth + 25 + (hasSub ? 15 : 0); 
+        const textWidth = Math.ceil(ctx.measureText(parentRef.title).width);
+        const itemWidth = textWidth + 25 + (hasSub ? 15 : 0);
         
         const isLast = i === sortedParents.length - 1;
         const moreBuffer = isLast ? 0 : 45;
         
         if (currentWidth + itemWidth + moreBuffer > availableWidth) {
-           break;
+          break;
         }
         
         currentWidth += itemWidth;
         newVisibleCount++;
       }
-
-      // Clean up DOM
-      testDivs.forEach(div => div.remove());
       
       setVisibleCount(newVisibleCount);
     };
