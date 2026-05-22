@@ -31,8 +31,11 @@ import { preloadLcpImage } from "@/lib/preload-lcp-image";
 
 function resolvePostDescription(post: Pick<Post, "title" | "meta">): string {
   const metaDescription = post.meta?.description?.trim();
-  if (metaDescription) return metaDescription;
-  return `Read ${post.title} and the latest updates on Dinasuvadu.`;
+  if (metaDescription && metaDescription.length > 50) return metaDescription;
+  
+  // Create a richer fallback description if the meta description is missing or too short
+  const fallback = `${post.title} - Get the latest Tamil news updates, breaking news, in-depth analysis, and exclusive reports on cinema, and sports from Tamil Nadu and across the globe on Dinasuvadu.`;
+  return fallback.slice(0, 160);
 }
 
 // Generate dynamic metadata for subcategory post pages
@@ -40,7 +43,10 @@ export async function generateMetadata({ params }: { params: Promise<{ categoryS
   const { subPostSlug } = await params;
   const post = await fetchPost(subPostSlug);
   if (!post) {
-    return { title: "Post not found – Dinasuvadu" };
+    return buildMetadata({
+      title: "Post not found – Dinasuvadu",
+      description: "Dinasuvadu - Tamil news portal. The requested post could not be found.",
+    });
   }
   const title = post.title;
   const description = resolvePostDescription(post);
