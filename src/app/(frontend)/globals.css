@@ -3360,3 +3360,11 @@ a:hover {
   color: #333;
   margin-top: 4px;
 }
+
+/* Google Discover Indexing Visibility Helper */
+article,
+.single-post-main,
+.site-main {
+  content-visibility: visible !important;
+}
+

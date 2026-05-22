@@ -21,7 +21,6 @@ export function PostHeroImage({ sources, alt, className }: PostHeroImageProps) {
           sizes="100vw"
         />
       ) : null}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={sources.src}
         srcSet={sources.srcSet || undefined}
@@ -30,7 +29,6 @@ export function PostHeroImage({ sources, alt, className }: PostHeroImageProps) {
         width={sources.width}
         height={sources.height}
         className={imgClass}
-        decoding="async"
         fetchPriority="high"
       />
     </picture>

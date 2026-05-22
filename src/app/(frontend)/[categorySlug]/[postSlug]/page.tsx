@@ -299,7 +299,10 @@ export async function generateMetadata({ params }: { params: Promise<{ categoryS
   // Fallback to checking for a single post
   const post = await fetchPost(postSlug);
   if (!post) {
-    return { title: "Post not found – Dinasuvadu" };
+    return buildMetadata({
+      title: "Post not found – Dinasuvadu",
+      description: "Dinasuvadu - Tamil news portal. The requested post could not be found.",
+    });
   }
 
   const canonicalPath = await resolveCanonicalPostPath(post, fetchParentCategory);
