@@ -20,7 +20,7 @@ export function PostHeroImage({ sources, alt, className }: PostHeroImageProps) {
       width={sources.width}
       height={sources.height}
       className={imgClass}
-      sizes="(max-width: 640px) 100vw, (max-width: 991px) 100vw, 66vw"
+      sizes="(max-width: 640px) 85vw, (max-width: 991px) 100vw, 66vw"
       priority
       fetchPriority="high"
     />

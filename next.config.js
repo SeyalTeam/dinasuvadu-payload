@@ -69,6 +69,7 @@ const nextConfig = {
   outputFileTracingRoot: path.join(dirname, './'),
   images: {
     remotePatterns: imageRemotePatterns,
+    deviceSizes: [480, 576, 640, 750, 828, 1080, 1200, 1920, 2048, 3840],
   },
   reactStrictMode: true,
   redirects,
