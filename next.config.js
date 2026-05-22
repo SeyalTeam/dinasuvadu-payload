@@ -63,6 +63,9 @@ const securityHeaders = [
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  experimental: {
+    inlineCss: true,
+  },
   outputFileTracingRoot: path.join(dirname, './'),
   images: {
     remotePatterns: imageRemotePatterns,
