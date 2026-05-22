@@ -655,30 +655,6 @@ export default async function SubCategoryPostPage({
         <article className="single-post-main">
           <ArticleFontScaleScript />
 
-          {heroSources ? (
-            <div className="single-post-hero-wrap">
-              <figure className="mb-0">
-                <div className="single-post-hero-media md:rounded-lg md:shadow-lg">
-                  <PostHeroImage
-                    sources={heroSources}
-                    alt={post.heroImage?.alt || "Hero Image"}
-                  />
-                  {post.heroImage?.caption && (
-                    <figcaption className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent text-white text-sm p-4 rounded-b-lg">
-                      {post.heroImage.caption}
-                    </figcaption>
-                  )}
-                </div>
-              </figure>
-              <PostImageActions
-                url={canonicalUrl}
-                title={post.title}
-                postSlug={subPostSlug}
-                description={post.meta?.description}
-              />
-            </div>
-          ) : null}
-
           <header className="single-post-header-card">
             <nav aria-label="Breadcrumb" className="single-post-breadcrumbs">
               <div className="flex items-center space-x-2 breadcrumbs">
@@ -776,6 +752,30 @@ export default async function SubCategoryPostPage({
               </div>
             </div>
           </header>
+
+          {heroSources ? (
+            <div className="single-post-hero-wrap">
+              <figure className="mb-0">
+                <div className="single-post-hero-media md:rounded-lg md:shadow-lg">
+                  <PostHeroImage
+                    sources={heroSources}
+                    alt={post.heroImage?.alt || "Hero Image"}
+                  />
+                  {post.heroImage?.caption && (
+                    <figcaption className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent text-white text-sm p-4 rounded-b-lg">
+                      {post.heroImage.caption}
+                    </figcaption>
+                  )}
+                </div>
+              </figure>
+              <PostImageActions
+                url={canonicalUrl}
+                title={post.title}
+                postSlug={subPostSlug}
+                description={post.meta?.description}
+              />
+            </div>
+          ) : null}
 
           <div className="single-post-body">
           {/* Post Content */}

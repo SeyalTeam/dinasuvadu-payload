@@ -765,36 +765,6 @@ export default async function PostOrSubCategoryPage({
         <article className="single-post-main">
           <ArticleFontScaleScript />
 
-          {heroSources ? (
-            <div className="single-post-hero-wrap">
-              <figure className="mb-0">
-                <div className="single-post-hero-media md:rounded-lg md:shadow-lg">
-                  <PostHeroImage
-                    sources={heroSources}
-                    alt={
-                      post.layout?.[0]?.blockType === "mediaBlock"
-                        ? post.layout[0].media?.alt || "Hero Image"
-                        : post.heroImage?.alt || "Hero Image"
-                    }
-                  />
-                  {(post.layout?.[0]?.media?.caption ||
-                    post.heroImage?.caption) && (
-                    <figcaption className="absolute bottom-0 left-0 right-0 bg-black/70 text-white text-sm p-4">
-                      {post.layout?.[0]?.media?.caption ||
-                        post.heroImage?.caption}
-                    </figcaption>
-                  )}
-                </div>
-              </figure>
-              <PostImageActions
-                url={canonicalUrl}
-                title={post.title}
-                postSlug={postSlug}
-                description={post.meta?.description}
-              />
-            </div>
-          ) : null}
-
           <header className="single-post-header-card">
             <nav aria-label="Breadcrumb" className="single-post-breadcrumbs">
               <div className="flex items-center space-x-2 breadcrumbs">
@@ -881,6 +851,36 @@ export default async function PostOrSubCategoryPage({
               </div>
             </div>
           </header>
+
+          {heroSources ? (
+            <div className="single-post-hero-wrap">
+              <figure className="mb-0">
+                <div className="single-post-hero-media md:rounded-lg md:shadow-lg">
+                  <PostHeroImage
+                    sources={heroSources}
+                    alt={
+                      post.layout?.[0]?.blockType === "mediaBlock"
+                        ? post.layout[0].media?.alt || "Hero Image"
+                        : post.heroImage?.alt || "Hero Image"
+                    }
+                  />
+                  {(post.layout?.[0]?.media?.caption ||
+                    post.heroImage?.caption) && (
+                    <figcaption className="absolute bottom-0 left-0 right-0 bg-black/70 text-white text-sm p-4">
+                      {post.layout?.[0]?.media?.caption ||
+                        post.heroImage?.caption}
+                    </figcaption>
+                  )}
+                </div>
+              </figure>
+              <PostImageActions
+                url={canonicalUrl}
+                title={post.title}
+                postSlug={postSlug}
+                description={post.meta?.description}
+              />
+            </div>
+          ) : null}
 
           <div className="single-post-body">
           {/* Hero Rich Text */}

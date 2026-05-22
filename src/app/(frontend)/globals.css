@@ -278,20 +278,6 @@ img {
   object-fit: cover;
 }
 
-/* Desktop: title above hero (mobile DOM has hero first for LCP) */
-@media (min-width: 992px) {
-  .single-post-header-card {
-    order: 1;
-  }
-
-  .single-post-hero-wrap {
-    order: 2;
-  }
-
-  .single-post-body {
-    order: 3;
-  }
-}
 
 @media (max-width: 768px) {
   .site,
