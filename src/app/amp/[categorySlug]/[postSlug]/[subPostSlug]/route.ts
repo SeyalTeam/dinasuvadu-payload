@@ -101,7 +101,8 @@ export async function GET(
       const cat = await fetchParentCategory(id);
       return { slug: cat?.slug };
     });
-    return Response.redirect(new URL(canonicalPath, request.url), 302);
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.dinasuvadu.com';
+    return Response.redirect(`${baseUrl}${canonicalPath}`, 302);
   }
   
   const ampContent = await renderAmpPost(post);
