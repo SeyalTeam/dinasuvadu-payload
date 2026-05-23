@@ -10,12 +10,14 @@ export function buildMetadata({
   imageUrl,
   type = "website",
   canonical,
+  amphtml,
 }: {
   title: string;
   description: string;
   imageUrl?: string;
   type?: "article" | "website";
   canonical?: string;
+  amphtml?: string;
 }): Metadata {
   const ogImage = imageUrl ?? "/website-template-OG.webp"; // fallback image in public folder
   return {
@@ -35,6 +37,15 @@ export function buildMetadata({
     },
     // Next.js supports canonical via alternates.canonical
     alternates: canonical ? { canonical } : undefined,
+    // Add custom amphtml tag via icons.other (Next.js App Router metadata API workaround)
+    icons: amphtml
+      ? {
+          other: {
+            rel: "amphtml",
+            url: amphtml,
+          },
+        }
+      : undefined,
     robots: {
       index: true,
       follow: true,
@@ -77,9 +88,10 @@ export function buildArticleLd({
   subPostSlug?: string;
   apiUrl?: string;
 }): string {
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.dinasuvadu.com';
   const url = subPostSlug
-    ? `https://www.dinasuvadu.com/${categorySlug}/${postSlug}/${subPostSlug}`
-    : `https://www.dinasuvadu.com/${categorySlug}/${postSlug}`;
+    ? `${baseUrl}/${categorySlug}/${postSlug}/${subPostSlug}`
+    : `${baseUrl}/${categorySlug}/${postSlug}`;
 
   const ld = {
     "@context": "https://schema.org",
@@ -103,7 +115,7 @@ export function buildArticleLd({
       "name": "Dinasuvadu",
       "logo": {
         "@type": "ImageObject",
-        "url": "https://www.dinasuvadu.com/logo.png"
+        "url": `${baseUrl}/logo.png`
       }
     },
     mainEntityOfPage: { "@type": "WebPage", "@id": url },

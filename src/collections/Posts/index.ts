@@ -160,6 +160,15 @@ export const Posts: CollectionConfig<'posts'> = {
       relationTo: 'users',
     },
     {
+      name: 'isAMP',
+      type: 'checkbox',
+      label: 'Serve as AMP Page',
+      defaultValue: false,
+      admin: {
+        position: 'sidebar',
+      },
+    },
+    {
       name: 'populatedAuthors',
       type: 'array',
       access: { update: () => false },

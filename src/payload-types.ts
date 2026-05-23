@@ -249,6 +249,7 @@ export interface Post {
   publishedAt?: string | null;
   tags?: (string | Tag)[] | null;
   authors?: (string | User)[] | null;
+  isAMP?: boolean | null;
   populatedAuthors?:
     | {
         id?: string | null;
@@ -1188,6 +1189,7 @@ export interface PostsSelect<T extends boolean = true> {
   publishedAt?: T;
   tags?: T;
   authors?: T;
+  isAMP?: T;
   populatedAuthors?:
     | T
     | {

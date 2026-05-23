@@ -51,8 +51,10 @@ export async function generateMetadata({ params }: { params: Promise<{ categoryS
   const description = resolvePostDescription(post);
   const imageUrl = resolvePostOgImageUrl(post) || undefined;
   const canonicalPath = await resolveCanonicalPostPath(post, fetchParentCategory);
-  const canonical = `https://www.dinasuvadu.com${canonicalPath}`;
-  return buildMetadata({ title, description, imageUrl, type: "article", canonical });
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.dinasuvadu.com';
+  const canonical = `${baseUrl}${canonicalPath}`;
+  const amphtml = post.isAMP ? `${baseUrl}/amp${canonicalPath}` : undefined;
+  return buildMetadata({ title, description, imageUrl, type: "article", canonical, amphtml });
 }
 
 // Type definitions
@@ -102,6 +104,7 @@ type Post = {
   slug: string;
   publishedAt: string;
   updatedAt?: string;
+  isAMP?: boolean;
   heroImage?: Media;
   content?: {
     root: {
@@ -278,6 +281,7 @@ async function fetchPostRaw(slug: string): Promise<Post | null> {
         publishedAt: true,
         updatedAt: true,
         tags: true,
+        isAMP: true,
       },
     });
     return (response.docs[0] as unknown as Post) || null;

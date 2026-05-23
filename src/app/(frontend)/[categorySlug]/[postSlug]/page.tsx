@@ -82,6 +82,7 @@ type Post = {
   slug: string;
   publishedAt: string;
   updatedAt?: string;
+  isAMP?: boolean;
   layout?: LayoutBlock[];
   hero?: {
     type: string;
@@ -308,8 +309,10 @@ export async function generateMetadata({ params }: { params: Promise<{ categoryS
   const title = post.title;
   const description = resolvePostDescription(post);
   const imageUrl = resolvePostOgImageUrl(post) || undefined;
-  const canonical = `https://www.dinasuvadu.com${canonicalPath}`;
-  return buildMetadata({ title, description, imageUrl, type: "article", canonical });
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.dinasuvadu.com';
+  const canonical = `${baseUrl}${canonicalPath}`;
+  const amphtml = post.isAMP ? `${baseUrl}/amp${canonicalPath}` : undefined;
+  return buildMetadata({ title, description, imageUrl, type: "article", canonical, amphtml });
 }
 
 
@@ -742,7 +745,6 @@ export default async function PostOrSubCategoryPage({
 
   return (
     <>
-
         {/* Breadcrumb JSON‑LD */}
         <script
           type="application/ld+json"

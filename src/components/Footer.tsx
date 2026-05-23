@@ -251,6 +251,17 @@ export default function Footer() {
           {/* Copyright Notice */}
           <div className="footer-bottom">
             <p>© {new Date().getFullYear()} Dinasuvadu. All rights reserved.</p>
+            <p style={{ marginTop: '4px', fontSize: '12px', opacity: 0.7 }}>
+              Powered by{' '}
+              <a
+                href="https://vseyal.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: 'inherit', textDecoration: 'none' }}
+              >
+                Vseyal
+              </a>
+            </p>
           </div>
         </div>
       </footer>
