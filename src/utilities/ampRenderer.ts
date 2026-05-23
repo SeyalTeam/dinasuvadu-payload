@@ -282,6 +282,7 @@ export async function renderAmpPost(post: any): Promise<string> {
     <link rel="canonical" href="${canonicalUrl}">
     
     <!-- Meta tags -->
+    <meta name="robots" content="max-image-preview:large">
     <meta name="description" content="${escapeHtml((post.meta?.description || post.title).substring(0, 160))}">
     <meta name="author" content="${escapeHtml(authorLine)}">
     <meta property="og:type" content="article">
