@@ -11,3 +11,9 @@ public/media/
 
 public/robots.txt
 public/sitemap*.xml
+
+# TypeScript build cache
+tsconfig.tsbuildinfo
+
+# Local scratch/test files
+scratch/
