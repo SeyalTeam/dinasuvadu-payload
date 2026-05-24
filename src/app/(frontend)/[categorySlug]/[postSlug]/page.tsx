@@ -861,14 +861,11 @@ export default async function PostOrSubCategoryPage({
                   <span className="single-post-clock" aria-hidden="true">
                     ◷
                   </span>
-                  <span>{wordsCount} Words | {readTimeMinutes} Min Read</span>
+                  <span>{readTimeMinutes} Min Read</span>
                 </div>
               </div>
               <div className="single-post-meta-bottom">
                 {publishedLabel && <span>Published - {publishedLabel}</span>}
-                {showUpdated && updatedLabel && (
-                  <span className="single-post-updated">Updated - {updatedLabel}</span>
-                )}
               </div>
             </div>
           </header>

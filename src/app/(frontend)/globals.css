@@ -2273,11 +2273,7 @@ a:hover {
   }
 }
 
-@media (prefers-color-scheme: dark) {
-  html {
-    color-scheme: dark;
-  }
-}
+
 
 @media (min-width: 900px) {
   .brand-logo {
@@ -2294,85 +2290,104 @@ a:hover {
   }
 }
 
-/* Comprehensive Dark Mode Fix */
-@media (prefers-color-scheme: dark) {
-  body {
-    color: #ededed !important;
-    background-color: #0a0a0a !important;
-  }
-  .main-header, .header-two.sticky, .mobile-drawer {
-    background-color: #121212 !important;
-  }
-  .header-two.sticky, .news-post, .grid-item-1, .bor-1 {
-    border-bottom: 1px solid #333 !important;
-  }
-  .drawer-menu li a, .drawer-menu-vertical li a, .post-title-1, .category-title, .breadcrumbs a, .breadcrumbs span, .para-txt, .ant-typography {
-    color: #ededed !important;
-  }
-  .home-category {
-    color: #60a5fa !important;
-  }
-  a:hover {
-    color: #93c5fd !important;
-  }
-  .col-md-3, .col-01, .web-stories-pagination .pagination-link {
-    background-color: #1e1e1e !important;
-    box-shadow: 0 4px 8px rgba(255, 255, 255, 0.05) !important;
-  }
-  .post-desc, .post-summary-box, .post-description, .post-svg p {
-    color: #cccccc !important;
-  }
-  .post-svg p {
-    background-color: #2a2a2a !important;
-  }
-  .post-tags .tags-bar {
-    background-color: #262626 !important;
-    border-color: #3a3a3a !important;
-  }
-  .post-tags .tags-icon {
-    color: #b3b3b3 !important;
-  }
-  .post-tags .tag-chip {
-    background-color: #3a3a3a !important;
-    color: #ededed !important;
-  }
-  .single-post-header-card {
-    background-color: #171717 !important;
-    border-color: #2f2f2f !important;
-  }
-  .single-post-title--hero,
-  .single-post-subtitle,
-  .single-post-author,
-  .single-post-readtime,
-  .single-post-meta-bottom,
-  .single-post-sidebar-title {
-    color: #ededed !important;
-  }
-  .single-post-meta {
-    border-top-color: #3a3a3a !important;
-  }
-  .single-post-clock {
-    color: #9ca3af !important;
-  }
-  .single-post-sidebar-card {
-    background-color: #1d1d1d !important;
-    border-color: #333 !important;
-  }
-  .menu-btn, .search-btn, .search-bar button {
-    color: #60a5fa !important; 
-  }
-  .search-bar input {
-    background-color: #1e1e1e !important;
-    color: white !important;
-    border: 1px solid #444 !important;
-  }
-  .site-footer {
-    background-color: #000000 !important;
-    border-top: 1px solid #333 !important;
-  }
-  .logo, .brand-logo, .mob-logo {
-    filter: brightness(0) invert(1);
-  }
+/* Dark Mode — only applies when user explicitly selects dark via the toggle ([data-theme='dark']) */
+[data-theme='dark'] body {
+  color: #ededed;
+  background-color: #0a0a0a;
+}
+[data-theme='dark'] .main-header,
+[data-theme='dark'] .header-two.sticky,
+[data-theme='dark'] .mobile-drawer {
+  background-color: #121212;
+}
+[data-theme='dark'] .header-two.sticky,
+[data-theme='dark'] .news-post,
+[data-theme='dark'] .grid-item-1,
+[data-theme='dark'] .bor-1 {
+  border-bottom: 1px solid #333;
+}
+[data-theme='dark'] .drawer-menu li a,
+[data-theme='dark'] .drawer-menu-vertical li a,
+[data-theme='dark'] .post-title-1,
+[data-theme='dark'] .category-title,
+[data-theme='dark'] .breadcrumbs a,
+[data-theme='dark'] .breadcrumbs span,
+[data-theme='dark'] .para-txt,
+[data-theme='dark'] .ant-typography {
+  color: #ededed;
+}
+[data-theme='dark'] .home-category {
+  color: #60a5fa;
+}
+[data-theme='dark'] a:hover {
+  color: #93c5fd;
+}
+[data-theme='dark'] .col-md-3,
+[data-theme='dark'] .col-01,
+[data-theme='dark'] .web-stories-pagination .pagination-link {
+  background-color: #1e1e1e;
+  box-shadow: 0 4px 8px rgba(255, 255, 255, 0.05);
+}
+[data-theme='dark'] .post-desc,
+[data-theme='dark'] .post-summary-box,
+[data-theme='dark'] .post-description,
+[data-theme='dark'] .post-svg p {
+  color: #cccccc;
+}
+[data-theme='dark'] .post-svg p {
+  background-color: #2a2a2a;
+}
+[data-theme='dark'] .post-tags .tags-bar {
+  background-color: #262626;
+  border-color: #3a3a3a;
+}
+[data-theme='dark'] .post-tags .tags-icon {
+  color: #b3b3b3;
+}
+[data-theme='dark'] .post-tags .tag-chip {
+  background-color: #3a3a3a;
+  color: #ededed;
+}
+[data-theme='dark'] .single-post-header-card {
+  background-color: #171717;
+  border-color: #2f2f2f;
+}
+[data-theme='dark'] .single-post-title--hero,
+[data-theme='dark'] .single-post-subtitle,
+[data-theme='dark'] .single-post-author,
+[data-theme='dark'] .single-post-readtime,
+[data-theme='dark'] .single-post-meta-bottom,
+[data-theme='dark'] .single-post-sidebar-title {
+  color: #ededed;
+}
+[data-theme='dark'] .single-post-meta {
+  border-top-color: #3a3a3a;
+}
+[data-theme='dark'] .single-post-clock {
+  color: #9ca3af;
+}
+[data-theme='dark'] .single-post-sidebar-card {
+  background-color: #1d1d1d;
+  border-color: #333;
+}
+[data-theme='dark'] .menu-btn,
+[data-theme='dark'] .search-btn,
+[data-theme='dark'] .search-bar button {
+  color: #60a5fa;
+}
+[data-theme='dark'] .search-bar input {
+  background-color: #1e1e1e;
+  color: white;
+  border: 1px solid #444;
+}
+[data-theme='dark'] .site-footer {
+  background-color: #000000;
+  border-top: 1px solid #333;
+}
+[data-theme='dark'] .logo,
+[data-theme='dark'] .brand-logo,
+[data-theme='dark'] .mob-logo {
+  filter: brightness(0) invert(1);
 }
 
 /* Post Bottom Interaction Bar (Restored Badge with Tag UI Colors) */

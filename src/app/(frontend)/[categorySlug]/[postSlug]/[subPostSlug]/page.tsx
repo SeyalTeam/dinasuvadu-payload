@@ -750,9 +750,6 @@ export default async function SubCategoryPostPage({
               </div>
               <div className="single-post-meta-bottom">
                 {publishedLabel && <span>Published - {publishedLabel}</span>}
-                {showUpdated && updatedLabel && (
-                  <span className="single-post-updated">Updated - {updatedLabel}</span>
-                )}
               </div>
             </div>
           </header>
