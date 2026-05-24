@@ -26,6 +26,13 @@ export const InitTheme: React.FC = () => {
       return theme === 'light' || theme === 'dark'
     }
 
+    // Migrate old 'theme' key → 'payload-theme' for users who had the previous toggle
+    var oldKey = window.localStorage.getItem('theme')
+    if (themeIsValid(oldKey) && !window.localStorage.getItem('${themeLocalStorageKey}')) {
+      window.localStorage.setItem('${themeLocalStorageKey}', oldKey)
+      window.localStorage.removeItem('theme')
+    }
+
     var themeToSet = '${defaultTheme}'
     var preference = window.localStorage.getItem('${themeLocalStorageKey}')
 
