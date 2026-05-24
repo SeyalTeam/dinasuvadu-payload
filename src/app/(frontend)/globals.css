@@ -1727,9 +1727,11 @@ a:hover {
   width: 320px;
   max-width: 85%;
   height: 100vh;
-  background: white;
+  background-color: var(--background);
+  color: var(--foreground);
+  border-left: 1px solid var(--border);
   z-index: 2000;
-  transition: right 0.3s ease-in-out, background-color 0.3s;
+  transition: right 0.3s ease-in-out, background-color 0.3s, border-left-color 0.3s, color 0.3s;
   padding: 20px;
   display: flex;
   flex-direction: column;
@@ -1740,9 +1742,7 @@ a:hover {
 }
 
 [data-theme='dark'] .mobile-drawer {
-  background-color: #23272e;
   box-shadow: -5px 0 15px rgba(0, 0, 0, 0.4);
-  color: #e0e0e0;
 }
 
 .mobile-drawer.open {
@@ -1797,14 +1797,13 @@ a:hover {
   justify-content: space-between;
   align-items: center;
   padding: 12px 0;
-  border-bottom: 1px dashed #eee;
+  border-bottom: 1px dashed var(--border);
   cursor: pointer;
   transition: color 0.3s, border-bottom-color 0.3s;
 }
 
 [data-theme='dark'] .accordion-trigger {
-  border-bottom-color: #2d323a !important;
-  color: #e0e0e0;
+  color: var(--foreground);
 }
 
 .nav-wrapper {
@@ -2329,9 +2328,7 @@ a:hover {
   color: #ededed;
   background-color: #0a0a0a;
 }
-[data-theme='dark'] .mobile-drawer {
-  background-color: #121212;
-}
+
 [data-theme='dark'] .news-post,
 [data-theme='dark'] .grid-item-1,
 [data-theme='dark'] .bor-1 {

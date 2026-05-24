@@ -645,32 +645,26 @@ export default function Header({ categories, homepageCategories }: HeaderProps) 
               
               return (
                 <li key={parent.id} className="accordion-item">
-                  <div className="accordion-trigger">
+                  <div 
+                    className="accordion-trigger"
+                    onClick={children.length > 0 ? () => setExpandedId(isExpanded ? null : parent.id) : undefined}
+                  >
                     <div style={{ display: "flex", alignItems: "center", gap: "0", flex: 1 }}>
                       {children.length > 0 ? (
-                        <button
-                          type="button"
+                        <span
                           className={`drawer-parent-link ${selectedKey === parent.id ? "active" : ""}`}
-                          aria-expanded={isExpanded}
-                          aria-controls={`drawer-children-${parent.id}`}
-                          onClick={() => setExpandedId(isExpanded ? null : parent.id)}
                           style={{
                             fontWeight: "800",
-                            textDecoration: "none",
                             fontSize: "14px",
                             fontFamily: "'Mukta Malar', sans-serif",
                             letterSpacing: "-0.2px",
                             display: "inline-block",
                             lineHeight: "1",
-                            border: "none",
-                            background: "none",
-                            padding: 0,
-                            cursor: "pointer",
-                            textAlign: "left",
+                            color: "inherit",
                           }}
                         >
                           {parent.title}
-                        </button>
+                        </span>
                       ) : (
                         <Link 
                           href={getCategoryHref(parent)}
