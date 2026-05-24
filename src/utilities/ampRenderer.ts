@@ -759,6 +759,50 @@ export async function renderAmpPost(post: any): Promise<string> {
           font-size: 20px;
         }
       }
+
+      /* ── Post-body heading sizes ─────────────────────────────── */
+      /* Must always be SMALLER than .article-title (24px desktop / 20px mobile) */
+      .article-body h2 {
+        font-family: 'Mukta Malar', sans-serif;
+        font-size: 20px;
+        font-weight: 700;
+        line-height: 1.4;
+        color: #111111;
+        margin: 24px 0 10px 0;
+      }
+
+      .article-body h3 {
+        font-family: 'Mukta Malar', sans-serif;
+        font-size: 17px;
+        font-weight: 700;
+        line-height: 1.4;
+        color: #222222;
+        margin: 20px 0 8px 0;
+      }
+
+      .article-body h4 {
+        font-family: 'Mukta Malar', sans-serif;
+        font-size: 15px;
+        font-weight: 700;
+        line-height: 1.4;
+        color: #333333;
+        margin: 16px 0 6px 0;
+      }
+
+      .article-body h5,
+      .article-body h6 {
+        font-family: 'Mukta Malar', sans-serif;
+        font-size: 14px;
+        font-weight: 700;
+        color: #444444;
+        margin: 12px 0 4px 0;
+      }
+
+      @media (max-width: 768px) {
+        .article-body h2 { font-size: 18px; }
+        .article-body h3 { font-size: 16px; }
+        .article-body h4 { font-size: 14px; }
+      }
     </style>
     
     <style amp-boilerplate>body{-webkit-animation:-amp-start 8s steps(1,end) 0s 1 normal both;-moz-animation:-amp-start 8s steps(1,end) 0s 1 normal both;-ms-animation:-amp-start 8s steps(1,end) 0s 1 normal both;animation:-amp-start 8s steps(1,end) 0s 1 normal both}@-webkit-keyframes -amp-start{from{visibility:hidden}to{visibility:visible}}@-moz-keyframes -amp-start{from{visibility:hidden}to{visibility:visible}}@-ms-keyframes -amp-start{from{visibility:hidden}to{visibility:visible}}@-o-keyframes -amp-start{from{visibility:hidden}to{visibility:visible}}@keyframes -amp-start{from{visibility:hidden}to{visibility:visible}}</style>
