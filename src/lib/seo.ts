@@ -107,6 +107,7 @@ export function buildArticleLd({
       post.populatedAuthors?.map((a: any) => ({
         "@type": "Person",
         name: a.name,
+        url: a.slug ? `${baseUrl}/author/${a.slug}` : undefined,
       })) || [],
     datePublished: post.publishedAt,
     dateModified: post.updatedAt || post.publishedAt,
