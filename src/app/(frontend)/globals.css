@@ -2414,6 +2414,37 @@ a:hover {
   filter: brightness(0) invert(1);
 }
 
+[data-theme='dark'] .post-image-actions {
+  border-bottom-color: var(--border);
+}
+[data-theme='dark'] .post-image-action-button {
+  background-color: #1f2937;
+  border-color: #374151;
+  color: #ededed;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+[data-theme='dark'] .post-image-action-button:hover {
+  background-color: #374151;
+  border-color: #9ca3af;
+}
+[data-theme='dark'] .post-action-count {
+  color: #ededed;
+}
+
+[data-theme='dark'] .post-bottom-interaction {
+  background-color: #1f2937;
+  border-color: #374151;
+}
+[data-theme='dark'] .post-bottom-action-btn {
+  color: #ededed;
+}
+[data-theme='dark'] .post-bottom-action-btn:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+[data-theme='dark'] .post-bottom-divider {
+  background-color: #374151;
+}
+
 /* Post Bottom Interaction Bar (Restored Badge with Tag UI Colors) */
 .post-bottom-interaction {
   margin-top: 24px;
