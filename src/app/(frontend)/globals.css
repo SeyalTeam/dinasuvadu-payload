@@ -2408,6 +2408,15 @@ a:hover {
   background-color: #000000;
   border-top: 1px solid #333;
 }
+[data-theme='dark'] .site-footer,
+[data-theme='dark'] .footer-bottom,
+[data-theme='dark'] .footer-bottom p,
+[data-theme='dark'] .footer-menu li a {
+  color: #ebebeb !important;
+}
+[data-theme='dark'] .footer-menu li a:hover {
+  color: #ffffff !important;
+}
 [data-theme='dark'] .logo,
 [data-theme='dark'] .brand-logo,
 [data-theme='dark'] .mob-logo {
