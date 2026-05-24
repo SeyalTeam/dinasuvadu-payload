@@ -11,7 +11,7 @@ export default function Footer() {
             <div className="footer-logo">
               <Link href="/">
                 <Image
-                  src="/dinasuvadu-white.png"
+                  src="/dinasuvadu.svg"
                   alt="Dinasuvadu Logo"
                   width={180}
                   height={45}
@@ -20,7 +20,7 @@ export default function Footer() {
               </Link>
             </div>
             <div className="d-flex gap-20 al-cn fl-wrap-mob-1 js-cn">
-              <p className="c-w">FOLLOW US ON</p>
+              <p className="footer-follow-us">FOLLOW US ON</p>
               <div className="d-flex gap al-cn social-media-icon fl-wrap-mob-1">
                 <a
                   href="https://www.youtube.com/@dinasuvadumedia"

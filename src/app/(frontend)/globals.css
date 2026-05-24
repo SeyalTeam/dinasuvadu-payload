@@ -2074,7 +2074,8 @@ a:hover {
 }
 
 .site-footer {
-  background-color: #000000;
+  background-color: var(--background);
+  border-top: 1px solid var(--border);
   padding: 0 30px;
   margin-top: auto;
 }
@@ -2082,6 +2083,14 @@ a:hover {
 .brand-logo {
   width: 150px;
   height: auto;
+}
+
+.footer-follow-us {
+  font-family: var(--font-mukta-malar), sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--foreground);
+  margin: 0;
 }
 
 .social-media-icon span svg {
@@ -2115,7 +2124,7 @@ a:hover {
 .footer-menu li a {
   font-size: 14px;
   font-weight: 500;
-  color: #ebebeb;
+  color: var(--foreground);
   text-decoration: none;
   font-family: var(--font-mukta-malar);
   white-space: nowrap;
@@ -2123,13 +2132,13 @@ a:hover {
 }
 
 .footer-menu li a:hover {
-  color: #ffffff;
+  color: var(--primary);
 }
 
 .footer-bottom {
   text-align: center;
   font-size: 16px;
-  color: #ebebeb;
+  color: var(--foreground);
   font-family: var(--font-mukta-malar);
   margin-top: 20px;
 }
@@ -2405,17 +2414,18 @@ a:hover {
   border: 1px solid #444;
 }
 [data-theme='dark'] .site-footer {
-  background-color: #000000;
-  border-top: 1px solid #333;
+  background-color: var(--background);
+  border-top: 1px solid var(--border);
 }
 [data-theme='dark'] .site-footer,
 [data-theme='dark'] .footer-bottom,
 [data-theme='dark'] .footer-bottom p,
+[data-theme='dark'] .footer-follow-us,
 [data-theme='dark'] .footer-menu li a {
-  color: #ebebeb !important;
+  color: #ededed !important;
 }
 [data-theme='dark'] .footer-menu li a:hover {
-  color: #ffffff !important;
+  color: #60a5fa !important;
 }
 [data-theme='dark'] .logo,
 [data-theme='dark'] .brand-logo,
