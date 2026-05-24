@@ -2519,3 +2519,42 @@ article,
   content-visibility: visible !important;
 }
 
+/* Dark Mode Typography Adjustments inside Rich Text and Prose */
+[data-theme='dark'] strong,
+[data-theme='dark'] b,
+[data-theme='dark'] .prose strong,
+[data-theme='dark'] .prose b,
+[data-theme='dark'] .payload-richtext strong,
+[data-theme='dark'] .payload-richtext b {
+  color: #ffffff !important;
+}
+
+[data-theme='dark'] .prose h1,
+[data-theme='dark'] .prose h2,
+[data-theme='dark'] .prose h3,
+[data-theme='dark'] .prose h4,
+[data-theme='dark'] .prose h5,
+[data-theme='dark'] .prose h6,
+[data-theme='dark'] .payload-richtext h1,
+[data-theme='dark'] .payload-richtext h2,
+[data-theme='dark'] .payload-richtext h3,
+[data-theme='dark'] .payload-richtext h4,
+[data-theme='dark'] .payload-richtext h5,
+[data-theme='dark'] .payload-richtext h6 {
+  color: #ffffff !important;
+}
+
+[data-theme='dark'] .prose a,
+[data-theme='dark'] .payload-richtext a {
+  color: #60a5fa !important;
+  text-decoration: underline;
+}
+
+[data-theme='dark'] .prose code,
+[data-theme='dark'] .payload-richtext code {
+  color: #fca5a5 !important;
+  background-color: #1e293b !important;
+  padding: 2px 4px !important;
+  border-radius: 4px !important;
+}
+
