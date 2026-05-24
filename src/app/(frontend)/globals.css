@@ -1025,7 +1025,7 @@ a:hover {
 }
 
 .single-post-header-card {
-  background: var(--card);
+  background: transparent;
   border: 0;
   border-bottom: 0px solid var(--border);
   border-radius: 0;
@@ -2373,7 +2373,7 @@ a:hover {
   color: #ededed;
 }
 [data-theme='dark'] .single-post-header-card {
-  background-color: #171717;
+  background-color: transparent;
   border-color: #2f2f2f;
 }
 [data-theme='dark'] .single-post-title--hero,
