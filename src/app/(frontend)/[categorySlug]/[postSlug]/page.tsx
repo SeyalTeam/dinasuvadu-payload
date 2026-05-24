@@ -1,4 +1,6 @@
 import React, { Suspense } from "react";
+import { convertLexicalToHTML } from "@payloadcms/richtext-lexical/html";
+import { EmbedHydrator } from "@/components/RichText/EmbedHydrator";
 export const revalidate = 300; // Revalidate every 5 minutes (ISR cache for TTFB)
 export const dynamicParams = true; // Enable on-demand rendering for non-pre-rendered posts
 import type { Metadata } from "next";
@@ -122,6 +124,20 @@ function trimTrailingEmptyHtmlBlocks(html: string): string {
       ""
     )
     .trim();
+}
+
+function convertRichTextToHTML(content: any): string {
+  if (!content) return "";
+
+  try {
+    return convertLexicalToHTML({
+      data: content,
+      disableContainer: true,
+    });
+  } catch (error) {
+    console.error("Error converting rich text content to HTML:", error);
+    return "";
+  }
 }
 
 
@@ -718,9 +734,12 @@ export default async function PostOrSubCategoryPage({
     redirect(canonicalPath);
   }
 
-  const postContent = post.content
-    ? extractPlainTextFromRichText(post.content)
-    : "";
+  const postContentHtml = trimTrailingEmptyHtmlBlocks(
+    convertRichTextToHTML(post.content)
+  );
+  const postContentPlainText = postContentHtml
+    ? ""
+    : (post.content ? extractPlainTextFromRichText(post.content) : "");
   const layoutContentText = (post.layout ?? [])
     .map((block: any) => {
       if (block.blockType === "content" && block.content) {
@@ -729,7 +748,7 @@ export default async function PostOrSubCategoryPage({
       return "";
     })
     .join(" ");
-  const fullContentText = `${post.title || ""} ${postContent} ${layoutContentText} ${post.meta?.description || ""}`;
+  const fullContentText = `${post.title || ""} ${stripHtml(postContentHtml)} ${postContentPlainText} ${layoutContentText} ${post.meta?.description || ""}`;
   const wordsCount = fullContentText.trim().split(/\s+/).filter(Boolean).length;
   const readTimeMinutes = estimateReadTimeMinutes(fullContentText);
   const publishedLabel = formatNewsTimestamp(post.publishedAt);
@@ -940,32 +959,33 @@ export default async function PostOrSubCategoryPage({
                 )}
               </section>
             ))
-          ) : postContent ? (
+          ) : (postContentHtml || postContentPlainText) ? (
             <section className="mb-12">
-              <div className="prose prose-lg prose-blue max-w-none text-gray-800 leading-relaxed">
-                {postContent.split("\n").map((paragraph, index) => {
-                   if (!paragraph.trim()) return null;
-                   
-                    // Skip any of the first few paragraphs if they are already in the summary box
-                    if (index < 5 && post.meta?.description) {
-                      // Normalize by stripping ALL whitespace and punctuation for a 'fingerprint' match
-                      const fingerprint = (str: string) => str.replace(/[^a-zA-Z0-9\u0B80-\u0BFF]/g, '');
-                      const fPara = fingerprint(paragraph);
-                      const fSummary = fingerprint(post.meta.description);
-                      
-                      // If either includes a substantial part of the other (fingerprint based)
-                      if (fPara.length > 20 && (fSummary.includes(fPara.substring(0, 40)) || fPara.includes(fSummary.substring(0, 40)))) {
-                        return null;
-                      }
-                    }
-                   
-                   return (
-                     <p className="post-desc" key={index}>
-                       {paragraph}
-                     </p>
-                   );
-                 })}
-              </div>
+              {postContentHtml ? (
+                <>
+                  {(/(twitter\.com|x\.com|platform\.twitter\.com)/i.test(postContentHtml) || /instagram\.com/i.test(postContentHtml)) && (
+                    <EmbedHydrator
+                      enableTwitter={/(twitter\.com|x\.com|platform\.twitter\.com)/i.test(postContentHtml)}
+                      enableInstagram={/instagram\.com/i.test(postContentHtml)}
+                    />
+                  )}
+                  <div
+                    className="payload-richtext prose md:prose-md max-w-none"
+                    dangerouslySetInnerHTML={{ __html: postContentHtml }}
+                  />
+                </>
+              ) : (
+                <div className="prose prose-lg prose-blue max-w-none text-gray-800 leading-relaxed">
+                  {postContentPlainText.split("\n").map((paragraph, index) => {
+                    if (!paragraph.trim()) return null;
+                    return (
+                      <p className="post-desc" key={index}>
+                        {paragraph}
+                      </p>
+                    );
+                  })}
+                </div>
+              )}
             </section>
           ) : null}
 
