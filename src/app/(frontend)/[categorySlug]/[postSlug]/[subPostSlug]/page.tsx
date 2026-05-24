@@ -421,17 +421,17 @@ async function LatestPostsSidebar({ currentPostSlug }: { currentPostSlug: string
                       ? `/${latestCategorySlug}/${latestSubCategorySlug}/${latestPost.slug}`
                       : `/${latestCategorySlug}/${latestPost.slug}`
                   }
-                  className="group flex gap-4 p-3 bg-white dark:bg-[#111] border border-gray-100 dark:border-gray-800 rounded-xl hover:shadow-lg hover:border-blue-100 dark:hover:border-blue-900/30 transition-all duration-300"
+                  className="group flex gap-4 p-3 bg-white dark:bg-card border border-gray-100 dark:border-border rounded-xl hover:shadow-lg hover:border-blue-100 dark:hover:border-blue-900/30 transition-all duration-300"
                 >
                   <div className="flex-1 flex flex-col justify-between py-0.5">
                     <h3 className="text-[14px] font-bold text-gray-800 dark:text-gray-200 leading-snug line-clamp-2 transition-colors para-txt">
                       {latestPost.title}
                     </h3>
                     <div className="flex items-center gap-2 mt-2">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-gray-600 bg-gray-100 dark:bg-gray-800 dark:text-gray-300 px-2 py-0.5 rounded">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-gray-600 bg-gray-100 dark:bg-gray-800 dark:text-gray-200 px-2 py-0.5 rounded">
                         {latestCategory?.title || 'News'}
                       </span>
-                      <span className="text-[11px] text-gray-400 dark:text-gray-500 flex items-center gap-1">
+                      <span className="text-[11px] text-gray-400 dark:text-gray-400 flex items-center gap-1">
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
                         </svg>
