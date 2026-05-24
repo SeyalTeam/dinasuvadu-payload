@@ -96,12 +96,17 @@ export async function GET(
     return notFound();
   }
   
-  if (!post.isAMP) {
-    const canonicalPath = await resolveCanonicalPostPath(post as any, async (id: string) => {
-      const cat = await fetchParentCategory(id);
-      return { slug: cat?.slug };
-    });
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.dinasuvadu.com';
+  const canonicalPath = await resolveCanonicalPostPath(post as any, async (id: string) => {
+    const cat = await fetchParentCategory(id);
+    return { slug: cat?.slug };
+  });
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.dinasuvadu.com';
+
+  const userAgent = request.headers.get('user-agent') || '';
+  const isMobile = /mobile|android|iphone|ipad|phone/i.test(userAgent);
+  const isBot = /bot|googlebot|crawler|spider|robot|lighthouse|mediapartners|apis-google|amphtml|validator/i.test(userAgent);
+
+  if (!post.isAMP || (!isMobile && !isBot)) {
     return Response.redirect(`${baseUrl}${canonicalPath}`, 302);
   }
   
