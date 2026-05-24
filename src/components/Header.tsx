@@ -129,33 +129,16 @@ export default function Header({ categories, homepageCategories }: HeaderProps) 
   useEffect(() => {
     setIsMounted(true);
 
-    // 1. Check explicit user preference saved in localStorage
+    // Only restore a theme the user explicitly saved — default is always light
     const savedTheme = localStorage.getItem("payload-theme") as "light" | "dark" | null;
-
     if (savedTheme === "light" || savedTheme === "dark") {
-      // User has explicitly chosen a theme — honour it
       setTheme(savedTheme);
       document.documentElement.setAttribute("data-theme", savedTheme);
     } else {
-      // 2. No saved preference — respect the OS / browser dark-mode setting
-      const systemPrefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-      const systemTheme = systemPrefersDark ? "dark" : "light";
-      setTheme(systemTheme);
-      document.documentElement.setAttribute("data-theme", systemTheme);
+      // No saved preference → always start in light mode
+      setTheme("light");
+      document.documentElement.setAttribute("data-theme", "light");
     }
-
-    // 3. Listen for OS-level theme changes while the page is open (no saved pref)
-    const mql = window.matchMedia("(prefers-color-scheme: dark)");
-    const onSystemThemeChange = (e: MediaQueryListEvent) => {
-      const hasSavedPref = localStorage.getItem("payload-theme");
-      if (!hasSavedPref) {
-        const newSystemTheme = e.matches ? "dark" : "light";
-        setTheme(newSystemTheme);
-        document.documentElement.setAttribute("data-theme", newSystemTheme);
-      }
-    };
-    mql.addEventListener("change", onSystemThemeChange);
-    return () => mql.removeEventListener("change", onSystemThemeChange);
   }, []);
 
   useEffect(() => {
