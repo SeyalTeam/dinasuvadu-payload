@@ -31,8 +31,6 @@ export default function RootLayout({
   return (
     <html lang="ta" suppressHydrationWarning>
       <head>
-        <link rel="preconnect" href="https://media.dinasuvadu.com" />
-        <link rel="dns-prefetch" href="https://media.dinasuvadu.com" />
       </head>
       <body className={muktaMalar.variable} suppressHydrationWarning>
         <Providers>
