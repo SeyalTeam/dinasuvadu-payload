@@ -18,7 +18,7 @@ const muktaMalar = Mukta_Malar({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SERVER_URL || "https://dinasuvadu.com"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SERVER_URL || "https://www.dinasuvadu.com"),
   title: "Dinasuvadu - Latest Tamil News",
   description: "Tamil news portal with latest updates on politics, cinema, and sports.",
 };

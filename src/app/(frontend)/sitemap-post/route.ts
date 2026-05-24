@@ -4,7 +4,7 @@ import config from "@/payload.config";
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
-  const baseUrl = process.env.PAYLOAD_PUBLIC_SERVER_URL || "https://dinasuvadu.com";
+  const baseUrl = process.env.PAYLOAD_PUBLIC_SERVER_URL || "https://www.dinasuvadu.com";
   
   const url = new URL(request.url);
   const pageParam = url.searchParams.get("page");
