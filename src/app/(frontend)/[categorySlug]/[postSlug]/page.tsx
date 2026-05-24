@@ -491,7 +491,7 @@ async function LatestPostsSidebar({ currentPostSlug }: { currentPostSlug: string
                       {latestPost.title}
                     </h3>
                     <div className="flex items-center gap-2 mt-2">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-gray-600 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-gray-600 bg-gray-100 dark:bg-gray-800 dark:text-gray-300 px-2 py-0.5 rounded">
                         {latestCategory?.title || 'News'}
                       </span>
                       <span className="text-[11px] text-gray-400 dark:text-gray-500 flex items-center gap-1">
@@ -821,7 +821,7 @@ export default async function PostOrSubCategoryPage({
                         <React.Fragment key={author.id}>
                           <Link 
                             href={`/author/${author.slug || author.id}`} 
-                            className="text-gray-900 dark:text-gray-100 font-bold transition-all"
+                            className="font-bold transition-all"
                           >
                             {author.name}
                           </Link>
@@ -829,7 +829,7 @@ export default async function PostOrSubCategoryPage({
                         </React.Fragment>
                       ))
                     ) : (
-                      <span className="font-bold text-gray-900">Dinasuvadu Team</span>
+                      <span className="font-bold">Dinasuvadu Team</span>
                     )}
                   </span>
                   <span
