@@ -274,9 +274,10 @@ export async function renderAmpPost(post: any): Promise<string> {
     <link rel="preload" as="script" href="https://cdn.ampproject.org/v0.js">
     <script async src="https://cdn.ampproject.org/v0.js"></script>
     
+    <link rel="preconnect" href="https://media.dinasuvadu.com" crossorigin>
     <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Mukta+Malar:wght@400;700&family=Open+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Mukta+Malar:wght@400;700&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
     
     <title>${escapeHtml(post.title)} – Dinasuvadu</title>
     <link rel="canonical" href="${canonicalUrl}">
@@ -604,7 +605,7 @@ export async function renderAmpPost(post: any): Promise<string> {
       
       .meta-time {
         font-size: 12px;
-        color: #888888;
+        color: #757575;
       }
       
       /* Social Sharing wrapper */
@@ -901,7 +902,7 @@ export async function renderAmpPost(post: any): Promise<string> {
         heroImageUrl
           ? `
       <div class="hero-image-wrap">
-        <amp-img src="${heroImageUrl}" alt="${escapeHtml(heroImageAlt)}" width="16" height="9" layout="responsive" lightbox="true"></amp-img>
+        <amp-img src="${heroImageUrl}" alt="${escapeHtml(heroImageAlt)}" width="16" height="9" layout="responsive" lightbox="true" fetchpriority="high" data-hero></amp-img>
       </div>
       ${heroCaption ? `<p class="hero-caption">${heroCaption}</p>` : ''}
       `
@@ -963,7 +964,7 @@ export async function renderAmpPost(post: any): Promise<string> {
     <!-- Footer -->
     <footer class="footer">
       <div class="footer-logo">
-        <a href="${baseUrl}">
+        <a href="${baseUrl}" aria-label="Dinasuvadu Home">
           <amp-img src="/dinasuvadu-white.png" alt="Dinasuvadu" width="120" height="30" layout="fixed"></amp-img>
         </a>
       </div>
