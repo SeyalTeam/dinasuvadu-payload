@@ -895,7 +895,7 @@ export async function renderAmpPost(post: any): Promise<string> {
 
     
     <!-- Main Story Container -->
-    <div class="story-container">
+    <main class="story-container">
       
       <!-- Hero Image -->
       ${
@@ -959,7 +959,7 @@ export async function renderAmpPost(post: any): Promise<string> {
       ` : ''}
       
 
-    </div>
+    </main>
     
     <!-- Footer -->
     <footer class="footer">
