@@ -93,6 +93,18 @@ export function convertHtmlToAmp(html: string): AmpConversionResult {
       }
     });
 
+    // ── 2.5 Unwrap <picture> tags (disallowed in AMP outside noscript) ──────
+    const pictures = root.querySelectorAll('picture');
+    pictures.forEach((pic) => {
+      const img = pic.querySelector('img');
+      if (img) {
+        // Replace the picture wrapper with just the inner img tag
+        pic.replaceWith(img.toString());
+      } else {
+        pic.remove();
+      }
+    });
+
     // ── 3. Convert standard img → amp-img ───────────────────────────────────
     const images = root.querySelectorAll('img');
     images.forEach((img) => {
