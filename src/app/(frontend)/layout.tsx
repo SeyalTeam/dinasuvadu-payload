@@ -4,10 +4,10 @@ import { Suspense } from "react";
 import { HeaderWithCategories } from "@/components/HeaderWithCategories";
 import { HeaderFallback } from "@/components/HeaderFallback";
 import Footer from "@/components/Footer";
-import Script from "next/script";
 import { Mukta_Malar } from "next/font/google";
 import { ModalsContainer } from "@/components/ModalsContainer";
 import { Providers } from "@/providers";
+import { GoogleAnalyticsLoader } from "@/components/GoogleAnalyticsLoader";
 
 const muktaMalar = Mukta_Malar({
   subsets: ["tamil", "latin"],
@@ -41,21 +41,10 @@ export default function RootLayout({
           <ModalsContainer />
           <Footer />
         </Providers>
-        {/* Google Analytics GA4 */}
-        <Script
-          src={`https://www.googletagmanager.com/gtag/js?id=G-YJ4CSJH2VC`}
-          strategy="lazyOnload"
-        />
-        <Script id="google-analytics" strategy="lazyOnload">
-          {`
-              window.dataLayer = window.dataLayer || [];
-              function gtag(){dataLayer.push(arguments);}
-              gtag('js', new Date());
-              gtag('config', 'G-YJ4CSJH2VC');
-          `}
-        </Script>
-
+        {/* Google Analytics GA4 loaded on user interaction */}
+        <GoogleAnalyticsLoader />
       </body>
     </html>
   );
 }
+
