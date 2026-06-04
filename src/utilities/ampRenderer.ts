@@ -244,7 +244,7 @@ export async function renderAmpPost(post: any): Promise<string> {
   const breadcrumbLd = buildBreadcrumbLd(breadcrumbItems);
 
   // Parse segments to pass proper args to buildArticleLd (fixes wrong URL for 3-segment paths)
-  let articleLdParams: any = {
+  const articleLdParams: any = {
     post,
     apiUrl: payloadUrl,
   };
@@ -278,6 +278,7 @@ export async function renderAmpPost(post: any): Promise<string> {
     <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Mukta+Malar:wght@400;700&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    ${heroImageUrl ? `<link rel="preload" href="${heroImageUrl}" as="image" fetchpriority="high">` : ''}
     
     <title>${escapeHtml(post.title)} – Dinasuvadu</title>
     <link rel="canonical" href="${canonicalUrl}">
@@ -902,7 +903,7 @@ export async function renderAmpPost(post: any): Promise<string> {
         heroImageUrl
           ? `
       <div class="hero-image-wrap">
-        <amp-img src="${heroImageUrl}" alt="${escapeHtml(heroImageAlt)}" width="16" height="9" layout="responsive" lightbox="true" data-hero></amp-img>
+        <amp-img src="${heroImageUrl}" alt="${escapeHtml(heroImageAlt)}" width="16" height="9" layout="responsive" lightbox="true" data-hero fetchpriority="high"></amp-img>
       </div>
       ${heroCaption ? `<p class="hero-caption">${heroCaption}</p>` : ''}
       `
