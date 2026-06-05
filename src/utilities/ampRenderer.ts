@@ -903,7 +903,7 @@ export async function renderAmpPost(post: any): Promise<string> {
         heroImageUrl
           ? `
       <div class="hero-image-wrap">
-        <amp-img src="${heroImageUrl}" alt="${escapeHtml(heroImageAlt)}" width="16" height="9" layout="responsive" lightbox="true" data-hero fetchpriority="high"></amp-img>
+        <amp-img src="${heroImageUrl}" alt="${escapeHtml(heroImageAlt)}" width="16" height="9" layout="responsive" lightbox="true" data-hero></amp-img>
       </div>
       ${heroCaption ? `<p class="hero-caption">${heroCaption}</p>` : ''}
       `
