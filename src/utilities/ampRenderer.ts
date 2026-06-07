@@ -291,6 +291,8 @@ export async function renderAmpPost(post: any): Promise<string> {
     <script async src="https://cdn.ampproject.org/v0.js"></script>
     
     <link rel="preconnect" href="https://media.dinasuvadu.com" crossorigin>
+    <link rel="preload" href="/fonts/mukta-malar-400-tamil.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/fonts/mukta-malar-700-tamil.woff2" as="font" type="font/woff2" crossorigin>
     ${heroImageUrl ? `<link rel="preload" href="${heroImagePreloadUrl}" ${heroImageSrcset ? `imagesrcset="${heroImageSrcset}" imagesizes="${heroImageSizes}"` : ''} as="image" fetchpriority="high">` : ''}
     
     <title>${escapeHtml(post.title)} – Dinasuvadu</title>
