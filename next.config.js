@@ -129,6 +129,12 @@ const nextConfig = {
           path.resolve(dirname, './src/empty-polyfill.js')
         )
       )
+      config.plugins.push(
+        new webpack.NormalModuleReplacementPlugin(
+          /next-devtools/,
+          path.resolve(dirname, './src/empty-polyfill.js')
+        )
+      )
     }
     return config
   },
