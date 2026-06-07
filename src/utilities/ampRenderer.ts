@@ -275,8 +275,9 @@ export async function renderAmpPost(post: any): Promise<string> {
     <script async src="https://cdn.ampproject.org/v0.js"></script>
     
     <link rel="preconnect" href="https://media.dinasuvadu.com" crossorigin>
-    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Mukta+Malar:wght@400;700&family=Open+Sans:wght@400;600;700&display=swap" as="style">
     <link href="https://fonts.googleapis.com/css2?family=Mukta+Malar:wght@400;700&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
     ${heroImageUrl ? `<link rel="preload" href="${heroImageUrl}" as="image" fetchpriority="high">` : ''}
     
