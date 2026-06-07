@@ -291,10 +291,6 @@ export async function renderAmpPost(post: any): Promise<string> {
     <script async src="https://cdn.ampproject.org/v0.js"></script>
     
     <link rel="preconnect" href="https://media.dinasuvadu.com" crossorigin>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Mukta+Malar:wght@400;700&family=Open+Sans:wght@400;600;700&display=swap" as="style">
-    <link href="https://fonts.googleapis.com/css2?family=Mukta+Malar:wght@400;700&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
     ${heroImageUrl ? `<link rel="preload" href="${heroImagePreloadUrl}" ${heroImageSrcset ? `imagesrcset="${heroImageSrcset}" imagesizes="${heroImageSizes}"` : ''} as="image" fetchpriority="high">` : ''}
     
     <title>${escapeHtml(post.title)} – Dinasuvadu</title>
@@ -330,6 +326,126 @@ export async function renderAmpPost(post: any): Promise<string> {
     <script type="application/ld+json">${articleLd}</script>
     
     <style amp-custom>${minifyCss(`
+      /* tamil */
+      @font-face {
+        font-family: 'Mukta Malar';
+        font-style: normal;
+        font-weight: 400;
+        font-display: swap;
+        src: url('/fonts/mukta-malar-400-tamil.woff2') format('woff2');
+        unicode-range: U+0964-0965, U+0B82-0BFA, U+200C-200D, U+20B9, U+25CC;
+      }
+
+      /* latin-ext */
+      @font-face {
+        font-family: 'Mukta Malar';
+        font-style: normal;
+        font-weight: 400;
+        font-display: swap;
+        src: url('/fonts/mukta-malar-400-latin-ext.woff2') format('woff2');
+        unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+      }
+
+      /* latin */
+      @font-face {
+        font-family: 'Mukta Malar';
+        font-style: normal;
+        font-weight: 400;
+        font-display: swap;
+        src: url('/fonts/mukta-malar-400-latin.woff2') format('woff2');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+      }
+
+      /* tamil */
+      @font-face {
+        font-family: 'Mukta Malar';
+        font-style: normal;
+        font-weight: 700;
+        font-display: swap;
+        src: url('/fonts/mukta-malar-700-tamil.woff2') format('woff2');
+        unicode-range: U+0964-0965, U+0B82-0BFA, U+200C-200D, U+20B9, U+25CC;
+      }
+
+      /* latin-ext */
+      @font-face {
+        font-family: 'Mukta Malar';
+        font-style: normal;
+        font-weight: 700;
+        font-display: swap;
+        src: url('/fonts/mukta-malar-700-latin-ext.woff2') format('woff2');
+        unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+      }
+
+      /* latin */
+      @font-face {
+        font-family: 'Mukta Malar';
+        font-style: normal;
+        font-weight: 700;
+        font-display: swap;
+        src: url('/fonts/mukta-malar-700-latin.woff2') format('woff2');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+      }
+
+      /* latin-ext */
+      @font-face {
+        font-family: 'Open Sans';
+        font-style: normal;
+        font-weight: 400;
+        font-display: swap;
+        src: url('/fonts/open-sans-400-latin-ext.woff2') format('woff2');
+        unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+      }
+
+      /* latin */
+      @font-face {
+        font-family: 'Open Sans';
+        font-style: normal;
+        font-weight: 400;
+        font-display: swap;
+        src: url('/fonts/open-sans-400-latin.woff2') format('woff2');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+      }
+
+      /* latin-ext */
+      @font-face {
+        font-family: 'Open Sans';
+        font-style: normal;
+        font-weight: 600;
+        font-display: swap;
+        src: url('/fonts/open-sans-600-latin-ext.woff2') format('woff2');
+        unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+      }
+
+      /* latin */
+      @font-face {
+        font-family: 'Open Sans';
+        font-style: normal;
+        font-weight: 600;
+        font-display: swap;
+        src: url('/fonts/open-sans-600-latin.woff2') format('woff2');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+      }
+
+      /* latin-ext */
+      @font-face {
+        font-family: 'Open Sans';
+        font-style: normal;
+        font-weight: 700;
+        font-display: swap;
+        src: url('/fonts/open-sans-700-latin-ext.woff2') format('woff2');
+        unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+      }
+
+      /* latin */
+      @font-face {
+        font-family: 'Open Sans';
+        font-style: normal;
+        font-weight: 700;
+        font-display: swap;
+        src: url('/fonts/open-sans-700-latin.woff2') format('woff2');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+      }
+
       body {
         font-family: 'Open Sans', 'Mukta Malar', sans-serif;
         background-color: #f4f6f8;
