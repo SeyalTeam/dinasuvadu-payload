@@ -2,7 +2,7 @@ import { getPayload } from 'payload';
 import config from '@/payload.config';
 import { convertLexicalToHTML } from '@payloadcms/richtext-lexical/html';
 import { convertHtmlToAmp } from '@/utilities/ampConverter';
-import { getImageUrl, resolvePostOgImageUrl } from '@/lib/post-images';
+import { getImageUrl, resolvePostOgImageUrl, resolvePostHeroSources } from '@/lib/post-images';
 import { resolveCanonicalPostPath } from '@/lib/post-url';
 import { buildBreadcrumbLd, buildArticleLd } from '@/lib/seo';
 
@@ -15,6 +15,15 @@ function escapeHtml(text?: string): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
+}
+
+// Basic CSS Minifier
+function minifyCss(css: string): string {
+  return css
+    .replace(/\/\*[\s\S]*?\*\//g, '')     // Remove comments
+    .replace(/\s+/g, ' ')                 // Collapse multiple spaces
+    .replace(/\s*([\{\}:;])\s*/g, '$1')   // Remove space around braces/colons
+    .trim();
 }
 
 // Lexical rich text caption to plain HTML/text converter
@@ -263,8 +272,12 @@ export async function renderAmpPost(post: any): Promise<string> {
   
   const articleLd = buildArticleLd(articleLdParams);
   
-  // Hero Image Url
-  const heroImageUrl = getImageUrl(post.heroImage, 'hero') || getImageUrl(post.meta?.image, 'hero');
+  // Hero Image Url & Sources
+  const heroSources = resolvePostHeroSources(post);
+  const heroImageUrl = heroSources?.src || getImageUrl(post.heroImage, 'hero') || getImageUrl(post.meta?.image, 'hero');
+  const heroImageSrcset = heroSources?.srcSet || '';
+  const heroImageSizes = heroSources?.sizes || '';
+  const heroImagePreloadUrl = heroSources?.preloadSrc || heroImageUrl;
   const heroImageAlt = post.heroImage?.alt || post.meta?.image?.alt || post.title;
   const heroCaption = await renderLexicalCaption(post.heroImage?.caption || post.meta?.image?.caption);
   
@@ -282,7 +295,7 @@ export async function renderAmpPost(post: any): Promise<string> {
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preload" href="https://fonts.googleapis.com/css2?family=Mukta+Malar:wght@400;700&family=Open+Sans:wght@400;600;700&display=swap" as="style">
     <link href="https://fonts.googleapis.com/css2?family=Mukta+Malar:wght@400;700&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
-    ${heroImageUrl ? `<link rel="preload" href="${heroImageUrl}" as="image" fetchpriority="high">` : ''}
+    ${heroImageUrl ? `<link rel="preload" href="${heroImagePreloadUrl}" ${heroImageSrcset ? `imagesrcset="${heroImageSrcset}" imagesizes="${heroImageSizes}"` : ''} as="image" fetchpriority="high">` : ''}
     
     <title>${escapeHtml(post.title)} – Dinasuvadu</title>
     <link rel="canonical" href="${canonicalUrl}">
@@ -316,7 +329,7 @@ export async function renderAmpPost(post: any): Promise<string> {
     <script type="application/ld+json">${breadcrumbLd}</script>
     <script type="application/ld+json">${articleLd}</script>
     
-    <style amp-custom>
+    <style amp-custom>${minifyCss(`
       body {
         font-family: 'Open Sans', 'Mukta Malar', sans-serif;
         background-color: #f4f6f8;
@@ -809,7 +822,7 @@ export async function renderAmpPost(post: any): Promise<string> {
         .article-body h3 { font-size: 16px; }
         .article-body h4 { font-size: 14px; }
       }
-    </style>
+    `)}</style>
     
     <style amp-boilerplate>body{-webkit-animation:-amp-start 8s steps(1,end) 0s 1 normal both;-moz-animation:-amp-start 8s steps(1,end) 0s 1 normal both;-ms-animation:-amp-start 8s steps(1,end) 0s 1 normal both;animation:-amp-start 8s steps(1,end) 0s 1 normal both}@-webkit-keyframes -amp-start{from{visibility:hidden}to{visibility:visible}}@-moz-keyframes -amp-start{from{visibility:hidden}to{visibility:visible}}@-ms-keyframes -amp-start{from{visibility:hidden}to{visibility:visible}}@-o-keyframes -amp-start{from{visibility:hidden}to{visibility:visible}}@keyframes -amp-start{from{visibility:hidden}to{visibility:visible}}</style>
     <noscript><style amp-boilerplate>body{-webkit-animation:none;-moz-animation:none;-ms-animation:none;animation:none}</style></noscript>
@@ -907,7 +920,7 @@ export async function renderAmpPost(post: any): Promise<string> {
         heroImageUrl
           ? `
       <div class="hero-image-wrap">
-        <amp-img src="${heroImageUrl}" alt="${escapeHtml(heroImageAlt)}" width="16" height="9" layout="responsive" lightbox="true" data-hero></amp-img>
+        <amp-img src="${heroImageUrl}" ${heroImageSrcset ? `srcset="${heroImageSrcset}" sizes="${heroImageSizes}"` : ''} alt="${escapeHtml(heroImageAlt)}" width="16" height="9" layout="responsive" lightbox="true" data-hero></amp-img>
       </div>
       ${heroCaption ? `<p class="hero-caption">${heroCaption}</p>` : ''}
       `
