@@ -9,6 +9,7 @@ export interface AmpConversionResult {
   html: string;
   usesTwitter: boolean;
   usesInstagram: boolean;
+  usesYoutube: boolean;
 }
 
 /**
@@ -36,10 +37,11 @@ function extractInstagramShortcode(url: string): string | null {
  * and removing script/style tags.
  */
 export function convertHtmlToAmp(html: string): AmpConversionResult {
-  if (!html) return { html: '', usesTwitter: false, usesInstagram: false };
+  if (!html) return { html: '', usesTwitter: false, usesInstagram: false, usesYoutube: false };
 
   let usesTwitter = false;
   let usesInstagram = false;
+  let usesYoutube = false;
 
   try {
     const root = parse(html);
@@ -140,6 +142,7 @@ export function convertHtmlToAmp(html: string): AmpConversionResult {
         /(?:youtube\.com\/embed\/|youtu\.be\/|youtube\.com\/watch\?v=)([a-zA-Z0-9_-]{11})/i,
       );
       if (ytMatch?.[1]) {
+        usesYoutube = true;
         iframe.replaceWith(
           `<amp-youtube data-videoid="${ytMatch[1]}" width="480" height="270" layout="responsive"></amp-youtube>`,
         );
@@ -194,7 +197,7 @@ export function convertHtmlToAmp(html: string): AmpConversionResult {
     // ── 6. Remove inline style tags (disallowed in AMP) ─────────────────────
     root.querySelectorAll('style').forEach((s) => s.remove());
 
-    return { html: root.toString(), usesTwitter, usesInstagram };
+    return { html: root.toString(), usesTwitter, usesInstagram, usesYoutube };
   } catch (error) {
     console.error('Error converting HTML to AMP:', error);
     // Safe regex fallback — only handles img tags
@@ -209,6 +212,6 @@ export function convertHtmlToAmp(html: string): AmpConversionResult {
           : '';
       })
       .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
-    return { html: fallbackHtml, usesTwitter, usesInstagram };
+    return { html: fallbackHtml, usesTwitter, usesInstagram, usesYoutube: false };
   }
 }

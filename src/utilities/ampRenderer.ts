@@ -146,6 +146,7 @@ export async function renderAmpPost(post: any): Promise<string> {
   let bodyHtml = '';
   let usesTwitter = false;
   let usesInstagram = false;
+  let usesYoutube = false;
 
   if (post.content) {
     try {
@@ -157,6 +158,7 @@ export async function renderAmpPost(post: any): Promise<string> {
       bodyHtml = result.html;
       usesTwitter = result.usesTwitter;
       usesInstagram = result.usesInstagram;
+      usesYoutube = result.usesYoutube;
     } catch (err) {
       console.error('Error converting rich text to HTML in AMP:', err);
     }
@@ -171,6 +173,7 @@ export async function renderAmpPost(post: any): Promise<string> {
         layoutHtmls.push(result.html);
         if (result.usesTwitter) usesTwitter = true;
         if (result.usesInstagram) usesInstagram = true;
+        if (result.usesYoutube) usesYoutube = true;
       } else if (block.blockType === 'mediaBlock' && block.media) {
         const url = getImageUrl(block.media, 'content');
         if (!url) continue;
@@ -305,7 +308,7 @@ export async function renderAmpPost(post: any): Promise<string> {
     <script async custom-element="amp-lightbox-gallery" src="https://cdn.ampproject.org/v0/amp-lightbox-gallery-0.1.js"></script>
     <script async custom-element="amp-social-share" src="https://cdn.ampproject.org/v0/amp-social-share-0.1.js"></script>
     <script async custom-element="amp-analytics" src="https://cdn.ampproject.org/v0/amp-analytics-0.1.js"></script>
-    <script async custom-element="amp-youtube" src="https://cdn.ampproject.org/v0/amp-youtube-0.1.js"></script>
+    ${usesYoutube ? '<script async custom-element="amp-youtube" src="https://cdn.ampproject.org/v0/amp-youtube-0.1.js"></script>' : ''}
     ${usesTwitter ? '<script async custom-element="amp-twitter" src="https://cdn.ampproject.org/v0/amp-twitter-0.1.js"></script>' : ''}
     ${usesInstagram ? '<script async custom-element="amp-instagram" src="https://cdn.ampproject.org/v0/amp-instagram-0.1.js"></script>' : ''}
     
