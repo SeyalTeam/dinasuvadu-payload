@@ -91,6 +91,31 @@ async function fetchParentCategory(parentId: string): Promise<{ slug: string; ti
   }
 }
 
+// Utility function to fetch children categories of a parent category ID
+async function fetchChildrenCategories(parentId: string): Promise<string[]> {
+  try {
+    const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/categories?where[parent][equals]=${parentId}&limit=100&depth=0`;
+    const response = await fetch(apiUrl, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      console.error(`Failed to fetch children for category ID ${parentId}: ${response.status} ${response.statusText}`);
+      return [];
+    }
+
+    const data = await response.json();
+    return data.docs?.map((c: any) => c.id) || [];
+  } catch (error) {
+    console.error(`Error fetching children for category ID ${parentId}:`, error);
+    return [];
+  }
+}
+
 // Utility function to construct the post URL based on category
 async function getPostUrl(post: any, baseUrl: string): Promise<string> {
   const category = post.categories?.[0];
@@ -150,8 +175,18 @@ export async function GET(
     }
   }
 
+  // Fetch child category IDs to include posts from subcategories
+  const childCategoryIds = await fetchChildrenCategories(category.id);
+  const allCategoryIds = [category.id, ...childCategoryIds];
+
+  // Construct query parameter to fetch posts in any of these categories
+  let categoriesQuery = '';
+  allCategoryIds.forEach((id, idx) => {
+    categoriesQuery += `&where[categories][in][${idx}]=${id}`;
+  });
+
   // Fetch posts for this category
-  const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/posts?limit=50&sort=-publishedAt&where[_status][equals]=published&where[categories][contains]=${category.id}&depth=2`;
+  const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/posts?limit=50&sort=-publishedAt&where[_status][equals]=published${categoriesQuery}&depth=2`;
   console.log('Fetching posts for category RSS feed from:', apiUrl);
 
   let allPosts = [];
