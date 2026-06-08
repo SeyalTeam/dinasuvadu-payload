@@ -1,14 +1,23 @@
 export const dynamic = 'force-dynamic'; // Ensures the route is dynamic and not cached indefinitely
 
-// Utility function to escape special characters for XML
+// Utility function to escape special characters for XML attribute values
 function escapeXml(unsafe: string): string {
   if (!unsafe) return '';
   return unsafe
-    .replace(/&/g, '&')
-    .replace(/</g, '<')
-    .replace(/>/g, '>')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&apos;');
+}
+
+// Utility function to escape special characters for XML text nodes (without escaping quotes)
+function escapeXmlText(unsafe: string): string {
+  if (!unsafe) return '';
+  return unsafe
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
 }
 
 // Utility function to wrap content in CDATA
@@ -212,7 +221,7 @@ export async function GET() {
 
       return `
     <item>
-      <title>${escapeXml(post.title)}</title>
+      <title>${escapeXmlText(post.title)}</title>
       <link>${postUrl}</link>
       <guid isPermaLink="false">${postUrl}</guid>
       <pubDate>${new Date(post.publishedAt).toUTCString()}</pubDate>
@@ -230,7 +239,7 @@ export async function GET() {
       )}</content:encoded>
       ${fullImageUrl ? `
       <media:content url="${fullImageUrl}" medium="image">
-        <media:title>${escapeXml(post.title)}</media:title>
+        <media:title>${escapeXmlText(post.title)}</media:title>
       </media:content>` : ''}
     </item>`;
     }))}

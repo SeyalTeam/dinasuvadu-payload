@@ -11,8 +11,12 @@ export const populateAuthors: CollectionAfterReadHook = async ({ doc, req: { pay
 
     for (const author of doc.authors) {
       try {
+        const authorId = typeof author === 'object' && author !== null
+          ? (typeof author.id === 'string' ? author.id : author.toString())
+          : author;
+
         const authorDoc = await payload.findByID({
-          id: typeof author === 'object' ? author?.id : author,
+          id: authorId,
           collection: 'users',
           depth: 0,
         })

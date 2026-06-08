@@ -2,15 +2,24 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic'; // Ensures the route is dynamic and not cached indefinitely
 
-// Utility function to escape special characters for XML
+// Utility function to escape special characters for XML attribute values
 function escapeXml(unsafe: string): string {
   if (!unsafe) return '';
   return unsafe
-    .replace(/&/g, '&')
-    .replace(/</g, '<')
-    .replace(/>/g, '>')
-    .replace(/"/g, '"')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
     .replace(/'/g, '&apos;');
+}
+
+// Utility function to escape special characters for XML text nodes (without escaping quotes)
+function escapeXmlText(unsafe: string): string {
+  if (!unsafe) return '';
+  return unsafe
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
 }
 
 // Utility function to wrap content in CDATA
@@ -247,10 +256,10 @@ export async function GET(
   xmlns:media="http://search.yahoo.com/mrss/"
 >
   <channel>
-    <title>Dinasuvadu - ${escapeXml(category.title)}</title>
+    <title>Dinasuvadu - ${escapeXmlText(category.title)}</title>
     <atom:link href="${baseUrl}/${categorySlug}/feed" rel="self" type="application/rss+xml" />
     <link>${baseUrl}/${categorySlug}</link>
-    <description>Tamil News, Breaking News in ${escapeXml(category.title)}, தமிழ் செய்திகள்</description>
+    <description>Tamil News, Breaking News in ${escapeXmlText(category.title)}, தமிழ் செய்திகள்</description>
     <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>
     <language>ta</language>
     <sy:updatePeriod>hourly</sy:updatePeriod>
@@ -258,7 +267,7 @@ export async function GET(
     <generator>Next.js with Payload CMS</generator>
     <image>
       <url>${baseUrl}/dinasuvadu.svg</url>
-      <title>Dinasuvadu - ${escapeXml(category.title)}</title>
+      <title>Dinasuvadu - ${escapeXmlText(category.title)}</title>
       <link>${baseUrl}/${categorySlug}</link>
       <width>32</width>
       <height>32</height>
@@ -275,7 +284,7 @@ export async function GET(
 
       return `
     <item>
-      <title>${escapeXml(post.title)}</title>
+      <title>${escapeXmlText(post.title)}</title>
       <link>${postUrl}</link>
       <guid isPermaLink="false">${postUrl}</guid>
       <pubDate>${new Date(post.publishedAt).toUTCString()}</pubDate>
@@ -293,7 +302,7 @@ export async function GET(
       )}</content:encoded>
       ${fullImageUrl ? `
       <media:content url="${fullImageUrl}" medium="image">
-        <media:title>${escapeXml(post.title)}</media:title>
+        <media:title>${escapeXmlText(post.title)}</media:title>
       </media:content>` : ''}
     </item>`;
     }))}
