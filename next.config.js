@@ -122,6 +122,7 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   webpack: (config, { webpack, isServer }) => {
+    config.cache = false
     if (!isServer) {
       config.plugins.push(
         new webpack.NormalModuleReplacementPlugin(
@@ -129,12 +130,12 @@ const nextConfig = {
           path.resolve(dirname, './src/empty-polyfill.js')
         )
       )
-      config.plugins.push(
+      /* config.plugins.push(
         new webpack.NormalModuleReplacementPlugin(
           /next-devtools/,
           path.resolve(dirname, './src/empty-polyfill.js')
         )
-      )
+      ) */
     }
     return config
   },

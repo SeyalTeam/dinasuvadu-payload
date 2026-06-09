@@ -277,6 +277,7 @@ async function fetchPostRaw(slug: string): Promise<Post | null> {
         heroImage: true,
         meta: true,
         categories: true,
+        authors: true,
         populatedAuthors: true,
         publishedAt: true,
         updatedAt: true,
