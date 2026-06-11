@@ -538,10 +538,11 @@ function convertRichTextToHTML(content: Post["content"]): string {
   if (!content) return "";
 
   try {
-    return convertLexicalToHTML({
+    const html = convertLexicalToHTML({
       data: content as any,
       disableContainer: true,
     });
+    return html ? html.replace(/<\/picture\$>/g, '</picture>').replace(/<\/a\$>/g, '</a>') : "";
   } catch (error) {
     console.error("Error converting rich text content to HTML:", error);
     return "";

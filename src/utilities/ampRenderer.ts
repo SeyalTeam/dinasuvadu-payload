@@ -36,7 +36,8 @@ async function renderLexicalCaption(captionObj: any): Promise<string> {
         data: captionObj,
         disableContainer: true,
       });
-      return convertHtmlToAmp(html).html;
+      const fixedHtml = html.replace(/<\/picture\$>/g, '</picture>').replace(/<\/a\$>/g, '</a>');
+      return convertHtmlToAmp(fixedHtml).html;
     } catch (err) {
       console.error('Error rendering Lexical caption:', err);
       try {
@@ -163,7 +164,8 @@ export async function renderAmpPost(post: any): Promise<string> {
         data: post.content,
         disableContainer: true,
       });
-      const result = convertHtmlToAmp(lexicalHtml);
+      const fixedLexicalHtml = lexicalHtml.replace(/<\/picture\$>/g, '</picture>').replace(/<\/a\$>/g, '</a>');
+      const result = convertHtmlToAmp(fixedLexicalHtml);
       bodyHtml = result.html;
       usesTwitter = result.usesTwitter;
       usesInstagram = result.usesInstagram;
