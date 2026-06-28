@@ -95,13 +95,52 @@ export const Posts: CollectionConfig<'posts'> = {
               relationTo: 'posts',
             },
             {
-              name: 'categories',
+              name: 'parentCategory',
               type: 'relationship',
+              relationTo: 'categories',
+              hasMany: false,
               admin: {
                 position: 'sidebar',
+                description: 'Select a parent category first',
               },
-              hasMany: true,
+              filterOptions: () => {
+                return {
+                  parent: {
+                    exists: false,
+                  },
+                }
+              },
+            },
+            {
+              name: 'categories',
+              type: 'relationship',
               relationTo: 'categories',
+              hasMany: true,
+              admin: {
+                position: 'sidebar',
+                description: 'Select one or more child categories',
+                condition: (data) => Boolean(data?.parentCategory),
+              },
+              filterOptions: ({ siblingData }) => {
+                const data = siblingData as any
+                const parentId = data && data.parentCategory
+                  ? (typeof data.parentCategory === 'object' && data.parentCategory !== null && 'id' in data.parentCategory
+                    ? data.parentCategory.id
+                    : data.parentCategory)
+                  : null;
+                if (parentId) {
+                  return {
+                    parent: {
+                      equals: parentId,
+                    },
+                  }
+                }
+                return {
+                  parent: {
+                    exists: true,
+                  },
+                }
+              },
             },
           ],
           label: 'Meta',
@@ -148,7 +187,12 @@ export const Posts: CollectionConfig<'posts'> = {
     {
       name: 'tags',
       type: 'relationship',
-      admin: { position: 'sidebar' },
+      admin: {
+        position: 'sidebar',
+        components: {
+          Field: '@/components/CreatableTagsField#CreatableTagsField',
+        },
+      },
       hasMany: true,
       relationTo: 'tags',
     },

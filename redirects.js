@@ -15,6 +15,16 @@ const redirects = async () => {
   const redirects = [
     internetExplorerRedirect,
     {
+      source: '/:categorySlug/:postSlug/amp',
+      destination: '/amp/:categorySlug/:postSlug',
+      permanent: true,
+    },
+    {
+      source: '/:categorySlug/:subCategorySlug/:postSlug/amp',
+      destination: '/amp/:categorySlug/:subCategorySlug/:postSlug',
+      permanent: true,
+    },
+    {
       source: '/posts-sitemap.xml',
       destination: '/sitemap-post?page=1',
       permanent: false,

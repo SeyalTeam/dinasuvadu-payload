@@ -237,6 +237,13 @@ export interface Post {
     [k: string]: unknown;
   };
   relatedPosts?: (string | Post)[] | null;
+  /**
+   * Select a parent category first
+   */
+  parentCategory?: (string | null) | Category;
+  /**
+   * Select one or more child categories
+   */
   categories?: (string | Category)[] | null;
   meta?: {
     title?: string | null;
@@ -1178,6 +1185,7 @@ export interface PostsSelect<T extends boolean = true> {
   heroImage?: T;
   content?: T;
   relatedPosts?: T;
+  parentCategory?: T;
   categories?: T;
   meta?:
     | T
