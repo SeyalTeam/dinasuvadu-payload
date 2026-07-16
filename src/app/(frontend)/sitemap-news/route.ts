@@ -20,12 +20,16 @@ export async function GET() {
       depth: 0,
       select: {
         slug: true,
+        parent: true,
       },
     });
     
     const categoryMap = new Map();
     categories.forEach((cat) => {
-      categoryMap.set(cat.id, cat.slug);
+      categoryMap.set(cat.id, {
+        slug: cat.slug,
+        parent: cat.parent,
+      });
     });
 
     // 2. Fetch posts published in the last 2 days (Max 1000 for Google News)
@@ -52,21 +56,34 @@ export async function GET() {
 
     const newsEntries = posts.map((post) => {
       let categorySlug = "news"; // default fallback
+      let parentSlug = null;
       
       // Determine category slug from the lookup map
       if (post.categories && post.categories.length > 0) {
         const catId = post.categories[0];
-        const lookupSlug = categoryMap.get(catId);
-        if (lookupSlug) {
-          categorySlug = lookupSlug;
+        const lookup = categoryMap.get(catId);
+        if (lookup) {
+          categorySlug = lookup.slug;
+          const parentId = typeof lookup.parent === "object" && lookup.parent !== null
+            ? (lookup.parent as any).id
+            : lookup.parent;
+          if (parentId) {
+            const parentLookup = categoryMap.get(parentId);
+            if (parentLookup) {
+              parentSlug = parentLookup.slug;
+            }
+          }
         }
       }
 
       // Ensure date is in ISO 8601 format
       const pubDate = post.publishedAt || post.updatedAt || post.createdAt;
+      const path = parentSlug 
+        ? `${parentSlug}/${categorySlug}/${post.slug}` 
+        : `${categorySlug}/${post.slug}`;
 
       return {
-        loc: `${baseUrl}/${categorySlug}/${post.slug}`,
+        loc: `${baseUrl}/${path}`,
         title: post.title,
         publicationDate: pubDate,
       };

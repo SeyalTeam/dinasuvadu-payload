@@ -18,26 +18,51 @@ export async function GET() {
       where: { _status: { equals: "published" } },
     });
 
+    // Find the latest updated post
+    const { docs: latestPost } = await payload.find({
+      collection: "posts",
+      limit: 1,
+      depth: 0,
+      sort: "-updatedAt",
+      where: { _status: { equals: "published" } },
+      select: {
+        updatedAt: true,
+      },
+    });
+    const postLastMod = latestPost[0]?.updatedAt || new Date().toISOString();
+
+    // Find the latest updated category
+    const { docs: latestCategory } = await payload.find({
+      collection: "categories",
+      limit: 1,
+      depth: 0,
+      sort: "-updatedAt",
+      select: {
+        updatedAt: true,
+      },
+    });
+    const catLastMod = latestCategory[0]?.updatedAt || postLastMod;
+
     const totalSitemaps = Math.ceil(totalDocs / postsPerPage);
     const sitemapEntries = [];
 
     // Add Google News Sitemap (Last 2 days)
     sitemapEntries.push({
       loc: `${baseUrl}/sitemap-news`,
-      lastmod: new Date().toISOString(),
+      lastmod: postLastMod,
     });
 
     // Add Next-Sitemap's standard static sitemap
     sitemapEntries.push({
       loc: `${baseUrl}/sitemap-0.xml`, 
-      lastmod: new Date().toISOString(),
+      lastmod: catLastMod,
     });
 
     // Add Dynamic Post Sitemaps
     for (let i = 0; i < totalSitemaps; i++) {
       sitemapEntries.push({
         loc: `${baseUrl}/sitemap-post?page=${i + 1}`,
-        lastmod: new Date().toISOString(),
+        lastmod: postLastMod,
       });
     }
 
