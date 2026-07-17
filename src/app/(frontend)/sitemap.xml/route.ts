@@ -10,13 +10,20 @@ export async function GET() {
   try {
     const payload = await getPayload({ config });
     
-    // Find total number of published posts
-    const { totalDocs } = await payload.find({
+    // Find highest customId and use range-based sitemap pages.
+    // This avoids high-offset Mongo/Payload pagination for deep post sitemaps.
+    const { docs: latestCustomIdPost } = await payload.find({
       collection: "posts",
-      limit: 1, // We only need the total count
+      limit: 1,
       depth: 0,
+      sort: "-customId",
       where: { _status: { equals: "published" } },
+      select: {
+        customId: true,
+      },
     });
+    const maxCustomId =
+      typeof latestCustomIdPost[0]?.customId === "number" ? latestCustomIdPost[0].customId : 0;
 
     // Find the latest updated post
     const { docs: latestPost } = await payload.find({
@@ -43,7 +50,7 @@ export async function GET() {
     });
     const catLastMod = latestCategory[0]?.updatedAt || postLastMod;
 
-    const totalSitemaps = Math.ceil(totalDocs / postsPerPage);
+    const totalSitemaps = Math.ceil(maxCustomId / postsPerPage);
     const sitemapEntries = [];
 
     // Add Google News Sitemap (Last 2 days)
