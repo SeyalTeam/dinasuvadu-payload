@@ -44,6 +44,7 @@ export async function GET(request: Request) {
       limit: postsPerPage,
       page,
       depth: 0,
+      sort: "-publishedAt",
       where: { _status: { equals: "published" } },
       select: {
         slug: true,

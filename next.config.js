@@ -66,6 +66,8 @@ const nextConfig = {
   experimental: {
     inlineCss: true,
   },
+  htmlLimitedBots:
+    /Googlebot|Googlebot-News|Google-InspectionTool|GoogleOther|Google-PageRenderer|Mediapartners-Google|AdsBot-Google|bingbot|BingPreview|Twitterbot|facebookexternalhit|Slackbot|LinkedInBot|WhatsApp|TelegramBot|Discordbot/i,
   outputFileTracingRoot: path.join(dirname, './'),
   images: {
     remotePatterns: imageRemotePatterns,
