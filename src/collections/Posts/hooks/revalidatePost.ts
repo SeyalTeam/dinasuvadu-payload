@@ -3,6 +3,27 @@ import { revalidatePath, revalidateTag } from 'next/cache'
 import type { Post } from '../../../payload-types'
 import { resolveCanonicalPostPath } from '@/lib/post-url'
 
+const revalidatePostDiscoverySurfaces = (payload: any) => {
+  const paths = [
+    '/',
+    '/latest-feed',
+    '/feed',
+    '/sitemap.xml',
+    '/sitemap-news',
+    '/sitemap-post',
+  ];
+
+  for (const path of paths) {
+    payload.logger.info(`Revalidating discovery surface: ${path}`)
+    revalidatePath(path)
+  }
+
+  revalidateTag('published-posts')
+  revalidateTag('homepage-latest-posts')
+  revalidateTag('homepage-category-posts')
+  revalidateTag('posts-sitemap')
+}
+
 export const revalidatePost: CollectionAfterChangeHook<Post> = async ({
   doc,
   previousDoc,
@@ -32,7 +53,7 @@ export const revalidatePost: CollectionAfterChangeHook<Post> = async ({
       payload.logger.info(`Revalidating AMP post at path: ${ampPath}`)
       revalidatePath(ampPath)
 
-      revalidateTag('posts-sitemap')
+      revalidatePostDiscoverySurfaces(payload)
 
       // If the post was already published and the slug or category changed,
       // also revalidate the OLD canonical + /amp paths to bust stale caches.
@@ -57,7 +78,7 @@ export const revalidatePost: CollectionAfterChangeHook<Post> = async ({
       payload.logger.info(`Revalidating old AMP post at path: ${oldAmpPath}`)
       revalidatePath(oldAmpPath)
 
-      revalidateTag('posts-sitemap')
+      revalidatePostDiscoverySurfaces(payload)
     }
   }
   return doc
@@ -91,7 +112,7 @@ export const revalidateDelete: CollectionAfterDeleteHook<Post> = async ({
     payload.logger.info(`Revalidating deleted AMP post at path: ${ampPath}`)
     revalidatePath(ampPath)
 
-    revalidateTag('posts-sitemap')
+    revalidatePostDiscoverySurfaces(payload)
   }
 
   return doc

@@ -1,4 +1,4 @@
-export const revalidate = 300; // ISR: avoid rebuilding heavy homepage every few seconds
+export const revalidate = 60; // Keep news discovery surfaces fresh for crawlers
 import Link from "next/link";
 import Image from "next/image";
 import { unstable_cache } from "next/cache";
@@ -58,7 +58,10 @@ async function fetchCategoriesRaw(): Promise<Category[]> {
 }
 
 const fetchCategories = () =>
-  unstable_cache(fetchCategoriesRaw, ["homepage-categories"], { revalidate: 300 })();
+  unstable_cache(fetchCategoriesRaw, ["homepage-categories"], {
+    revalidate: 300,
+    tags: ["homepage-categories"],
+  })();
 
 async function fetchLatestPostsRaw(): Promise<Post[]> {
   try {
@@ -68,6 +71,11 @@ async function fetchLatestPostsRaw(): Promise<Post[]> {
       limit: 34,
       depth: 2,
       sort: "-publishedAt",
+      where: {
+        _status: {
+          equals: "published",
+        },
+      },
     });
     return (res.docs as unknown as Post[]) || [];
   } catch (err) {
@@ -77,7 +85,10 @@ async function fetchLatestPostsRaw(): Promise<Post[]> {
 }
 
 const fetchLatestPosts = () =>
-  unstable_cache(fetchLatestPostsRaw, ["homepage-latest-posts"], { revalidate: 300 })();
+  unstable_cache(fetchLatestPostsRaw, ["homepage-latest-posts"], {
+    revalidate: 60,
+    tags: ["homepage-latest-posts", "published-posts"],
+  })();
 
 async function fetchPostsByCategoryRaw(categoryId: string): Promise<Post[]> {
   try {
@@ -103,9 +114,18 @@ async function fetchPostsByCategoryRaw(categoryId: string): Promise<Post[]> {
       depth: 2,
       sort: "-publishedAt",
       where: {
-        categories: {
-          in: allCategoryIds,
-        },
+        and: [
+          {
+            categories: {
+              in: allCategoryIds,
+            },
+          },
+          {
+            _status: {
+              equals: "published",
+            },
+          },
+        ],
       },
     });
     return (res.docs as unknown as Post[]) || [];
@@ -119,7 +139,14 @@ const fetchPostsByCategory = (categoryId: string) =>
   unstable_cache(
     async () => fetchPostsByCategoryRaw(categoryId),
     ["homepage-category-posts", categoryId],
-    { revalidate: 300 }
+    {
+      revalidate: 60,
+      tags: [
+        "homepage-category-posts",
+        `homepage-category-posts-${categoryId}`,
+        "published-posts",
+      ],
+    }
   )();
 
 // Fetch parent category details by ID
