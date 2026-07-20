@@ -3,8 +3,26 @@ import config from "@/payload.config";
 
 export const dynamic = "force-dynamic";
 
+type SitemapEntry = {
+  loc: string;
+  lastmod?: string;
+};
+
+function escapeXml(value: unknown): string {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
+
+function normalizeBaseUrl(): string {
+  return (process.env.PAYLOAD_PUBLIC_SERVER_URL || "https://www.dinasuvadu.com").replace(/\/$/, "");
+}
+
 export async function GET() {
-  const baseUrl = process.env.PAYLOAD_PUBLIC_SERVER_URL || "https://www.dinasuvadu.com";
+  const baseUrl = normalizeBaseUrl();
   const postsPerPage = 500;
 
   try {
@@ -51,7 +69,7 @@ export async function GET() {
     const catLastMod = latestCategory[0]?.updatedAt || postLastMod;
 
     const totalSitemaps = Math.ceil(maxCustomId / postsPerPage);
-    const sitemapEntries = [];
+    const sitemapEntries: SitemapEntry[] = [];
 
     // Add Google News Sitemap (Last 2 days)
     sitemapEntries.push({
@@ -65,11 +83,10 @@ export async function GET() {
       lastmod: catLastMod,
     });
 
-    // Add Dynamic Post Sitemaps
-    for (let i = 0; i < totalSitemaps; i++) {
+    for (let page = totalSitemaps; page >= 1; page--) {
       sitemapEntries.push({
-        loc: `${baseUrl}/sitemap-post?page=${i + 1}`,
-        lastmod: postLastMod,
+        loc: `${baseUrl}/sitemap-post?page=${page}`,
+        lastmod: page === totalSitemaps ? postLastMod : undefined,
       });
     }
 
@@ -79,8 +96,8 @@ ${sitemapEntries
   .map(
     (entry) => `
   <sitemap>
-    <loc>${entry.loc}</loc>
-    <lastmod>${entry.lastmod}</lastmod>
+    <loc>${escapeXml(entry.loc)}</loc>${entry.lastmod ? `
+    <lastmod>${escapeXml(entry.lastmod)}</lastmod>` : ""}
   </sitemap>`
   )
   .join("")}

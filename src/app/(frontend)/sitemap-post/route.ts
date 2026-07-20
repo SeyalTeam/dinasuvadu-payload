@@ -115,8 +115,8 @@ async function fetchPostsForSitemapPage(payload: any, page: number): Promise<any
   const totalPages = Math.ceil(maxCustomId / POSTS_PER_SITEMAP);
   if (page > totalPages) return [];
 
-  const rangeHigh = (totalPages - page + 1) * POSTS_PER_SITEMAP;
-  const rangeLow = Math.max(rangeHigh - POSTS_PER_SITEMAP + 1, 1);
+  const rangeLow = (page - 1) * POSTS_PER_SITEMAP + 1;
+  const rangeHigh = page * POSTS_PER_SITEMAP;
 
   const { docs } = await payload.find({
     collection: "posts",
