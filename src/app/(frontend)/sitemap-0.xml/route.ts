@@ -3,13 +3,51 @@ import config from "@/payload.config";
 
 export const dynamic = "force-dynamic";
 
+function escapeXml(value: unknown): string {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
+
+function normalizeBaseUrl(): string {
+  return (
+    process.env.PAYLOAD_PUBLIC_SERVER_URL ||
+    process.env.NEXT_PUBLIC_BASE_URL ||
+    process.env.NEXT_PUBLIC_SERVER_URL ||
+    "https://www.dinasuvadu.com"
+  ).replace(/\/$/, "");
+}
+
+function normalizeId(value: unknown): string | null {
+  if (typeof value === "string" && value) return value;
+  if (value && typeof value === "object" && "id" in value) {
+    const id = (value as { id?: unknown }).id;
+    return typeof id === "string" && id ? id : null;
+  }
+  return null;
+}
+
 export async function GET() {
-  const baseUrl = process.env.PAYLOAD_PUBLIC_SERVER_URL || "https://www.dinasuvadu.com";
+  const baseUrl = normalizeBaseUrl();
 
   try {
     const payload = await getPayload({ config });
 
-    const sitemapEntries = [];
+    const sitemapEntries: { loc: string; lastmod: string }[] = [];
+
+    // Find the latest post update date for fallback static page lastmod
+    const { docs: latestPost } = await payload.find({
+      collection: "posts",
+      limit: 1,
+      depth: 0,
+      sort: "-updatedAt",
+      where: { _status: { equals: "published" } },
+      select: { updatedAt: true },
+    });
+    const fallbackLastMod = latestPost[0]?.updatedAt || "2026-01-01T00:00:00.000Z";
 
     // 1. Add static frontend pages
     const staticPages = [
@@ -23,29 +61,48 @@ export async function GET() {
     staticPages.forEach((pagePath) => {
       sitemapEntries.push({
         loc: `${baseUrl}${pagePath}`,
-        lastmod: new Date().toISOString(),
-        changefreq: "daily",
-        priority: pagePath === "" ? "1.0" : "0.7",
+        lastmod: fallbackLastMod,
       });
     });
 
-    // 2. Fetch and add all categories
+    // 2. Fetch and add all categories with parent hierarchy
     const { docs: categories } = await payload.find({
       collection: "categories",
       limit: 1000,
       depth: 0,
       select: {
         slug: true,
+        parent: true,
         updatedAt: true,
       },
     });
 
-    categories.forEach((category) => {
+    const categoryMap = new Map<string, { slug: string; parent?: unknown; updatedAt?: string }>();
+    categories.forEach((cat: any) => {
+      if (cat.id && cat.slug) {
+        categoryMap.set(cat.id, {
+          slug: cat.slug,
+          parent: cat.parent,
+          updatedAt: cat.updatedAt,
+        });
+      }
+    });
+
+    categories.forEach((category: any) => {
+      if (!category.slug) return;
+
+      let categoryPath = category.slug;
+      const parentId = normalizeId(category.parent);
+      if (parentId) {
+        const parentLookup = categoryMap.get(parentId);
+        if (parentLookup?.slug) {
+          categoryPath = `${parentLookup.slug}/${category.slug}`;
+        }
+      }
+
       sitemapEntries.push({
-        loc: `${baseUrl}/${category.slug}`,
-        lastmod: category.updatedAt || new Date().toISOString(),
-        changefreq: "daily",
-        priority: "0.8",
+        loc: `${baseUrl}/${categoryPath}`,
+        lastmod: category.updatedAt || fallbackLastMod,
       });
     });
 
@@ -63,14 +120,15 @@ export async function GET() {
       },
     });
 
-    pages.forEach((page) => {
+    pages.forEach((page: any) => {
       // Avoid duplicate urls for hardcoded routes if they exist in DB
-      if (page.slug && !["about-us", "contact-us", "disclaimer", "terms-conditions", "home"].includes(page.slug)) {
+      if (
+        page.slug &&
+        !["about-us", "contact-us", "disclaimer", "terms-conditions", "home"].includes(page.slug)
+      ) {
         sitemapEntries.push({
           loc: `${baseUrl}/${page.slug}`,
-          lastmod: page.updatedAt || new Date().toISOString(),
-          changefreq: "weekly",
-          priority: "0.6",
+          lastmod: page.updatedAt || fallbackLastMod,
         });
       }
     });
@@ -81,10 +139,8 @@ ${sitemapEntries
   .map(
     (entry) => `
   <url>
-    <loc>${entry.loc}</loc>
-    <lastmod>${entry.lastmod}</lastmod>
-    <changefreq>${entry.changefreq}</changefreq>
-    <priority>${entry.priority}</priority>
+    <loc>${escapeXml(entry.loc)}</loc>
+    <lastmod>${escapeXml(entry.lastmod)}</lastmod>
   </url>`
   )
   .join("")}
@@ -93,6 +149,7 @@ ${sitemapEntries
     return new Response(sitemapXml, {
       headers: {
         "Content-Type": "text/xml; charset=utf-8",
+        "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
       },
     });
   } catch (error) {

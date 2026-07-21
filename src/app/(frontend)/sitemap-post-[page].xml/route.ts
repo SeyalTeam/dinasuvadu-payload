@@ -15,7 +15,12 @@ function escapeXml(value: unknown): string {
 }
 
 function normalizeBaseUrl(): string {
-  return (process.env.PAYLOAD_PUBLIC_SERVER_URL || "https://www.dinasuvadu.com").replace(/\/$/, "");
+  return (
+    process.env.PAYLOAD_PUBLIC_SERVER_URL ||
+    process.env.NEXT_PUBLIC_BASE_URL ||
+    process.env.NEXT_PUBLIC_SERVER_URL ||
+    "https://www.dinasuvadu.com"
+  ).replace(/\/$/, "");
 }
 
 function normalizeId(value: unknown): string | null {
@@ -73,7 +78,7 @@ async function fetchCategoryMap(payload: any): Promise<Map<string, { slug?: stri
     });
 
     const categoryMap = new Map<string, { slug?: string | null; parent?: unknown }>();
-    categories.forEach((cat) => {
+    categories.forEach((cat: any) => {
       categoryMap.set(cat.id, {
         slug: cat.slug,
         parent: cat.parent,
@@ -82,7 +87,7 @@ async function fetchCategoryMap(payload: any): Promise<Map<string, { slug?: stri
 
     return categoryMap;
   } catch (error) {
-    payload.logger.error({ err: error }, "Sitemap category lookup failed; using fallback category paths");
+    payload.logger?.error?.({ err: error }, "Sitemap category lookup failed; using fallback category paths");
     return new Map();
   }
 }
@@ -103,7 +108,7 @@ async function fetchMaxCustomId(payload: any): Promise<number | null> {
     const customId = docs?.[0]?.customId;
     return typeof customId === "number" && customId > 0 ? customId : null;
   } catch (error) {
-    payload.logger.warn({ err: error }, "Sitemap max customId lookup failed");
+    payload.logger?.warn?.({ err: error }, "Sitemap max customId lookup failed");
     return null;
   }
 }
@@ -144,15 +149,18 @@ async function fetchPostsForSitemapPage(payload: any, page: number): Promise<any
   return docs || [];
 }
 
-export async function GET(request: Request) {
-  const baseUrl = normalizeBaseUrl();
-  const url = new URL(request.url);
-  const pageParam = url.searchParams.get("page");
-  const page = Number.parseInt(pageParam || "1", 10);
+export async function GET(
+  _request: Request,
+  { params }: { params: Promise<{ page: string }> }
+) {
+  const { page: rawPage } = await params;
+  const page = Number.parseInt(rawPage || "1", 10);
 
   if (!Number.isFinite(page) || page < 1) {
     return xmlResponse(emptySitemap());
   }
+
+  const baseUrl = normalizeBaseUrl();
 
   try {
     const payload = await getPayload({ config });

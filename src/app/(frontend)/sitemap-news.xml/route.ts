@@ -3,8 +3,26 @@ import config from "@/payload.config";
 
 export const dynamic = "force-dynamic";
 
+function escapeXml(value: unknown): string {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
+
+function normalizeBaseUrl(): string {
+  return (
+    process.env.PAYLOAD_PUBLIC_SERVER_URL ||
+    process.env.NEXT_PUBLIC_BASE_URL ||
+    process.env.NEXT_PUBLIC_SERVER_URL ||
+    "https://www.dinasuvadu.com"
+  ).replace(/\/$/, "");
+}
+
 export async function GET() {
-  const baseUrl = process.env.PAYLOAD_PUBLIC_SERVER_URL || "https://www.dinasuvadu.com";
+  const baseUrl = normalizeBaseUrl();
   
   // Google News sitemap must only contain articles from the last 2 days
   const twoDaysAgo = new Date();
@@ -25,7 +43,7 @@ export async function GET() {
     });
     
     const categoryMap = new Map();
-    categories.forEach((cat) => {
+    categories.forEach((cat: any) => {
       categoryMap.set(cat.id, {
         slug: cat.slug,
         parent: cat.parent,
@@ -54,18 +72,20 @@ export async function GET() {
       },
     });
 
-    const newsEntries = posts.map((post) => {
+    const newsEntries = posts.map((post: any) => {
       let categorySlug = "news"; // default fallback
       let parentSlug = null;
       
       // Determine category slug from the lookup map
       if (post.categories && post.categories.length > 0) {
-        const catId = post.categories[0];
+        const catId = typeof post.categories[0] === "object" && post.categories[0] !== null
+          ? post.categories[0].id
+          : post.categories[0];
         const lookup = categoryMap.get(catId);
         if (lookup) {
           categorySlug = lookup.slug;
           const parentId = typeof lookup.parent === "object" && lookup.parent !== null
-            ? (lookup.parent as any).id
+            ? lookup.parent.id
             : lookup.parent;
           if (parentId) {
             const parentLookup = categoryMap.get(parentId);
@@ -76,7 +96,6 @@ export async function GET() {
         }
       }
 
-      // Ensure date is in ISO 8601 format
       const pubDate = post.publishedAt || post.updatedAt || post.createdAt;
       const path = parentSlug 
         ? `${parentSlug}/${categorySlug}/${post.slug}` 
@@ -84,7 +103,7 @@ export async function GET() {
 
       return {
         loc: `${baseUrl}/${path}`,
-        title: post.title,
+        title: post.title || "",
         publicationDate: pubDate,
       };
     });
@@ -94,16 +113,16 @@ export async function GET() {
         xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">
 ${newsEntries
   .map(
-    (entry) => `
+    (entry: any) => `
   <url>
-    <loc>${entry.loc}</loc>
+    <loc>${escapeXml(entry.loc)}</loc>
     <news:news>
       <news:publication>
         <news:name>Dinasuvadu</news:name>
         <news:language>ta</news:language>
       </news:publication>
-      <news:publication_date>${entry.publicationDate}</news:publication_date>
-      <news:title>${entry.title.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;')}</news:title>
+      <news:publication_date>${escapeXml(entry.publicationDate)}</news:publication_date>
+      <news:title>${escapeXml(entry.title)}</news:title>
     </news:news>
   </url>`
   )
@@ -113,6 +132,7 @@ ${newsEntries
     return new Response(sitemap, {
       headers: {
         "Content-Type": "text/xml; charset=utf-8",
+        "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
       },
     });
   } catch (error) {

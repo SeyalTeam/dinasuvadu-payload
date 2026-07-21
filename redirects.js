@@ -25,14 +25,24 @@ const redirects = async () => {
       permanent: true,
     },
     {
+      source: '/sitemap-news',
+      destination: '/sitemap-news.xml',
+      permanent: true,
+    },
+    {
+      source: '/sitemap-post',
+      destination: '/sitemap-post-1.xml',
+      permanent: true,
+    },
+    {
       source: '/posts-sitemap.xml',
-      destination: '/sitemap-post?page=1',
-      permanent: false,
+      destination: '/sitemap-post-1.xml',
+      permanent: true,
     },
     {
       source: '/pages-sitemap.xml',
       destination: '/sitemap-0.xml',
-      permanent: false,
+      permanent: true,
     },
   ]
 

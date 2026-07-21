@@ -18,7 +18,12 @@ function escapeXml(value: unknown): string {
 }
 
 function normalizeBaseUrl(): string {
-  return (process.env.PAYLOAD_PUBLIC_SERVER_URL || "https://www.dinasuvadu.com").replace(/\/$/, "");
+  return (
+    process.env.PAYLOAD_PUBLIC_SERVER_URL ||
+    process.env.NEXT_PUBLIC_BASE_URL ||
+    process.env.NEXT_PUBLIC_SERVER_URL ||
+    "https://www.dinasuvadu.com"
+  ).replace(/\/$/, "");
 }
 
 export async function GET() {
@@ -68,25 +73,26 @@ export async function GET() {
     });
     const catLastMod = latestCategory[0]?.updatedAt || postLastMod;
 
-    const totalSitemaps = Math.ceil(maxCustomId / postsPerPage);
+    const totalSitemaps = Math.max(1, Math.ceil(maxCustomId / postsPerPage));
     const sitemapEntries: SitemapEntry[] = [];
 
     // Add Google News Sitemap (Last 2 days)
     sitemapEntries.push({
-      loc: `${baseUrl}/sitemap-news`,
+      loc: `${baseUrl}/sitemap-news.xml`,
       lastmod: postLastMod,
     });
 
-    // Add Next-Sitemap's standard static sitemap
+    // Add static & categories sitemap
     sitemapEntries.push({
       loc: `${baseUrl}/sitemap-0.xml`, 
       lastmod: catLastMod,
     });
 
-    for (let page = totalSitemaps; page >= 1; page--) {
+    // Add post sitemap pages in ascending order (1 to totalSitemaps)
+    for (let page = 1; page <= totalSitemaps; page++) {
       sitemapEntries.push({
-        loc: `${baseUrl}/sitemap-post?page=${page}`,
-        lastmod: page === totalSitemaps ? postLastMod : undefined,
+        loc: `${baseUrl}/sitemap-post-${page}.xml`,
+        lastmod: postLastMod,
       });
     }
 
@@ -106,6 +112,7 @@ ${sitemapEntries
     return new Response(sitemapIndex, {
       headers: {
         "Content-Type": "text/xml; charset=utf-8",
+        "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
       },
     });
   } catch (error) {
