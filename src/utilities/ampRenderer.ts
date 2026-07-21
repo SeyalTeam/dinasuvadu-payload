@@ -1057,16 +1057,15 @@ export async function renderAmpPost(post: any): Promise<string> {
     </footer>
     
     <!-- Analytics -->
-    <amp-analytics type="googleanalytics">
+    <amp-analytics type="gtag" data-credentials="include">
       <script type="application/json">
         {
           "vars": {
-            "gtag_id": "G-YJ4CSJH2VC"
-          },
-          "triggers": {
-            "trackPageview": {
-              "on": "visible",
-              "request": "pageview"
+            "gtag_id": "G-YJ4CSJH2VC",
+            "config": {
+              "G-YJ4CSJH2VC": {
+                "groups": "default"
+              }
             }
           }
         }
