@@ -75,6 +75,14 @@ const nextConfig = {
   },
   reactStrictMode: true,
   redirects,
+  async rewrites() {
+    return [
+      {
+        source: '/sitemap-post-:page.xml',
+        destination: '/sitemap-post-xml?page=:page',
+      },
+    ]
+  },
   async headers() {
     return [
       {

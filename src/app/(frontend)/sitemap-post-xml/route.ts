@@ -149,12 +149,10 @@ async function fetchPostsForSitemapPage(payload: any, page: number): Promise<any
   return docs || [];
 }
 
-export async function GET(
-  _request: Request,
-  { params }: { params: Promise<{ page: string }> }
-) {
-  const { page: rawPage } = await params;
-  const page = Number.parseInt(rawPage || "1", 10);
+export async function GET(request: Request) {
+  const url = new URL(request.url);
+  const pageParam = url.searchParams.get("page");
+  const page = Number.parseInt(pageParam || "1", 10);
 
   if (!Number.isFinite(page) || page < 1) {
     return xmlResponse(emptySitemap());
