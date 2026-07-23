@@ -21,15 +21,6 @@ function normalizeBaseUrl(): string {
   ).replace(/\/$/, "");
 }
 
-function normalizeId(value: unknown): string | null {
-  if (typeof value === "string" && value) return value;
-  if (value && typeof value === "object" && "id" in value) {
-    const id = (value as { id?: unknown }).id;
-    return typeof id === "string" && id ? id : null;
-  }
-  return null;
-}
-
 export async function GET() {
   const baseUrl = normalizeBaseUrl();
 
@@ -43,11 +34,11 @@ export async function GET() {
       collection: "posts",
       limit: 1,
       depth: 0,
-      sort: "-updatedAt",
+      sort: "-publishedAt",
       where: { _status: { equals: "published" } },
-      select: { updatedAt: true },
+      select: { publishedAt: true, updatedAt: true },
     });
-    const fallbackLastMod = latestPost[0]?.updatedAt || "2026-01-01T00:00:00.000Z";
+    const fallbackLastMod = latestPost[0]?.publishedAt || latestPost[0]?.updatedAt || "2026-01-01T00:00:00.000Z";
 
     // 1. Add static frontend pages
     const staticPages = [
@@ -65,43 +56,22 @@ export async function GET() {
       });
     });
 
-    // 2. Fetch and add all categories with parent hierarchy
+    // 2. Fetch and add all categories with single-segment slug (matching Next.js [categorySlug] router)
     const { docs: categories } = await payload.find({
       collection: "categories",
       limit: 1000,
       depth: 0,
       select: {
         slug: true,
-        parent: true,
         updatedAt: true,
       },
-    });
-
-    const categoryMap = new Map<string, { slug: string; parent?: unknown; updatedAt?: string }>();
-    categories.forEach((cat: any) => {
-      if (cat.id && cat.slug) {
-        categoryMap.set(cat.id, {
-          slug: cat.slug,
-          parent: cat.parent,
-          updatedAt: cat.updatedAt,
-        });
-      }
     });
 
     categories.forEach((category: any) => {
       if (!category.slug) return;
 
-      let categoryPath = category.slug;
-      const parentId = normalizeId(category.parent);
-      if (parentId) {
-        const parentLookup = categoryMap.get(parentId);
-        if (parentLookup?.slug) {
-          categoryPath = `${parentLookup.slug}/${category.slug}`;
-        }
-      }
-
       sitemapEntries.push({
-        loc: `${baseUrl}/${categoryPath}`,
+        loc: `${baseUrl}/${category.slug}`,
         lastmod: category.updatedAt || fallbackLastMod,
       });
     });

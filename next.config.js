@@ -72,6 +72,8 @@ const nextConfig = {
   images: {
     remotePatterns: imageRemotePatterns,
     deviceSizes: [480, 576, 640, 750, 828, 1080, 1200, 1920, 2048, 3840],
+    formats: ['image/avif', 'image/webp'],
+    minimumCacheTTL: 31536000,
   },
   reactStrictMode: true,
   redirects,
@@ -79,7 +81,7 @@ const nextConfig = {
     return [
       {
         source: '/sitemap-post-:page.xml',
-        destination: '/sitemap-post-xml?page=:page',
+        destination: '/sitemap-post/:page',
       },
     ]
   },
@@ -88,6 +90,10 @@ const nextConfig = {
       {
         source: '/(.*)',
         headers: securityHeaders,
+      },
+      {
+        source: '/_next/image(.*)',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
       },
       {
         source: '/:categorySlug/:postSlug',
