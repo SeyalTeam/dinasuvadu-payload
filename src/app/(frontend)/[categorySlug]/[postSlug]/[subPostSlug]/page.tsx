@@ -5,7 +5,7 @@ import Image from "next/image";
 import { unstable_cache } from "next/cache";
 // import { Space } from "antd";
 // import { ClockCircleOutlined } from "@ant-design/icons";
-import { notFound, redirect } from "next/navigation";
+import { notFound, redirect, permanentRedirect } from "next/navigation";
 import { getPayload } from "payload";
 import config from "@/payload.config";
 import type { Metadata } from "next";
@@ -583,7 +583,7 @@ export default async function SubCategoryPostPage({
 
   // Canonicalize non-exact but valid paths for migrated / legacy links.
   if (!isExactPathMatch && canonicalPath !== incomingPath) {
-    redirect(canonicalPath);
+    permanentRedirect(canonicalPath);
   }
 
   // Fetch subcategory info for breadcrumbs/heading (soft fallback, no hard 404 here).

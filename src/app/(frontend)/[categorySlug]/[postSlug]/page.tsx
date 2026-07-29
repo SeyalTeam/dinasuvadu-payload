@@ -10,7 +10,7 @@ import Image from "next/image";
 import { unstable_cache } from "next/cache";
 // import { Space } from "antd";
 // import { ClockCircleOutlined } from "@ant-design/icons";
-import { notFound, redirect } from "next/navigation";
+import { notFound, redirect, permanentRedirect } from "next/navigation";
 import { ArticleFontScaleScript } from "@/components/ArticleFontScaleScript";
 import PostImageActions from "@/components/PostImageActions";
 import PostBottomInteraction from "@/components/PostBottomInteraction";
@@ -732,7 +732,7 @@ export default async function PostOrSubCategoryPage({
 
   // Legacy two-segment links like /news/{post} should canonicalize to /news/{sub}/{post} when needed.
   if (isLegacyTopLevelAlias && canonicalPath !== incomingPath) {
-    redirect(canonicalPath);
+    permanentRedirect(canonicalPath);
   }
 
   const postContentHtml = trimTrailingEmptyHtmlBlocks(
