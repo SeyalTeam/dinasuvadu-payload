@@ -87,8 +87,7 @@ export function CategoryFeed({
                       src={imageUrl || "/placeholder-news.jpg"}
                       fill
                       className="object-cover"
-                      priority
-                      fetchPriority="high"
+                      sizes="(max-width: 640px) 100vw, 300px"
                     />
                   </div>
                   <h3 className="text-[24px] font-black leading-[1.2] text-[#111] dark:text-white px-1 line-clamp-3 tracking-tight para-txt">

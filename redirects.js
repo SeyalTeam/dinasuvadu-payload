@@ -15,13 +15,13 @@ const redirects = async () => {
   const redirects = [
     internetExplorerRedirect,
     {
-      source: '/:categorySlug/:postSlug/amp',
-      destination: '/amp/:categorySlug/:postSlug',
+      source: '/:path+/amp',
+      destination: '/amp/:path+',
       permanent: true,
     },
     {
-      source: '/:categorySlug/:subCategorySlug/:postSlug/amp',
-      destination: '/amp/:categorySlug/:subCategorySlug/:postSlug',
+      source: '/:path+/amp/',
+      destination: '/amp/:path+',
       permanent: true,
     },
     {

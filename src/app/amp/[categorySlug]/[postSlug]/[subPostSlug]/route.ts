@@ -64,58 +64,63 @@ export async function GET(
   request: Request,
   { params }: { params: Promise<{ categorySlug: string; postSlug: string; subPostSlug: string }> }
 ) {
-  const { categorySlug, postSlug, subPostSlug } = await params;
-  
-  const post = await fetchPost(subPostSlug);
-  
-  if (!post) {
+  try {
+    const { categorySlug, postSlug, subPostSlug } = await params;
+    
+    const post = await fetchPost(subPostSlug);
+    
+    if (!post) {
+      return notFound();
+    }
+
+    // Validate that the request category paths match one of the valid post path candidates
+    const candidates = await resolvePostPathCandidates(post as any, async (id: string) => {
+      const cat = await fetchParentCategory(id);
+      return { slug: cat?.slug };
+    });
+
+    const normalizedCategory = categorySlug.toLowerCase();
+    const normalizedSubCategory = postSlug.toLowerCase();
+    const normalizedPost = subPostSlug.toLowerCase();
+
+    const isValid = candidates.some((candidate) => {
+      const segments = candidate.split('/').filter(Boolean);
+      return (
+        segments.length === 3 &&
+        segments[0]?.toLowerCase() === normalizedCategory &&
+        segments[1]?.toLowerCase() === normalizedSubCategory &&
+        segments[2]?.toLowerCase() === normalizedPost
+      );
+    });
+
+    if (!isValid) {
+      return notFound();
+    }
+    
+    const canonicalPath = await resolveCanonicalPostPath(post as any, async (id: string) => {
+      const cat = await fetchParentCategory(id);
+      return { slug: cat?.slug };
+    });
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.dinasuvadu.com';
+
+    const userAgent = request.headers.get('user-agent') || '';
+    const isMobile = /mobile|android|iphone|ipad|phone/i.test(userAgent);
+    const isBot = /bot|googlebot|crawler|spider|robot|lighthouse|mediapartners|apis-google|amphtml|validator/i.test(userAgent);
+
+    if (!post.isAMP || (!isMobile && !isBot)) {
+      return Response.redirect(`${baseUrl}${canonicalPath}`, 302);
+    }
+    
+    const ampContent = await renderAmpPost(post);
+    
+    return new Response(ampContent, {
+      headers: {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'public, max-age=300, s-maxage=300, stale-while-revalidate=600',
+      },
+    });
+  } catch (error) {
+    console.error('AMP Route GET Error (3-segment):', error);
     return notFound();
   }
-
-  // Validate that the request category paths match one of the valid post path candidates
-  const candidates = await resolvePostPathCandidates(post as any, async (id: string) => {
-    const cat = await fetchParentCategory(id);
-    return { slug: cat?.slug };
-  });
-
-  const normalizedCategory = categorySlug.toLowerCase();
-  const normalizedSubCategory = postSlug.toLowerCase();
-  const normalizedPost = subPostSlug.toLowerCase();
-
-  const isValid = candidates.some((candidate) => {
-    const segments = candidate.split('/').filter(Boolean);
-    return (
-      segments.length === 3 &&
-      segments[0]?.toLowerCase() === normalizedCategory &&
-      segments[1]?.toLowerCase() === normalizedSubCategory &&
-      segments[2]?.toLowerCase() === normalizedPost
-    );
-  });
-
-  if (!isValid) {
-    return notFound();
-  }
-  
-  const canonicalPath = await resolveCanonicalPostPath(post as any, async (id: string) => {
-    const cat = await fetchParentCategory(id);
-    return { slug: cat?.slug };
-  });
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.dinasuvadu.com';
-
-  const userAgent = request.headers.get('user-agent') || '';
-  const isMobile = /mobile|android|iphone|ipad|phone/i.test(userAgent);
-  const isBot = /bot|googlebot|crawler|spider|robot|lighthouse|mediapartners|apis-google|amphtml|validator/i.test(userAgent);
-
-  if (!post.isAMP || (!isMobile && !isBot)) {
-    return Response.redirect(`${baseUrl}${canonicalPath}`, 302);
-  }
-  
-  const ampContent = await renderAmpPost(post);
-  
-  return new Response(ampContent, {
-    headers: {
-      'Content-Type': 'text/html; charset=utf-8',
-      'Cache-Control': 'public, max-age=300, s-maxage=300, stale-while-revalidate=600',
-    },
-  });
 }
