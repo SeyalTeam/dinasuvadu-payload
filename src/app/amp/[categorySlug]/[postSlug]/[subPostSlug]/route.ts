@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import { NextResponse } from 'next/server';
 import { getPayload } from 'payload';
 import config from '@/payload.config';
 import { renderAmpPost } from '@/utilities/ampRenderer';
@@ -104,7 +105,7 @@ export async function GET(
 
     if (!isValidCategoryPath || !post.isAMP || (!isMobile && !isBot)) {
       const targetUrl = new URL(canonicalPath, request.url).toString();
-      return Response.redirect(targetUrl, 301);
+      return NextResponse.redirect(targetUrl, 301);
     }
     
     const ampContent = await renderAmpPost(post);
