@@ -73,6 +73,11 @@ export async function GET(
       return notFound();
     }
 
+    const canonicalPath = await resolveCanonicalPostPath(post as any, async (id: string) => {
+      const cat = await fetchParentCategory(id);
+      return { slug: cat?.slug };
+    });
+
     // Validate that the request category paths match one of the valid post path candidates
     const candidates = await resolvePostPathCandidates(post as any, async (id: string) => {
       const cat = await fetchParentCategory(id);
@@ -83,7 +88,7 @@ export async function GET(
     const normalizedSubCategory = postSlug.toLowerCase();
     const normalizedPost = subPostSlug.toLowerCase();
 
-    const isValid = candidates.some((candidate) => {
+    const isValidCategoryPath = candidates.some((candidate) => {
       const segments = candidate.split('/').filter(Boolean);
       return (
         segments.length === 3 &&
@@ -93,20 +98,11 @@ export async function GET(
       );
     });
 
-    if (!isValid) {
-      return notFound();
-    }
-    
-    const canonicalPath = await resolveCanonicalPostPath(post as any, async (id: string) => {
-      const cat = await fetchParentCategory(id);
-      return { slug: cat?.slug };
-    });
-
     const userAgent = request.headers.get('user-agent') || '';
     const isMobile = /mobile|android|iphone|ipad|phone/i.test(userAgent);
     const isBot = /bot|googlebot|crawler|spider|robot|lighthouse|mediapartners|apis-google|amphtml|validator/i.test(userAgent);
 
-    if (!post.isAMP || (!isMobile && !isBot)) {
+    if (!isValidCategoryPath || !post.isAMP || (!isMobile && !isBot)) {
       const targetUrl = new URL(canonicalPath, request.url).toString();
       return Response.redirect(targetUrl, 301);
     }
