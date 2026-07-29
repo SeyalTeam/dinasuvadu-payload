@@ -102,7 +102,12 @@ export async function GET(
     const isBot = /bot|googlebot|crawler|spider|robot|lighthouse|mediapartners|apis-google|amphtml|validator/i.test(userAgent);
 
     if (!isValidCategoryPath || !post.isAMP || (!isMobile && !isBot)) {
-      const targetUrl = new URL(canonicalPath, request.url).toString();
+      const baseUrl = (
+        process.env.PAYLOAD_PUBLIC_SERVER_URL ||
+        process.env.NEXT_PUBLIC_BASE_URL ||
+        'https://www.dinasuvadu.com'
+      ).replace(/\/$/, '');
+      const targetUrl = `${baseUrl}${canonicalPath}`;
       return NextResponse.redirect(targetUrl, 301);
     }
     
