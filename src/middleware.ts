@@ -5,21 +5,6 @@ export function middleware(request: NextRequest) {
   const url = request.nextUrl;
   const pathname = url.pathname;
 
-  // Dynamic domain consolidation: redirect to whichever host is configured in env (www or non-www)
-  const canonicalUrlString = process.env.PAYLOAD_PUBLIC_SERVER_URL || process.env.NEXT_PUBLIC_BASE_URL || 'https://www.dinasuvadu.com';
-  try {
-    const canonicalUrl = new URL(canonicalUrlString);
-    const canonicalHost = canonicalUrl.host; // e.g. 'www.dinasuvadu.com' or 'dinasuvadu.com'
-    
-    // Check if the current host is a dinasuvadu domain but mismatching the canonical configuration
-    const isProdDomain = host.includes('dinasuvadu.com');
-    if (isProdDomain && host !== canonicalHost) {
-      const redirectUrl = new URL(pathname + url.search, canonicalUrlString);
-      return NextResponse.redirect(redirectUrl, 308); // Permanent redirect (preserves method)
-    }
-  } catch (error) {
-    console.error('Error parsing canonical URL in middleware:', error);
-  }
 
   // Redirect legacy subcategory pagination query URLs to path-based pagination.
   // Example: /news/tamilnadu?page=2 -> /news/tamilnadu/p/2
