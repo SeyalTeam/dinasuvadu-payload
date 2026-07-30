@@ -132,9 +132,18 @@ async function fetchPostsByCategory(
       where: {
         and: [
           {
-            categories: {
-              in: [category.id],
-            },
+            or: [
+              {
+                categories: {
+                  in: [category.id],
+                },
+              },
+              {
+                parentCategory: {
+                  equals: category.id,
+                },
+              },
+            ],
           },
           {
             _status: {

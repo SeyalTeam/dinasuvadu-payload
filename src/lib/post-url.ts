@@ -10,6 +10,7 @@ export type CategoryPathLike = {
 
 export type PostPathLike = {
   slug?: string | null;
+  parentCategory?: CategoryPathLike | string | null;
   categories?: CategoryPathLike[] | null;
 };
 
@@ -81,6 +82,21 @@ export async function resolvePostPathCandidates(
     }
 
     candidates.push(`/${categorySlug}/${postSlug}`);
+  }
+
+  if (candidates.length === 0 && post.parentCategory) {
+    let parentSlug: string | null = null;
+
+    if (typeof post.parentCategory === "string") {
+      const parentCat = await resolveParentCategory(post.parentCategory);
+      parentSlug = normalizeSlug(parentCat?.slug || null);
+    } else if (typeof post.parentCategory === "object" && post.parentCategory !== null) {
+      parentSlug = normalizeSlug(post.parentCategory.slug || null);
+    }
+
+    if (parentSlug) {
+      candidates.push(`/${parentSlug}/${postSlug}`);
+    }
   }
 
   if (candidates.length === 0) {

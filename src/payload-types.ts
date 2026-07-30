@@ -238,11 +238,11 @@ export interface Post {
   };
   relatedPosts?: (string | Post)[] | null;
   /**
-   * Select a parent category first
+   * Select a main parent category (e.g., Sports, News, Cinema)
    */
   parentCategory?: (string | null) | Category;
   /**
-   * Select one or more child categories
+   * Optional: Select one or more child categories (e.g., Hockey, Cricket)
    */
   categories?: (string | Category)[] | null;
   meta?: {

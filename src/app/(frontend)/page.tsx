@@ -116,9 +116,18 @@ async function fetchPostsByCategoryRaw(categoryId: string): Promise<Post[]> {
       where: {
         and: [
           {
-            categories: {
-              in: allCategoryIds,
-            },
+            or: [
+              {
+                categories: {
+                  in: allCategoryIds,
+                },
+              },
+              {
+                parentCategory: {
+                  in: allCategoryIds,
+                },
+              },
+            ],
           },
           {
             _status: {

@@ -97,9 +97,18 @@ async function fetchPostsByCategoryId(
       depth: 2,
       sort: "-publishedAt",
       where: {
-        categories: {
-          in: [categoryId],
-        },
+        or: [
+          {
+            categories: {
+              in: [categoryId],
+            },
+          },
+          {
+            parentCategory: {
+              equals: categoryId,
+            },
+          },
+        ],
       },
     });
 
@@ -164,9 +173,18 @@ async function fetchPostsByCategory(
       depth: 2,
       sort: "-publishedAt",
       where: {
-        categories: {
-          in: allCategoryIds,
-        },
+        or: [
+          {
+            categories: {
+              in: allCategoryIds,
+            },
+          },
+          {
+            parentCategory: {
+              in: allCategoryIds,
+            },
+          },
+        ],
       },
     });
 

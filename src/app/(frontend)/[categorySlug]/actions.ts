@@ -60,9 +60,18 @@ export async function fetchCategoryPostsAction(
       depth: 2,
       sort: "-publishedAt",
       where: {
-        categories: {
-          in: allCategoryIds,
-        },
+        or: [
+          {
+            categories: {
+              in: allCategoryIds,
+            },
+          },
+          {
+            parentCategory: {
+              in: allCategoryIds,
+            },
+          },
+        ],
       },
     });
 

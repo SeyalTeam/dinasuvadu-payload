@@ -101,7 +101,7 @@ export const Posts: CollectionConfig<'posts'> = {
               hasMany: false,
               admin: {
                 position: 'sidebar',
-                description: 'Select a parent category first',
+                description: 'Select a main parent category (e.g., Sports, News, Cinema)',
               },
               filterOptions: () => {
                 return {
@@ -118,7 +118,7 @@ export const Posts: CollectionConfig<'posts'> = {
               hasMany: true,
               admin: {
                 position: 'sidebar',
-                description: 'Select one or more child categories',
+                description: 'Optional: Select one or more child categories (e.g., Hockey, Cricket)',
                 condition: (data) => Boolean(data?.parentCategory),
               },
               filterOptions: ({ siblingData }) => {
