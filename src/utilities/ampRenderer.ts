@@ -56,6 +56,38 @@ async function renderLexicalCaption(captionObj: any): Promise<string> {
   return '';
 }
 
+// Helper to inject AMP AdSense code after the 2nd paragraph
+function injectAmpAdAfterSecondParagraph(html: string): string {
+  if (!html) return html;
+
+  const ampAdHtml = `
+<div class="amp-ad-wrapper" style="display:flex;justify-content:center;align-items:center;margin:20px 0;width:100%;overflow:hidden;">
+  <amp-ad width="100vw" height="320"
+       type="adsense"
+       data-ad-client="ca-pub-3178237798172468"
+       data-ad-slot="1904211788"
+       data-auto-format="rspv"
+       data-full-width="">
+    <div overflow=""></div>
+  </amp-ad>
+</div>`;
+
+  let paragraphCount = 0;
+  const updatedHtml = html.replace(/<\/p>/gi, (match) => {
+    paragraphCount++;
+    if (paragraphCount === 2) {
+      return `</p>\n${ampAdHtml}`;
+    }
+    return match;
+  });
+
+  if (paragraphCount === 1) {
+    return updatedHtml.replace(/<\/p>/i, `</p>\n${ampAdHtml}`);
+  }
+
+  return updatedHtml;
+}
+
 // Cache in-memory category mapping for sidebar navigation
 let cachedCategories: any[] | null = null;
 let cachedCategoriesTimestamp = 0;
@@ -166,7 +198,7 @@ export async function renderAmpPost(post: any): Promise<string> {
       });
       const fixedLexicalHtml = lexicalHtml.replace(/<\/picture\$>/g, '</picture>').replace(/<\/a\$>/g, '</a>');
       const result = convertHtmlToAmp(fixedLexicalHtml);
-      bodyHtml = result.html;
+      bodyHtml = injectAmpAdAfterSecondParagraph(result.html);
       usesTwitter = result.usesTwitter;
       usesInstagram = result.usesInstagram;
       usesYoutube = result.usesYoutube;
@@ -317,6 +349,7 @@ export async function renderAmpPost(post: any): Promise<string> {
     <meta name="twitter:image" content="${ogImageUrl}">
     
      <!-- Required AMP scripts -->
+    <script async custom-element="amp-ad" src="https://cdn.ampproject.org/v0/amp-ad-0.1.js"></script>
     <script async custom-element="amp-sidebar" src="https://cdn.ampproject.org/v0/amp-sidebar-0.1.js"></script>
     <script async custom-element="amp-accordion" src="https://cdn.ampproject.org/v0/amp-accordion-0.1.js"></script>
     <script async custom-element="amp-form" src="https://cdn.ampproject.org/v0/amp-form-0.1.js"></script>
