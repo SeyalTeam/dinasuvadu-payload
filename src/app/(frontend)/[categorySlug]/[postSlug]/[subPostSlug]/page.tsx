@@ -534,6 +534,38 @@ function extractPlainTextFromRichText(content: any): string {
     .join("\n");
 }
 
+function injectAdSenseAfterSecondParagraph(html: string): string {
+  if (!html) return html;
+
+  const adSenseHtml = `
+<div class="adsense-container my-6 flex justify-center items-center min-h-[250px] overflow-hidden" style="margin:24px 0;">
+  <ins class="adsbygoogle"
+       style="display:block; width:100%; text-align:center;"
+       data-ad-client="ca-pub-3178237798172468"
+       data-ad-slot="1904211788"
+       data-ad-format="auto"
+       data-full-width-responsive="true"></ins>
+  <script>
+    (adsbygoogle = window.adsbygoogle || []).push({});
+  </script>
+</div>`;
+
+  let paragraphCount = 0;
+  const updatedHtml = html.replace(/<\/p>/gi, (match) => {
+    paragraphCount++;
+    if (paragraphCount === 2) {
+      return `</p>\n${adSenseHtml}`;
+    }
+    return match;
+  });
+
+  if (paragraphCount === 1) {
+    return updatedHtml.replace(/<\/p>/i, `</p>\n${adSenseHtml}`);
+  }
+
+  return updatedHtml;
+}
+
 function convertRichTextToHTML(content: Post["content"]): string {
   if (!content) return "";
 
@@ -542,7 +574,8 @@ function convertRichTextToHTML(content: Post["content"]): string {
       data: content as any,
       disableContainer: true,
     });
-    return html ? html.replace(/<\/picture\$>/g, '</picture>').replace(/<\/a\$>/g, '</a>') : "";
+    const formattedHtml = html ? html.replace(/<\/picture\$>/g, '</picture>').replace(/<\/a\$>/g, '</a>') : "";
+    return injectAdSenseAfterSecondParagraph(formattedHtml);
   } catch (error) {
     console.error("Error converting rich text content to HTML:", error);
     return "";
