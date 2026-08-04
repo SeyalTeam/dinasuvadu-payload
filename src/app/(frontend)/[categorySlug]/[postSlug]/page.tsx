@@ -1,7 +1,6 @@
 import React, { Suspense } from "react";
 import { convertLexicalToHTML } from "@payloadcms/richtext-lexical/html";
 import { EmbedHydrator } from "@/components/RichText/EmbedHydrator";
-import AdSenseAd from "@/components/AdSenseAd";
 export const revalidate = 300; // Revalidate every 5 minutes (ISR cache for TTFB)
 export const dynamicParams = true; // Enable on-demand rendering for non-pre-rendered posts
 import type { Metadata } from "next";
@@ -127,36 +126,6 @@ function trimTrailingEmptyHtmlBlocks(html: string): string {
     .trim();
 }
 
-const AD_PLACEHOLDER = "<!--AD_PLACEHOLDER-->";
-
-function injectAdPlaceholderAfterSecondParagraph(html: string): string {
-  if (!html) return html;
-
-  let paragraphCount = 0;
-  let injected = false;
-  const updatedHtml = html.replace(/<\/p>/gi, (match) => {
-    paragraphCount++;
-    if (paragraphCount === 2 && !injected) {
-      injected = true;
-      return `</p>${AD_PLACEHOLDER}`;
-    }
-    return match;
-  });
-
-  // Fallback: if article has only 1 paragraph, inject after it
-  if (!injected && paragraphCount === 1) {
-    return updatedHtml.replace(/<\/p>/i, `</p>${AD_PLACEHOLDER}`);
-  }
-
-  return updatedHtml;
-}
-
-function splitHtmlAtAdMarker(html: string): [string, string] {
-  const idx = html.indexOf(AD_PLACEHOLDER);
-  if (idx === -1) return [html, ""];
-  return [html.slice(0, idx), html.slice(idx + AD_PLACEHOLDER.length)];
-}
-
 function convertRichTextToHTML(content: any): string {
   if (!content) return "";
 
@@ -165,8 +134,7 @@ function convertRichTextToHTML(content: any): string {
       data: content,
       disableContainer: true,
     });
-    const formattedHtml = html ? html.replace(/<\/picture\$>/g, '</picture>').replace(/<\/a\$>/g, '</a>') : "";
-    return injectAdPlaceholderAfterSecondParagraph(formattedHtml);
+    return html ? html.replace(/<\/picture\$>/g, '</picture>').replace(/<\/a\$>/g, '</a>') : "";
   } catch (error) {
     console.error("Error converting rich text content to HTML:", error);
     return "";
@@ -1008,24 +976,10 @@ export default async function PostOrSubCategoryPage({
                       enableInstagram={/instagram\.com/i.test(postContentHtml)}
                     />
                   )}
-                  {(() => {
-                    const [beforeAd, afterAd] = splitHtmlAtAdMarker(postContentHtml);
-                    return (
-                      <>
-                        <div
-                          className="payload-richtext prose md:prose-md max-w-none"
-                          dangerouslySetInnerHTML={{ __html: beforeAd }}
-                        />
-                        <AdSenseAd />
-                        {afterAd && (
-                          <div
-                            className="payload-richtext prose md:prose-md max-w-none"
-                            dangerouslySetInnerHTML={{ __html: afterAd }}
-                          />
-                        )}
-                      </>
-                    );
-                  })()}
+                  <div
+                    className="payload-richtext prose md:prose-md max-w-none"
+                    dangerouslySetInnerHTML={{ __html: postContentHtml }}
+                  />
                 </>
               ) : (
                 <div className="prose prose-lg prose-blue max-w-none text-gray-800 leading-relaxed">

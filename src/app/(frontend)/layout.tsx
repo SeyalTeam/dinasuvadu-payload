@@ -7,10 +7,6 @@ import Footer from "@/components/Footer";
 import { Mukta_Malar } from "next/font/google";
 import { ModalsContainer } from "@/components/ModalsContainer";
 import { Providers } from "@/providers";
-import { GoogleAnalyticsLoader } from "@/components/GoogleAnalyticsLoader";
-
-import Script from "next/script";
-
 const muktaMalar = Mukta_Malar({
   subsets: ["tamil", "latin"],
   // Keep only commonly used weights to reduce initial font preload pressure.
@@ -33,11 +29,6 @@ export default function RootLayout({
   return (
     <html lang="ta" suppressHydrationWarning>
       <head>
-        <Script
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3178237798172468"
-          strategy="lazyOnload"
-          crossOrigin="anonymous"
-        />
       </head>
       <body className={muktaMalar.variable} suppressHydrationWarning>
         <Providers>

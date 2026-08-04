@@ -18,7 +18,6 @@ import {
 } from "@/lib/post-url";
 import { convertLexicalToHTML } from "@payloadcms/richtext-lexical/html";
 import { EmbedHydrator } from "@/components/RichText/EmbedHydrator";
-import AdSenseAd from "@/components/AdSenseAd";
 import { ArticleFontScaleScript } from "@/components/ArticleFontScaleScript";
 import PostImageActions from "@/components/PostImageActions";
 import PostBottomInteraction from "@/components/PostBottomInteraction";
@@ -535,35 +534,6 @@ function extractPlainTextFromRichText(content: any): string {
     .join("\n");
 }
 
-const AD_PLACEHOLDER = "<!--AD_PLACEHOLDER-->";
-
-function injectAdPlaceholderAfterSecondParagraph(html: string): string {
-  if (!html) return html;
-
-  let paragraphCount = 0;
-  let injected = false;
-  const updatedHtml = html.replace(/<\/p>/gi, (match) => {
-    paragraphCount++;
-    if (paragraphCount === 2 && !injected) {
-      injected = true;
-      return `</p>${AD_PLACEHOLDER}`;
-    }
-    return match;
-  });
-
-  if (!injected && paragraphCount === 1) {
-    return updatedHtml.replace(/<\/p>/i, `</p>${AD_PLACEHOLDER}`);
-  }
-
-  return updatedHtml;
-}
-
-function splitHtmlAtAdMarker(html: string): [string, string] {
-  const idx = html.indexOf(AD_PLACEHOLDER);
-  if (idx === -1) return [html, ""];
-  return [html.slice(0, idx), html.slice(idx + AD_PLACEHOLDER.length)];
-}
-
 function convertRichTextToHTML(content: Post["content"]): string {
   if (!content) return "";
 
@@ -572,8 +542,7 @@ function convertRichTextToHTML(content: Post["content"]): string {
       data: content as any,
       disableContainer: true,
     });
-    const formattedHtml = html ? html.replace(/<\/picture\$>/g, '</picture>').replace(/<\/a\$>/g, '</a>') : "";
-    return injectAdPlaceholderAfterSecondParagraph(formattedHtml);
+    return html ? html.replace(/<\/picture\$>/g, '</picture>').replace(/<\/a\$>/g, '</a>') : "";
   } catch (error) {
     console.error("Error converting rich text content to HTML:", error);
     return "";
@@ -823,24 +792,10 @@ export default async function SubCategoryPostPage({
                       enableInstagram={hasInstagramEmbed}
                     />
                   )}
-                  {(() => {
-                    const [beforeAd, afterAd] = splitHtmlAtAdMarker(postContentHtml);
-                    return (
-                      <>
-                        <div
-                          className="payload-richtext prose md:prose-md max-w-none"
-                          dangerouslySetInnerHTML={{ __html: beforeAd }}
-                        />
-                        <AdSenseAd />
-                        {afterAd && (
-                          <div
-                            className="payload-richtext prose md:prose-md max-w-none"
-                            dangerouslySetInnerHTML={{ __html: afterAd }}
-                          />
-                        )}
-                      </>
-                    );
-                  })()}
+                  <div
+                    className="payload-richtext prose md:prose-md max-w-none"
+                    dangerouslySetInnerHTML={{ __html: postContentHtml }}
+                  />
                 </>
               ) : (
                 <div className="prose prose-lg prose-blue max-w-none text-gray-800 leading-relaxed">
