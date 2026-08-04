@@ -7,6 +7,8 @@ import Footer from "@/components/Footer";
 import { Mukta_Malar } from "next/font/google";
 import { ModalsContainer } from "@/components/ModalsContainer";
 import { Providers } from "@/providers";
+import { GoogleAnalyticsLoader } from "@/components/GoogleAnalyticsLoader";
+
 const muktaMalar = Mukta_Malar({
   subsets: ["tamil", "latin"],
   // Keep only commonly used weights to reduce initial font preload pressure.
