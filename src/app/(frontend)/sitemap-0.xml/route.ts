@@ -56,24 +56,61 @@ export async function GET() {
       });
     });
 
-    // 2. Fetch and add all categories with single-segment slug (matching Next.js [categorySlug] router)
+    // 2. Fetch and add all categories with proper path hierarchy
     const { docs: categories } = await payload.find({
       collection: "categories",
       limit: 1000,
-      depth: 0,
+      depth: 1,
       select: {
         slug: true,
+        parent: true,
         updatedAt: true,
       },
     });
 
+    const categoryMap = new Map<string, any>();
+    categories.forEach((cat: any) => {
+      if (cat.id) categoryMap.set(String(cat.id), cat);
+      if (cat._id) categoryMap.set(String(cat._id), cat);
+    });
+
+    const addedLocs = new Set<string>();
+    staticPages.forEach((path) => addedLocs.add(`${baseUrl}${path}`));
+
     categories.forEach((category: any) => {
       if (!category.slug) return;
 
-      sitemapEntries.push({
-        loc: `${baseUrl}/${category.slug}`,
-        lastmod: category.updatedAt || fallbackLastMod,
-      });
+      let path: string | null = null;
+
+      if (!category.parent) {
+        // Top-level category
+        path = `/${category.slug}`;
+      } else {
+        // Sub-category: resolve parent slug
+        let parentObj = category.parent;
+        if (typeof parentObj === "string" || typeof parentObj === "number") {
+          parentObj = categoryMap.get(String(parentObj));
+        }
+
+        if (parentObj && parentObj.slug) {
+          // Verify parent itself is a top-level category (no grand-parent)
+          const grandParent = typeof parentObj.parent === "object" ? parentObj.parent : parentObj.parent ? categoryMap.get(String(parentObj.parent)) : null;
+          if (!grandParent) {
+            path = `/${parentObj.slug}/${category.slug}`;
+          }
+        }
+      }
+
+      if (path) {
+        const fullLoc = `${baseUrl}${path}`;
+        if (!addedLocs.has(fullLoc)) {
+          addedLocs.add(fullLoc);
+          sitemapEntries.push({
+            loc: fullLoc,
+            lastmod: category.updatedAt || fallbackLastMod,
+          });
+        }
+      }
     });
 
     // 3. Fetch and add all dynamic pages
@@ -96,10 +133,14 @@ export async function GET() {
         page.slug &&
         !["about-us", "contact-us", "disclaimer", "terms-conditions", "home"].includes(page.slug)
       ) {
-        sitemapEntries.push({
-          loc: `${baseUrl}/${page.slug}`,
-          lastmod: page.updatedAt || fallbackLastMod,
-        });
+        const fullLoc = `${baseUrl}/${page.slug}`;
+        if (!addedLocs.has(fullLoc)) {
+          addedLocs.add(fullLoc);
+          sitemapEntries.push({
+            loc: fullLoc,
+            lastmod: page.updatedAt || fallbackLastMod,
+          });
+        }
       }
     });
 
