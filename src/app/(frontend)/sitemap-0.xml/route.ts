@@ -13,12 +13,18 @@ function escapeXml(value: unknown): string {
 }
 
 function normalizeBaseUrl(): string {
-  return (
+  let url = (
     process.env.PAYLOAD_PUBLIC_SERVER_URL ||
     process.env.NEXT_PUBLIC_BASE_URL ||
     process.env.NEXT_PUBLIC_SERVER_URL ||
     "https://www.dinasuvadu.com"
   ).replace(/\/$/, "");
+
+  if (url.includes("dinasuvadu.com") && !url.includes("www.dinasuvadu.com") && !url.includes("media.dinasuvadu.com")) {
+    url = url.replace("dinasuvadu.com", "www.dinasuvadu.com");
+  }
+
+  return url;
 }
 
 export async function GET() {
