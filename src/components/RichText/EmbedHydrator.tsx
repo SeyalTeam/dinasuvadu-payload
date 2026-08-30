@@ -9,8 +9,15 @@ type EmbedHydratorProps = {
 
 const loadScript = (id: string, src: string): Promise<void> => {
   return new Promise((resolve) => {
-    if (document.getElementById(id)) {
-      resolve()
+    const existing = document.getElementById(id)
+    if (existing) {
+      const globalObjName = id.includes('twitter') ? 'twttr' : 'instgrm'
+      if ((window as any)[globalObjName]) {
+        resolve()
+        return
+      }
+      existing.addEventListener('load', () => resolve())
+      existing.addEventListener('error', () => resolve())
       return
     }
 
@@ -32,15 +39,44 @@ export function EmbedHydrator({ enableTwitter, enableInstagram }: EmbedHydratorP
     const hydrateEmbeds = async () => {
       if (enableTwitter) {
         await loadScript('twitter-widgets-js', 'https://platform.twitter.com/widgets.js')
-        if (!isCancelled && (window as any).twttr?.widgets) {
-          ;(window as any).twttr.widgets.load()
+        if (!isCancelled) {
+          const runLoad = () => {
+            if ((window as any).twttr?.widgets) {
+              ;(window as any).twttr.widgets.load()
+              return true
+            }
+            return false
+          }
+          if (!runLoad()) {
+            // Try again with small timeouts if not fully initialized yet
+            const interval = setInterval(() => {
+              if (isCancelled || runLoad()) {
+                clearInterval(interval)
+              }
+            }, 50)
+            setTimeout(() => clearInterval(interval), 1000)
+          }
         }
       }
 
       if (enableInstagram) {
         await loadScript('instagram-embed-js', 'https://www.instagram.com/embed.js')
-        if (!isCancelled && (window as any).instgrm?.Embeds) {
-          ;(window as any).instgrm.Embeds.process()
+        if (!isCancelled) {
+          const runProcess = () => {
+            if ((window as any).instgrm?.Embeds) {
+              ;(window as any).instgrm.Embeds.process()
+              return true
+            }
+            return false
+          }
+          if (!runProcess()) {
+            const interval = setInterval(() => {
+              if (isCancelled || runProcess()) {
+                clearInterval(interval)
+              }
+            }, 50)
+            setTimeout(() => clearInterval(interval), 1000)
+          }
         }
       }
     }

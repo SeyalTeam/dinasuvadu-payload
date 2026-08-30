@@ -541,8 +541,17 @@ function convertRichTextToHTML(content: Post["content"]): string {
     const html = convertLexicalToHTML({
       data: content as any,
       disableContainer: true,
+      converters: ({ defaultConverters }) => ({
+        ...defaultConverters,
+        blocks: {
+          embed: ({ node }: { node: any }) => {
+            return `<div class="col-start-2 my-8 w-full flex justify-center overflow-hidden">${node.fields.url}</div>`;
+          }
+        }
+      })
     });
-    return html ? html.replace(/<\/picture\$>/g, '</picture>').replace(/<\/a\$>/g, '</a>') : "";
+    const strippedHtml = html ? html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "") : "";
+    return strippedHtml ? strippedHtml.replace(/<\/picture\$>/g, '</picture>').replace(/<\/a\$>/g, '</a>') : "";
   } catch (error) {
     console.error("Error converting rich text content to HTML:", error);
     return "";
@@ -788,6 +797,7 @@ export default async function SubCategoryPostPage({
                 <>
                   {(hasTwitterEmbed || hasInstagramEmbed) && (
                     <EmbedHydrator
+                      key={post.id}
                       enableTwitter={hasTwitterEmbed}
                       enableInstagram={hasInstagramEmbed}
                     />

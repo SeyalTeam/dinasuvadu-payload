@@ -165,6 +165,14 @@ export async function renderAmpPost(post: any): Promise<string> {
       const lexicalHtml = await convertLexicalToHTML({
         data: post.content,
         disableContainer: true,
+        converters: ({ defaultConverters }) => ({
+          ...defaultConverters,
+          blocks: {
+            embed: ({ node }: { node: any }) => {
+              return `<div class="col-start-2 my-8 w-full flex justify-center overflow-hidden">${node.fields.url}</div>`;
+            }
+          }
+        })
       });
       const fixedLexicalHtml = lexicalHtml.replace(/<\/picture\$>/g, '</picture>').replace(/<\/a\$>/g, '</a>');
       const result = convertHtmlToAmp(fixedLexicalHtml);
