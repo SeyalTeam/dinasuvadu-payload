@@ -11,6 +11,7 @@ type BentoCardProps = {
     title: string;
     slug: string;
     publishedAt: string;
+    postLink?: string;
     heroImage?: {
       url: string;
       alt?: string;

@@ -191,8 +191,8 @@ export const CreatableTagsField: React.FC<{ path: string }> = ({ path }) => {
       const name = newOption.label.trim()
       const tagNames = name
         .split(',')
-        .map((t) => t.trim())
-        .filter((t) => t.length > 0)
+        .map((t: string) => t.trim())
+        .filter((t: string) => t.length > 0)
 
       if (tagNames.length > 0) {
         await processTags(tagNames)
