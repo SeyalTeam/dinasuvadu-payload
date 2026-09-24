@@ -327,7 +327,6 @@ export async function renderAmpPost(post: any): Promise<string> {
     <meta name="twitter:image" content="${ogImageUrl}">
     
      <!-- Required AMP scripts -->
-    <script async custom-element="amp-ad" src="https://cdn.ampproject.org/v0/amp-ad-0.1.js"></script>
     <script async custom-element="amp-sidebar" src="https://cdn.ampproject.org/v0/amp-sidebar-0.1.js"></script>
     <script async custom-element="amp-accordion" src="https://cdn.ampproject.org/v0/amp-accordion-0.1.js"></script>
     <script async custom-element="amp-form" src="https://cdn.ampproject.org/v0/amp-form-0.1.js"></script>
@@ -759,14 +758,6 @@ export async function renderAmpPost(post: any): Promise<string> {
         font-style: italic;
       }
       
-      .amp-ad-container {
-        margin: 24px auto;
-        padding: 0 16px;
-        max-width: 600px;
-        text-align: center;
-        overflow: hidden;
-      }
-      
       .amp-article-media {
         margin: 20px 0;
       }
@@ -1044,11 +1035,6 @@ export async function renderAmpPost(post: any): Promise<string> {
       <!-- Body Text -->
       <div class="article-body">
         ${bodyHtml}
-      </div>
-
-      <!-- MGID Bottom Ad -->
-      <div class="amp-ad-container">
-        <amp-embed width="600" height="600" layout="responsive" type="mgid" data-website="447614" data-widget="2085419" data-block-on-consent="_till_responded"></amp-embed>
       </div>
       
       <!-- Tags -->

@@ -53,7 +53,7 @@ const HERO_MOBILE_MAX_WIDTH = 640;
 /** WordPress-style uploads: `name-900x506.webp` → width 900 */
 function widthFromUrl(url: string): number | null {
   const match = url.match(/-(\d{2,4})x\d+\.(?:webp|jpe?g|png|avif)/i);
-  return match?.[1] ? Number.parseInt(match[1], 10) : null;
+  return match ? Number.parseInt(match[1], 10) : null;
 }
 
 const imageVariantSizes: Record<ImageVariant, string[]> = {
@@ -170,15 +170,12 @@ export function resolvePostHeroSources(post: PostWithHero): HeroImageSources | n
   if (!srcSetEntries.length) return null;
 
   const smallest = srcSetEntries[0];
-  if (!smallest) return null;
-
   const mobileEntries = srcSetEntries.filter((e) => e.w <= HERO_MOBILE_MAX_WIDTH);
-  const lastMobile = mobileEntries.length > 0 ? mobileEntries[mobileEntries.length - 1] : undefined;
-  const preloadEntry = lastMobile ?? smallest;
+  const preloadEntry =
+    mobileEntries[mobileEntries.length - 1] ?? smallest;
 
   const srcSet = srcSetEntries.map((e) => `${e.url} ${e.w}w`).join(", ");
-  const mobileList = mobileEntries.length > 0 ? mobileEntries : [smallest];
-  const mobileSrcSet = mobileList
+  const mobileSrcSet = (mobileEntries.length ? mobileEntries : [smallest])
     .map((e) => `${e.url} ${e.w}w`)
     .join(", ");
 

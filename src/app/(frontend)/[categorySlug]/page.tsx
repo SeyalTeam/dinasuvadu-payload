@@ -673,7 +673,6 @@ export default async function CategoryPage({
                 if (sidebarPosts.length === 0) return null;
                 
                 const featuredPost = sidebarPosts[0];
-                if (!featuredPost) return null;
                 const listPosts = sidebarPosts.slice(1);
 
                 return (

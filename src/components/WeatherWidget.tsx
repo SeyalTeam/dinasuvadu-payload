@@ -3,10 +3,8 @@
 import React, { useState, useEffect } from "react";
 import { Sun, Cloud, CloudSun, CloudFog, CloudDrizzle, CloudRain, CloudLightning, CloudSnow, Wind } from "lucide-react";
 
-const defaultWeather = { text: "தெள்ளத்தெளிவான வானம்", icon: Sun };
-
 const weatherMap: Record<number, { text: string; icon: any }> = {
-  0: defaultWeather,
+  0: { text: "தெள்ளத்தெளிவான வானம்", icon: Sun },
   1: { text: "முக்கியமாக தெளிவானது", icon: Sun },
   2: { text: "பகுதி மேகமூட்டம்", icon: CloudSun },
   3: { text: "மேகமூட்டம்", icon: Cloud },
@@ -75,7 +73,7 @@ export const WeatherWidget: React.FC = () => {
     fetchWeather();
   }, []);
 
-  const { text, icon: WeatherIcon } = weatherMap[weather.code] ?? weatherMap[0] ?? defaultWeather;
+  const { text, icon: WeatherIcon } = weatherMap[weather.code] || weatherMap[0];
 
   return (
     <div className="bg-white dark:bg-[#111] p-5 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 transition-all">
