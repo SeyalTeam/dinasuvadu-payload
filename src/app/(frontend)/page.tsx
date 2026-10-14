@@ -40,7 +40,7 @@ type Post = {
   tags?: { id: string; title: string; slug: string }[];
 };
 
-const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+const apiUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_SERVER_URL || "https://www.dinasuvadu.com";
 
 async function fetchCategoriesRaw(): Promise<Category[]> {
   try {

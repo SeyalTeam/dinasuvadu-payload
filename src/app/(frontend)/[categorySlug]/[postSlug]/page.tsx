@@ -114,7 +114,7 @@ type Post = {
 };
 
 // API base URL
-const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+const apiUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_SERVER_URL || "https://www.dinasuvadu.com";
 
 function trimTrailingEmptyHtmlBlocks(html: string): string {
   if (!html) return html;
@@ -335,10 +335,9 @@ export async function generateMetadata({ params }: { params: Promise<{ categoryS
   const title = post.title;
   const description = resolvePostDescription(post);
   const imageUrl = resolvePostOgImageUrl(post) || undefined;
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.dinasuvadu.com';
+  const baseUrl = process.env.NEXT_PUBLIC_SERVER_URL || process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_BASE_URL || 'https://www.dinasuvadu.com';
   const canonical = `${baseUrl}${canonicalPath}`;
-  const amphtml = post.isAMP ? `${baseUrl}/amp${canonicalPath}` : undefined;
-  return buildMetadata({ title, description, imageUrl, type: "article", canonical, amphtml });
+  return buildMetadata({ title, description, imageUrl, type: "article", canonical });
 }
 
 

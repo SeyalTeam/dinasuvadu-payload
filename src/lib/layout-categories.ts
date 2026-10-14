@@ -24,7 +24,9 @@ const fetchCategoriesCached = unstable_cache(
         parent: true,
       },
     });
-    const allCategories = (allRes.docs as unknown as LayoutCategory[]) || [];
+    const allCategories = ((allRes.docs as unknown as LayoutCategory[]) || []).filter(
+      (cat) => cat.slug && cat.slug.toLowerCase() !== "uncategorized"
+    );
     const categoriesById = new Map(
       allCategories.map((category) => [String(category.id), category])
     );

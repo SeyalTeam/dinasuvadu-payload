@@ -2,6 +2,7 @@ import { getPayload } from "payload";
 import config from "@/payload.config";
 
 export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 function escapeXml(value: unknown): string {
   return String(value || "")
@@ -13,13 +14,15 @@ function escapeXml(value: unknown): string {
 }
 
 function normalizeBaseUrl(): string {
-  let url = (
+  const rawUrl = (
+    process.env.NEXT_PUBLIC_SERVER_URL ||
+    process.env.NEXT_PUBLIC_SITE_URL ||
     process.env.PAYLOAD_PUBLIC_SERVER_URL ||
     process.env.NEXT_PUBLIC_BASE_URL ||
-    process.env.NEXT_PUBLIC_SERVER_URL ||
     "https://www.dinasuvadu.com"
   ).replace(/\/$/, "");
 
+  let url = rawUrl;
   if (url.includes("dinasuvadu.com") && !url.includes("www.dinasuvadu.com") && !url.includes("media.dinasuvadu.com")) {
     url = url.replace("dinasuvadu.com", "www.dinasuvadu.com");
   }
@@ -48,12 +51,15 @@ export async function GET() {
       },
     });
     
-    const categoryMap = new Map();
+    const categoryMap = new Map<string, { slug: string; parent?: any }>();
     categories.forEach((cat: any) => {
-      categoryMap.set(cat.id, {
-        slug: cat.slug,
-        parent: cat.parent,
-      });
+      const idStr = String(cat.id || cat._id || "");
+      if (idStr) {
+        categoryMap.set(idStr, {
+          slug: cat.slug,
+          parent: cat.parent,
+        });
+      }
     });
 
     // 2. Fetch posts published in the last 2 days (Max 1000 for Google News)
@@ -72,6 +78,7 @@ export async function GET() {
         title: true,
         slug: true,
         categories: true,
+        parentCategory: true,
         publishedAt: true,
         updatedAt: true,
         createdAt: true,
@@ -80,25 +87,36 @@ export async function GET() {
 
     const newsEntries = posts.map((post: any) => {
       let categorySlug = "news"; // default fallback
-      let parentSlug = null;
+      let parentSlug: string | null = null;
       
       // Determine category slug from the lookup map
       if (post.categories && post.categories.length > 0) {
-        const catId = typeof post.categories[0] === "object" && post.categories[0] !== null
-          ? post.categories[0].id
-          : post.categories[0];
-        const lookup = categoryMap.get(catId);
+        const rawCat = post.categories[0];
+        const catId = typeof rawCat === "object" && rawCat !== null ? rawCat.id || rawCat._id : rawCat;
+        const lookup = catId ? categoryMap.get(String(catId)) : null;
         if (lookup) {
           categorySlug = lookup.slug;
-          const parentId = typeof lookup.parent === "object" && lookup.parent !== null
-            ? lookup.parent.id
-            : lookup.parent;
+          const rawParent = lookup.parent;
+          const parentId = typeof rawParent === "object" && rawParent !== null
+            ? rawParent.id || rawParent._id
+            : rawParent;
           if (parentId) {
-            const parentLookup = categoryMap.get(parentId);
+            const parentLookup = categoryMap.get(String(parentId));
             if (parentLookup) {
               parentSlug = parentLookup.slug;
             }
           }
+        }
+      }
+
+      if (!parentSlug && post.parentCategory) {
+        const rawParentCat = post.parentCategory;
+        const parentCatId = typeof rawParentCat === "object" && rawParentCat !== null
+          ? rawParentCat.id || rawParentCat._id
+          : rawParentCat;
+        const parentLookup = parentCatId ? categoryMap.get(String(parentCatId)) : null;
+        if (parentLookup && parentLookup.slug !== categorySlug) {
+          parentSlug = parentLookup.slug;
         }
       }
 
@@ -138,7 +156,7 @@ ${newsEntries
     return new Response(sitemap, {
       headers: {
         "Content-Type": "text/xml; charset=utf-8",
-        "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
+        "Cache-Control": "public, max-age=60, s-maxage=60, stale-while-revalidate=120",
       },
     });
   } catch (error) {

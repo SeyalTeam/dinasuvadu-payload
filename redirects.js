@@ -15,13 +15,18 @@ const redirects = async () => {
   const redirects = [
     internetExplorerRedirect,
     {
+      source: '/amp/:path*',
+      destination: '/:path*',
+      permanent: true,
+    },
+    {
       source: '/:path+/amp',
-      destination: '/amp/:path+',
+      destination: '/:path+',
       permanent: true,
     },
     {
       source: '/:path+/amp/',
-      destination: '/amp/:path+',
+      destination: '/:path+',
       permanent: true,
     },
     {

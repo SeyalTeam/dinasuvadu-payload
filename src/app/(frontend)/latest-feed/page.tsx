@@ -37,7 +37,7 @@ type Post = {
   readingTime?: number;
 };
 
-const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+const apiUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_SERVER_URL || "https://www.dinasuvadu.com";
 
 async function fetchLatestPosts(limit: number = 20): Promise<{ docs: Post[], hasNextPage: boolean }> {
   try {

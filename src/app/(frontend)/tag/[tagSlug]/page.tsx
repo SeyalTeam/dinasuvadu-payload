@@ -4,6 +4,7 @@ import React from "react";
 import type { Metadata } from "next";
 import { buildMetadata, buildBreadcrumbLd } from "@/lib/seo";
 import { resolvePostPathForContext } from "@/lib/post-url";
+import { notFound, permanentRedirect } from "next/navigation";
 import Link from "next/link";
 import ShareButton from "@/components/ShareButton";
 import { getPayload } from "payload";
@@ -39,8 +40,8 @@ type Post = {
   categories?: Category[];
 };
 
-const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
-const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3001";
+const apiUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_SERVER_URL || "https://www.dinasuvadu.com";
+const baseUrl = process.env.NEXT_PUBLIC_SERVER_URL || process.env.NEXT_PUBLIC_SITE_URL || "https://www.dinasuvadu.com";
 
 const getPageNumber = (pageParam: string | string[] | undefined): number => {
   if (Array.isArray(pageParam)) {
@@ -125,19 +126,51 @@ async function fetchPostsByTag(
   return res || null;
 }
 
-export async function generateMetadata({ params }: { params: Promise<{ tagSlug: string }> }): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ tagSlug: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}): Promise<Metadata> {
   const { tagSlug } = await params;
+  const query = await searchParams;
+  const page = getPageNumber(query?.page);
+  const isPaginated = page > 1;
+
   const tag = await fetchTagBySlug(tagSlug);
-  if (tag) {
-    const title = `${tag.name} – Dinasuvadu`;
-    const description = `Explore the latest articles tagged with "${tag.name}" on Dinasuvadu.`;
-    return buildMetadata({
-      title,
-      description,
-      canonical: `https://www.dinasuvadu.com/tag/${tagSlug}`,
-    });
+  if (!tag) {
+    return { title: "Tag not found – Dinasuvadu" };
   }
-  return { title: "Dinasuvadu - Latest Tamil News" };
+
+  const payload = await getPayload({ config });
+  const countResult = await payload.count({
+    collection: "posts",
+    where: {
+      and: [
+        { tags: { contains: tag.id } },
+        { _status: { equals: "published" } },
+      ],
+    },
+  });
+  const totalPosts = typeof countResult === "number" ? countResult : countResult?.totalDocs || 0;
+  const isThin = totalPosts < 5;
+
+  const title = isPaginated ? `${tag.name} – Page ${page}` : `${tag.name} – Dinasuvadu`;
+  const description = `Explore the latest articles tagged with "${tag.name}" on Dinasuvadu.`;
+
+  return buildMetadata({
+    title,
+    description,
+    canonical: `https://www.dinasuvadu.com/tag/${tagSlug}`,
+    robots:
+      isThin || isPaginated
+        ? {
+            index: false,
+            follow: true,
+          }
+        : undefined,
+  });
 }
 
 export default async function TagPage({
@@ -149,6 +182,11 @@ export default async function TagPage({
 }) {
   const { tagSlug } = await params;
   const query = await searchParams;
+  const rawPageParam = Array.isArray(query?.page) ? query.page[0] : query?.page;
+  if (rawPageParam === "1") {
+    permanentRedirect(`/tag/${tagSlug}`);
+  }
+
   const page = getPageNumber(query.page);
   const initialListLimit = 15;
   const limit = initialListLimit;
@@ -156,10 +194,15 @@ export default async function TagPage({
   const tag = await fetchTagBySlug(tagSlug);
 
   if (!tag) {
-    return <div className="site" style={{ padding: '20px' }}>Tag not found</div>;
+    notFound();
   }
 
   const { posts, total } = await fetchPostsByTag(tag.id, page, limit);
+  const totalPages = Math.ceil(total / limit);
+
+  if (total === 0 || posts.length === 0 || page > totalPages) {
+    notFound();
+  }
 
   // Sidebar Data: Fetch top parent categories to show in the sidebar
   const payload = await getPayload({ config });

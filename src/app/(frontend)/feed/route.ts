@@ -123,7 +123,7 @@ async function getPostUrl(post: any, baseUrl: string): Promise<string> {
 
 export async function GET() {
   // Use the base URL from environment variable
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+  const baseUrl = process.env.NEXT_PUBLIC_SERVER_URL || process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_BASE_URL || 'https://www.dinasuvadu.com';
 
   // Fetch the most recent 50 published posts from Payload CMS API
   const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/posts?limit=50&sort=-publishedAt&where[_status][equals]=published&depth=2`;

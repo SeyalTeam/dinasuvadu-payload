@@ -40,8 +40,8 @@ type Post = {
   categories?: Category[];
 };
 
-const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
-const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3001";
+const apiUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_SERVER_URL || "https://www.dinasuvadu.com";
+const baseUrl = process.env.NEXT_PUBLIC_SERVER_URL || process.env.NEXT_PUBLIC_SITE_URL || "https://www.dinasuvadu.com";
 
 // Helper function to handle query parameters (string | string[] | undefined)
 const getPageNumber = (pageParam: string | string[] | undefined): number => {

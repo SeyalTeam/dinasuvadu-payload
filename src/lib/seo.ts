@@ -10,7 +10,7 @@ export function buildMetadata({
   imageUrl,
   type = "website",
   canonical,
-  amphtml,
+  robots,
 }: {
   title: string;
   description: string;
@@ -18,6 +18,7 @@ export function buildMetadata({
   type?: "article" | "website";
   canonical?: string;
   amphtml?: string;
+  robots?: Metadata["robots"];
 }): Metadata {
   const ogImage = imageUrl ?? "/website-template-OG.webp"; // fallback image in public folder
   return {
@@ -37,16 +38,7 @@ export function buildMetadata({
     },
     // Next.js supports canonical via alternates.canonical
     alternates: canonical ? { canonical } : undefined,
-    // Add custom amphtml tag via icons.other (Next.js App Router metadata API workaround)
-    icons: amphtml
-      ? {
-          other: {
-            rel: "amphtml",
-            url: amphtml,
-          },
-        }
-      : undefined,
-    robots: {
+    robots: robots ?? {
       index: true,
       follow: true,
       'max-image-preview': 'large',
@@ -80,7 +72,7 @@ export function buildArticleLd({
   categorySlug,
   postSlug,
   subPostSlug,
-  apiUrl = "http://localhost:3000",
+  apiUrl = process.env.NEXT_PUBLIC_SERVER_URL || process.env.NEXT_PUBLIC_SITE_URL || "https://www.dinasuvadu.com",
 }: {
   post: any;
   categorySlug: string;
@@ -88,7 +80,7 @@ export function buildArticleLd({
   subPostSlug?: string;
   apiUrl?: string;
 }): string {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.dinasuvadu.com';
+  const baseUrl = process.env.NEXT_PUBLIC_SERVER_URL || process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_BASE_URL || 'https://www.dinasuvadu.com';
   const url = subPostSlug
     ? `${baseUrl}/${categorySlug}/${postSlug}/${subPostSlug}`
     : `${baseUrl}/${categorySlug}/${postSlug}`;

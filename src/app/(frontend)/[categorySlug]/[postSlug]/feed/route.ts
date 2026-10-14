@@ -135,7 +135,7 @@ export async function GET(
   const { categorySlug, postSlug } = params;
 
   // Use the base URL from environment variable
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+  const baseUrl = process.env.NEXT_PUBLIC_SERVER_URL || process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_BASE_URL || 'https://www.dinasuvadu.com';
 
   // Fetch the subcategory by slug (postSlug is the subcategory, e.g., "tamilnadu")
   const subCategory = await fetchCategoryBySlug(postSlug);

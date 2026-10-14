@@ -51,10 +51,9 @@ export async function generateMetadata({ params }: { params: Promise<{ categoryS
   const description = resolvePostDescription(post);
   const imageUrl = resolvePostOgImageUrl(post) || undefined;
   const canonicalPath = await resolveCanonicalPostPath(post, fetchParentCategory);
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.dinasuvadu.com';
+  const baseUrl = process.env.NEXT_PUBLIC_SERVER_URL || process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_BASE_URL || 'https://www.dinasuvadu.com';
   const canonical = `${baseUrl}${canonicalPath}`;
-  const amphtml = post.isAMP ? `${baseUrl}/amp${canonicalPath}` : undefined;
-  return buildMetadata({ title, description, imageUrl, type: "article", canonical, amphtml });
+  return buildMetadata({ title, description, imageUrl, type: "article", canonical });
 }
 
 // Type definitions
@@ -182,7 +181,7 @@ function formatTimeAgo(dateString: string): string {
 }
 
 // API base URL
-const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+const apiUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_SERVER_URL || "https://www.dinasuvadu.com";
 
 const normalizeSlug = (slug: string): string => {
   try {

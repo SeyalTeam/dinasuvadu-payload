@@ -40,8 +40,8 @@ type Post = {
   tags?: Tag[];
 };
 
-const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
-const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3001";
+const apiUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_SERVER_URL || "https://www.dinasuvadu.com";
+const baseUrl = process.env.NEXT_PUBLIC_SERVER_URL || process.env.NEXT_PUBLIC_SITE_URL || "https://www.dinasuvadu.com";
 
 function getImageUrl(media: any): string | null {
   if (!media) return null;
@@ -201,24 +201,26 @@ export async function generateMetadata({
       title: "Category News",
       description: "Explore category news on Dinasuvadu.",
       canonical: `https://www.dinasuvadu.com/${categorySlug}/${postSlug}`,
+      robots: {
+        index: false,
+        follow: true,
+      },
     });
   }
 
   const possibleSubCategory = await fetchCategoryBySlug(postSlug);
   if (possibleSubCategory && possibleSubCategory.parent) {
-    const title =
-      pageNumber > 1
-        ? `${possibleSubCategory.title || "Category"} News - Page ${pageNumber} - Dinasuvadu`
-        : `${possibleSubCategory.title || "Category"} News - Dinasuvadu`;
+    const title = `${possibleSubCategory.title || "Category"} News - Page ${pageNumber} - Dinasuvadu`;
     const description = `Read the latest ${possibleSubCategory.title || "category"} news and updates on Dinasuvadu.`;
-    const canonical =
-      pageNumber > 1
-        ? `https://www.dinasuvadu.com/${categorySlug}/${postSlug}/p/${pageNumber}`
-        : `https://www.dinasuvadu.com/${categorySlug}/${postSlug}`;
+    const canonical = `https://www.dinasuvadu.com/${categorySlug}/${postSlug}`;
     return buildMetadata({
       title,
       description,
       canonical,
+      robots: {
+        index: false,
+        follow: true,
+      },
     });
   }
 
@@ -226,6 +228,10 @@ export async function generateMetadata({
     title: "Category News",
     description: "Explore category news on Dinasuvadu.",
     canonical: `https://www.dinasuvadu.com/${categorySlug}/${postSlug}`,
+    robots: {
+      index: false,
+      follow: true,
+    },
   });
 }
 
@@ -293,8 +299,8 @@ export default async function SubCategoryPaginatedPage({
   const { posts, total } = await fetchPostsByCategory(postSlug, pageNumber, limit);
   const totalPages = Math.ceil(total / limit);
 
-  if (totalPages > 0 && pageNumber > totalPages) {
-    redirect(pageHref(totalPages));
+  if (total === 0 || posts.length === 0 || pageNumber > totalPages) {
+    notFound();
   }
 
   return (

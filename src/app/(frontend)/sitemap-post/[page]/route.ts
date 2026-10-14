@@ -2,6 +2,7 @@ import { getPayload } from "payload";
 import config from "@/payload.config";
 
 export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 const POSTS_PER_SITEMAP = 500;
 
@@ -15,13 +16,15 @@ function escapeXml(value: unknown): string {
 }
 
 function normalizeBaseUrl(): string {
-  let url = (
+  const rawUrl = (
+    process.env.NEXT_PUBLIC_SERVER_URL ||
+    process.env.NEXT_PUBLIC_SITE_URL ||
     process.env.PAYLOAD_PUBLIC_SERVER_URL ||
     process.env.NEXT_PUBLIC_BASE_URL ||
-    process.env.NEXT_PUBLIC_SERVER_URL ||
     "https://www.dinasuvadu.com"
   ).replace(/\/$/, "");
 
+  let url = rawUrl;
   if (url.includes("dinasuvadu.com") && !url.includes("www.dinasuvadu.com") && !url.includes("media.dinasuvadu.com")) {
     url = url.replace("dinasuvadu.com", "www.dinasuvadu.com");
   }
@@ -57,7 +60,7 @@ function xmlResponse(xml: string): Response {
     status: 200,
     headers: {
       "Content-Type": "text/xml; charset=utf-8",
-      "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
+      "Cache-Control": "public, max-age=60, s-maxage=60, stale-while-revalidate=120",
     },
   });
 }

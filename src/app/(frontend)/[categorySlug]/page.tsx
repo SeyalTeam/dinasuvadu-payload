@@ -7,7 +7,7 @@ import { buildMetadata, buildBreadcrumbLd } from "@/lib/seo";
 // Removed duplicate import of buildMetadata
 import Link from "next/link";
 import Image from "next/image";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import ShareButton from "@/components/ShareButton";
 import { getPayload } from "payload";
 import config from "@/payload.config";
@@ -53,8 +53,8 @@ type Post = {
 };
 
 // API base URL
-const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
-const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3001";
+const apiUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_SERVER_URL || "https://www.dinasuvadu.com";
+const baseUrl = process.env.NEXT_PUBLIC_SERVER_URL || process.env.NEXT_PUBLIC_SITE_URL || "https://www.dinasuvadu.com";
 
 // Fetch a category by slug
 async function fetchCategoryBySlug(slug: string): Promise<Category | null> {
@@ -273,24 +273,45 @@ function getImageUrl(url: string | undefined): string | null {
 // Generate dynamic metadata for SEO
 export async function generateMetadata({
   params,
+  searchParams,
 }: {
   params: Promise<{ categorySlug: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }): Promise<Metadata> {
   const { categorySlug } = await params;
+  const query = await searchParams;
+  const pageParam = Array.isArray(query?.page) ? query.page[0] : query?.page;
+  const page = pageParam ? parseInt(pageParam, 10) : 1;
+  const isPaginated = !isNaN(page) && page > 1;
+
   const category = await fetchCategoryBySlug(categorySlug);
   if (category) {
-    const title = `${category.title || "Category"} News`;
+    const title = isPaginated
+      ? `${category.title || "Category"} News – Page ${page}`
+      : `${category.title || "Category"} News`;
     const description = `Follow the latest ${category.title || "category"} news, updates, and analysis on Dinasuvadu.`;
     return buildMetadata({
       title,
       description,
       canonical: `https://www.dinasuvadu.com/${categorySlug}`,
+      robots: isPaginated
+        ? {
+            index: false,
+            follow: true,
+          }
+        : undefined,
     });
   }
   return buildMetadata({
     title: "Category News",
     description: "Explore category news on Dinasuvadu.",
     canonical: `https://www.dinasuvadu.com/${categorySlug}`,
+    robots: isPaginated
+      ? {
+          index: false,
+          follow: true,
+        }
+      : undefined,
   });
 }
 
@@ -304,7 +325,16 @@ export default async function CategoryPage({
   console.log("Entering CategoryPage component for [categorySlug]");
 
   const { categorySlug } = await params;
+  if (categorySlug.toLowerCase() === "uncategorized") {
+    notFound();
+  }
+
   const query = await searchParams; // Await searchParams
+  const rawPageParam = Array.isArray(query?.page) ? query.page[0] : query?.page;
+  if (rawPageParam === "1") {
+    permanentRedirect(`/${categorySlug}`);
+  }
+
   const isNews = categorySlug.toLowerCase() === 'news';
   const isCinema = categorySlug.toLowerCase() === "cinema";
   const isSports = categorySlug.toLowerCase() === "sports";
@@ -342,6 +372,11 @@ export default async function CategoryPage({
     page,
     limit
   );
+
+  const totalPages = Math.ceil(total / limit);
+  if (total === 0 || rawPosts.length === 0 || page > totalPages) {
+    notFound();
+  }
 
   // Resolve initial posts with URLs on the server
   const resolvedPosts = await Promise.all(
@@ -519,7 +554,6 @@ export default async function CategoryPage({
   const remainingGrid = sidebarContent.filter(item => !processedSlugs.includes(item.category.slug.toLowerCase()));
 
   // Build pagination link tags (next / prev) after totalPages is known
-  const totalPages = Math.ceil(total / limit);
   const paginationLinks: React.ReactNode[] = [];
   if (page > 1) {
     paginationLinks.push(
@@ -674,6 +708,7 @@ export default async function CategoryPage({
                 
                 const featuredPost = sidebarPosts[0];
                 const listPosts = sidebarPosts.slice(1);
+                if (!featuredPost) return null;
 
                 return (
                   <div key={sidebarCat.id} className="bg-white dark:bg-[#111] p-5 rounded-2xl shadow-md border border-gray-100 dark:border-gray-800 flex flex-col">
